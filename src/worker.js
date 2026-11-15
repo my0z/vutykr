@@ -71,11 +71,16 @@ async function refresh(env) {
 }
 
 export default {
-  async fetch(req, env) {
+  async fetch(req, env, ctx) {
     const url = new URL(req.url);
     if (url.pathname === '/api/products') {
       const stored = await env.DATA.get('products');
       if (stored) return new Response(stored, { headers: { 'content-type': 'application/json', 'cache-control': 'public,max-age=600' } });
+      // 저장된 상품이 없으면 백그라운드에서 즉시 갱신 (5분 잠금)
+      if (env.COUPANG_ACCESS_KEY && !(await env.DATA.get('lock'))) {
+        await env.DATA.put('lock', '1', { expirationTtl: 300 });
+        ctx.waitUntil(refresh(env));
+      }
       return env.ASSETS.fetch(new Request(new URL('/products.json', url), req));
     }
     return env.ASSETS.fetch(req);
