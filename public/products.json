@@ -1,0 +1,9 @@
+{
+  "categories": ["전체", "스킨케어", "선케어", "클렌징", "메이크업", "바디헤어"],
+  "products": [
+    { "id": 1, "category": "스킨케어", "name": "수분 토너 추천 상품 자리", "desc": "쿠팡 파트너스 링크로 교체하세요", "badge": "BEST", "url": "https://link.coupang.com/a/REPLACE_1", "image": "" },
+    { "id": 2, "category": "선케어", "name": "무기자차 선크림 추천 상품 자리", "desc": "쿠팡 파트너스 링크로 교체하세요", "badge": "NEW", "url": "https://link.coupang.com/a/REPLACE_2", "image": "" },
+    { "id": 3, "category": "클렌징", "name": "저자극 클렌징 추천 상품 자리", "desc": "쿠팡 파트너스 링크로 교체하세요", "badge": "", "url": "https://link.coupang.com/a/REPLACE_3", "image": "" },
+    { "id": 4, "category": "메이크업", "name": "데일리 립 추천 상품 자리", "desc": "쿠팡 파트너스 링크로 교체하세요", "badge": "", "url": "https://link.coupang.com/a/REPLACE_4", "image": "" }
+  ]
+}

@@ -1,4 +1,10 @@
-# ...
+name = "vutykr"
+compatibility_date = "2026-11-15"
+
+[assets]
+directory = "./public"
+not_found_handling = "single-page-application"
+
 [observability]
 enabled = true
 head_sampling_rate = 1
@@ -17,4 +23,3 @@ persist = true
 
 [observability.issues]
 enabled = true
-# ...
