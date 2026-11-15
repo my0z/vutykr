@@ -70,10 +70,13 @@ async function refresh(env) {
   const errors = [];
   const seen = new Set();
   const products = [];
+  const names = new Set();
   const add = (list, cat, badge) => {
     for (const p of list) {
-      if (!p.productId || seen.has(p.productId)) continue;
+      const nm = String(p.productName || '').toLowerCase().replace(/\s+/g, '');
+      if (!p.productId || seen.has(p.productId) || names.has(nm)) continue;
       seen.add(p.productId);
+      names.add(nm);
       products.push(norm(p, cat, badge));
     }
   };
