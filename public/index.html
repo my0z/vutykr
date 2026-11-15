@@ -22,25 +22,19 @@ window.__d = window.__p ? Promise.resolve(window.__p) : Promise.all([
 <div id="promo" role="complementary" aria-label="제휴 사이트 소개"></div>
 <script>
 (function () {
+  // 자매 사이트 배너 6개 중 하나를 무작위로 보여준다 (내 사이트 배너는 없다)
   var B = [
-    { id: 'b1', i: '🚗', t: '자동차용품 인기 랭킹 한눈에', s: '세차 블랙박스 엔진오일 베스트를 매일 자동 업데이트', c: 'BODCAR 가기', u: 'https://bodcar.com/', g: ['#0b5fff', '#00b3ff'] },
-    { id: 'b2', i: '⛺', t: '차박 준비물 베스트 모아보기', s: '에어매트 냉온장고 햇빛 가림막까지', c: '차박캠핑 보기', u: 'https://bodcar.com/c/%EC%B0%A8%EB%B0%95%EC%BA%A0%ED%95%91', g: ['#0f766e', '#00b3ff'] },
-    { id: 'b3', i: '📹', t: '블랙박스와 엔진오일 인기템', s: '지금 많이 찾는 차량용품 TOP 랭킹', c: '랭킹 보기', u: 'https://bodcar.com/c/%EB%B8%94%EB%9E%99%EB%B0%95%EC%8A%A4', g: ['#1e293b', '#0b5fff'] },
-    { id: 'v1', i: '🌸', t: '쁘띠.끄 뷰티 인기템 랭킹', s: '스킨케어 선케어 클렌징을 매일 자동 업데이트', c: '쁘띠.끄 가기', u: 'https://vuty.kr/', g: ['#ff4d8d', '#ff8a5c'] },
-    { id: 'v2', i: '☀️', t: '선케어 모아보기', s: '자외선 차단 인기템을 한곳에서', c: '선케어 보기', u: 'https://vuty.kr/c/%EC%84%A0%EC%BC%80%EC%96%B4', g: ['#ff8a5c', '#f5b83d'] },
-    { id: 'v3', i: '💧', t: '스킨케어 베스트 랭킹', s: '토너 에센스 크림 인기 상품 TOP', c: '랭킹 보기', u: 'https://vuty.kr/c/%EC%8A%A4%ED%82%A8%EC%BC%80%EC%96%B4', g: ['#8b5cf6', '#ff4d8d'] },
-    { id: 'u1', i: '🔌', t: 'USB.KR 전자기기 가격 비교', s: '스펙과 쿠팡 최저가를 한눈에 비교한다', c: 'USB.KR 가기', u: 'https://usb.kr/', g: ['#0e0d10', '#3a3340'] },
-    { id: 'u2', i: '🚘', t: '차량용 전자기기 모아보기', s: '블랙박스 거치대 충전기 비교 리뷰', c: '차량용 보기', u: 'https://usb.kr/category/car', g: ['#111827', '#1f6feb'] },
-    { id: 'u3', i: '🏷️', t: '쿠팡 골드박스 전자기기 핫딜', s: '오늘의 특가를 확인하세요', c: '핫딜 보기', u: 'https://usb.kr/deals', g: ['#b45309', '#ef4444'] }
+    ['b1','자동차용품 인기 랭킹 한눈에','https://bodcar.com/'],
+    ['b2','차박 준비물 베스트 모아보기','https://bodcar.com/c/%EC%B0%A8%EB%B0%95%EC%BA%A0%ED%95%91'],
+    ['b3','블랙박스와 엔진오일 인기템','https://bodcar.com/c/%EB%B8%94%EB%9E%99%EB%B0%95%EC%8A%A4'],
+    ['u1','USB.KR 전자기기 가격 비교','https://usb.kr/'],
+    ['u2','차량용 전자기기 모아보기','https://usb.kr/category/car'],
+    ['u3','쿠팡 골드박스 전자기기 핫딜','https://usb.kr/deals']
   ];
-  var me = location.hostname.replace(/^www\./, '');
-  // 내 사이트 배너는 빼고 나머지 6개 중 무작위로 하나를 보여준다
-  var pool = B.filter(function (b) { return b.u.indexOf('//' + me + '/') < 0; });
-  var b = pool[Math.floor(Math.random() * pool.length)];
-  var el = document.getElementById('promo');
+  var b = B[Math.floor(Math.random() * B.length)], el = document.getElementById('promo');
   if (!b || !el) return;
-  var u = b.u + (b.u.indexOf('?') < 0 ? '?' : '&') + 'utm_source=' + me + '&utm_medium=banner&utm_campaign=' + b.id;
-  el.innerHTML = '<a class="pb" href="' + u + '" target="_blank" rel="noopener" style="background:linear-gradient(100deg,' + b.g[0] + ',' + b.g[1] + ')"><i>' + b.i + '</i><b>' + b.t + '</b><span>' + b.s + '</span><em>' + b.c + ' →</em></a>';
+  var u = b[2] + (b[2].indexOf('?') < 0 ? '?' : '&') + 'utm_source=vuty.kr&utm_medium=banner&utm_campaign=' + b[0];
+  el.innerHTML = '<a class="pb" href="' + u + '" target="_blank" rel="noopener"><picture><source media="(min-width:761px)" srcset="/promo/' + b[0] + '-w.webp"><img src="/promo/' + b[0] + '-n.webp" width="960" height="300" alt="' + b[1] + '" fetchpriority="low" decoding="async"></picture></a>';
 })();
 </script>
 <div class="topbar"><div class="in"><span>🌸 뷰티 인기템을 매일 자동으로 업데이트해요</span><nav><a href="#/talk">수다방</a><a href="#/write">글쓰기</a></nav></div></div>
