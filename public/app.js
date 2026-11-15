@@ -7,7 +7,16 @@
   let products = { products: [], categories: ['전체'] };
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const won = n => n ? Number(n).toLocaleString('ko-KR') + '원' : '가격 확인';
-  const img = p => p.image ? `<img src="/img?u=${encodeURIComponent(p.image)}" alt="" loading="lazy" onerror="this.replaceWith('🌸')">` : '🌸';
+  const img = p => p.image ? `<img data-src="/img?u=${encodeURIComponent(p.image)}" alt="" onerror="this.replaceWith('🌸')">` : '🌸';
+  // 썸네일은 화면에 들어오기 직전에만 불러온다
+  const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return;
+    const el = e.target;
+    io.unobserve(el);
+    el.src = el.dataset.src;
+  }), { rootMargin: '80px 0px' }) : null;
+  const watch = root => root.querySelectorAll && root.querySelectorAll('img[data-src]').forEach(el => { if (io) io.observe(el); else el.src = el.dataset.src; });
+  new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1) watch(n); }))).observe(document.body, { childList: true, subtree: true });
   const api = async (u, opt) => { const r = await fetch(u, opt); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '오류가 발생했어요'); return j; };
   const post = (u, b) => api(u, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) });
   const ago = ts => { const s = (Date.now() - ts) / 1000; if (s < 60) return '방금 전'; if (s < 3600) return Math.floor(s / 60) + '분 전'; if (s < 86400) return Math.floor(s / 3600) + '시간 전'; if (s < 604800) return Math.floor(s / 86400) + '일 전'; const d = new Date(ts); return `${d.getMonth() + 1}/${d.getDate()}`; };
