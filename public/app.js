@@ -8,7 +8,6 @@
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const icons = { '전체':'✨','스킨케어':'💧','선케어':'☀️','클렌징':'🫧','메이크업':'💄','바디헤어':'🧴' };
 
-  $('cnt').textContent = data.products.length;
   if (data.updatedAt) {
     const d = new Date(data.updatedAt);
     $('upd').textContent = `${d.getMonth() + 1}/${d.getDate()}`;
