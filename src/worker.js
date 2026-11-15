@@ -138,7 +138,17 @@ async function image(url, ctx, env) {
   let up;
   try { up = await fetch('https://' + t.host + t.pathname + t.search, { headers: { 'user-agent': 'Mozilla/5.0' }, cf: { cacheTtl: 86400, cacheEverything: true } }); } catch (e) { return new Response('upstream error', { status: 502 }); }
   if (!up.ok) return new Response('upstream ' + up.status, { status: 502 });
-  const res = new Response(up.body, { headers: { 'content-type': up.headers.get('content-type') || 'image/jpeg', 'cache-control': 'public,max-age=86400' } });
+  const res = new Response(up.body, { headers: { 'content-type': up.headers.get('content-type') || 'image/jpeg', 'cache-control': 'public,max-age=604800' } });
+  ctx.waitUntil(caches.default.put(key, res.clone()));
+  return res;
+}
+
+// 응답을 엣지에 잠깐 캐시해서 KV와 D1을 매번 읽지 않게 한다
+async function edgeJson(url, ctx, ttl, make) {
+  const key = new Request(url.origin + url.pathname);
+  const hit = await caches.default.match(key);
+  if (hit) return hit;
+  const res = new Response(await make(), { headers: { 'content-type': 'application/json', 'cache-control': `public,max-age=${ttl}` } });
   ctx.waitUntil(caches.default.put(key, res.clone()));
   return res;
 }
@@ -149,7 +159,7 @@ export default {
     const path = url.pathname;
     if (path === '/0') return admin(req, env, url);
     if (/^\/i\/\d+$/.test(path)) return image(url, ctx, env);
-    if (path === '/api/clicks') return new Response(JSON.stringify(env.DB ? await clickCounts(env) : {}), { headers: { 'content-type': 'application/json', 'cache-control': 'public,max-age=300' } });
+    if (path === '/api/clicks') return edgeJson(url, ctx, 300, async () => JSON.stringify(env.DB ? await clickCounts(env) : {}));
     if (/^\/api\/(posts|comments)(\/|$)/.test(path)) return env.DB ? community(req, env, url, ctx) : new Response('{"error":"db"}', { status: 500 });
     if (/^\/[a-z0-9]{4}$/.test(path)) {
       const link = (await getLinks(env))[path.slice(1)];
@@ -170,11 +180,12 @@ export default {
       return new Response(JSON.stringify(info, null, 1), { headers: { 'content-type': 'application/json' } });
     }
     if (url.pathname === '/api/products') {
-      const stored = await env.DATA.get('products');
-      if (stored) {
-        const d = JSON.parse(stored);
-        for (const p of d.products) p.image = !!p.image; // 원본 이미지 주소는 숨김
-        return new Response(JSON.stringify(d), { headers: { 'content-type': 'application/json', 'cache-control': 'public,max-age=600' } });
+      const hit = await caches.default.match(new Request(url.origin + url.pathname));
+      if (hit) return hit;
+      const d = await getProducts(env);
+      if (d) {
+        const body = JSON.stringify({ ...d, products: d.products.map(p => ({ ...p, image: !!p.image })) }); // 원본 이미지 주소는 숨김
+        return edgeJson(url, ctx, 300, async () => body);
       }
       // 저장된 상품이 없으면 백그라운드에서 즉시 갱신 (5분 잠금)
       if (env.COUPANG_ACCESS_KEY && !(await env.DATA.get('lock'))) {

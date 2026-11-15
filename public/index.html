@@ -6,8 +6,17 @@
 <title>쁘띠.끄 | 뷰티 인기템 랭킹 쇼핑</title>
 <meta name="description" content="스킨케어 선케어 클렌징 메이크업 인기 뷰티템 랭킹을 매일 자동으로 업데이트합니다">
 <meta name="theme-color" content="#ff4d8d">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"></noscript>
 <link rel="stylesheet" href="/style.css">
+<script>
+// 스크립트 로딩과 동시에 상품 데이터를 먼저 요청
+window.__d = Promise.all([
+  fetch('/api/products').then(function (r) { return r.json(); }).catch(function () { return null; }),
+  fetch('/api/clicks').then(function (r) { return r.json(); }).catch(function () { return {}; })
+]);
+</script>
 </head>
 <body>
 <div class="topbar"><div class="in"><span>🌸 뷰티 인기템을 매일 자동으로 업데이트해요</span><nav><a href="#/talk">수다방</a><a href="#/write">글쓰기</a></nav></div></div>
@@ -23,7 +32,7 @@
   <div id="boards"></div>
 </div><div id="drop" class="drop"></div></nav>
 
-<main id="view" class="wrap"></main>
+<main id="view" class="wrap"><div class="skh"></div><div class="skg"><i></i><i></i><i></i><i></i><i></i></div></main>
 
 <footer>
   <div class="in">
@@ -35,6 +44,6 @@
   </div>
 </footer>
 <button id="top" aria-label="맨 위로">↑</button>
-<script src="/app.js"></script>
+<script src="/app.js" defer></script>
 </body>
 </html>

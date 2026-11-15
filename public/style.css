@@ -99,6 +99,10 @@ form.f{display:grid;gap:8px}form.f input,form.f textarea,form.f select{width:100
 form.f input:focus,form.f textarea:focus,form.f select:focus{outline:0;border-color:var(--p1);box-shadow:0 0 0 3px #ff4d8d22}
 form.f .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.hp{position:absolute;left:-9999px}.err{color:#e5484d;font-size:.82rem;min-height:1em}
 
+@keyframes sh{to{background-position:-200% 0}}
+.skh,.skg i{background:linear-gradient(90deg,var(--card) 25%,var(--soft) 50%,var(--card) 75%);background-size:200% 100%;animation:sh 1.3s infinite;border-radius:22px}
+.skh{height:340px;margin-bottom:22px}.skg{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}.skg i{display:block;height:280px}
+@media(max-width:760px){.skg{grid-template-columns:repeat(2,minmax(0,1fr))}.skh{height:300px}.skg i:nth-child(n+5){display:none}}
 @keyframes in{from{opacity:0;transform:translateY(10px)}}
 footer{background:var(--card);border-top:1px solid var(--line);color:var(--mute);font-size:.78rem;padding:36px 0 56px}footer p{margin:5px 0;line-height:1.6}footer .logo{display:inline-block;margin-bottom:8px;font-size:1.3rem}
 #top{position:fixed;right:18px;bottom:18px;width:46px;height:46px;border:0;border-radius:50%;background:var(--grad);color:#fff;font-size:1.1rem;cursor:pointer;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.25s;z-index:40}#top.show{opacity:1;pointer-events:auto}
