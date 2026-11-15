@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="/style.css">
 <script>
 // 스크립트 로딩과 동시에 상품 데이터를 먼저 요청
-window.__d = Promise.all([
+window.__d = window.__p ? Promise.resolve(window.__p) : Promise.all([
   fetch('/api/products').then(function (r) { return r.json(); }).catch(function () { return null; }),
   fetch('/api/clicks').then(function (r) { return r.json(); }).catch(function () { return {}; })
 ]);

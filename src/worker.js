@@ -120,7 +120,7 @@ async function refresh(env) {
 let prodCache = { t: 0, v: null };
 async function getProducts(env) {
   if (Date.now() - prodCache.t < 60000 && prodCache.v) return prodCache.v;
-  const v = JSON.parse((await env.DATA.get('products')) || 'null');
+  const v = JSON.parse((await env.DATA.get('products', { cacheTtl: 60 })) || 'null');
   prodCache = { t: Date.now(), v };
   return v;
 }
@@ -154,14 +154,44 @@ async function edgeJson(url, ctx, ttl, make) {
   return res;
 }
 
+// 클릭 집계는 KV에 저장해 두고 오래되면 뒤에서 갱신한다 (요청이 D1을 기다리지 않게)
+async function getClicks(env, ctx) {
+  let o = null;
+  try { o = JSON.parse((await env.DATA.get('clicks', { cacheTtl: 60 })) || 'null'); } catch (e) {}
+  if (env.DB && (!o || Date.now() - o.t > 600000)) {
+    ctx.waitUntil((async () => {
+      try {
+        if (await env.DATA.get('clicks-lock')) return;
+        await env.DATA.put('clicks-lock', '1', { expirationTtl: 60 });
+        await env.DATA.put('clicks', JSON.stringify({ t: Date.now(), v: await clickCounts(env) }));
+      } catch (e) {}
+    })());
+  }
+  return o ? o.v : {};
+}
+
 export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
     const path = url.pathname;
     if (path === '/0') return admin(req, env, url);
     if (/^\/i\/\d+$/.test(path)) return image(url, ctx, env);
-    if (path === '/api/clicks') return edgeJson(url, ctx, 300, async () => JSON.stringify(env.DB ? await clickCounts(env) : {}));
-    if (/^\/api\/(posts|comments)(\/|$)/.test(path)) return env.DB ? community(req, env, url, ctx) : new Response('{"error":"db"}', { status: 500 });
+    if (path === '/api/clicks') return new Response(JSON.stringify(await getClicks(env, ctx)), { headers: { 'content-type': 'application/json', 'cache-control': 'public,max-age=60,stale-while-revalidate=300' } });
+    if (/^\/api\/(posts|comments)(\/|$)/.test(path)) {
+      if (!env.DB) return new Response('{"error":"db"}', { status: 500 });
+      if (req.method === 'GET' && path === '/api/posts') { // 글 목록은 엣지에 30초 캐시
+        const key = new Request(url.origin + url.pathname + url.search);
+        const hit = await caches.default.match(key);
+        if (hit) return hit;
+        const res = await community(req, env, url, ctx);
+        if (!res.ok) return res;
+        const r = new Response(res.body, res);
+        r.headers.set('cache-control', 'public,max-age=30');
+        ctx.waitUntil(caches.default.put(key, r.clone()));
+        return r;
+      }
+      return community(req, env, url, ctx);
+    }
     if (/^\/[a-z0-9]{4}$/.test(path)) {
       const link = (await getLinks(env))[path.slice(1)];
       if (link) {
@@ -170,7 +200,7 @@ export default {
       }
     }
     if (path === '/' || path === '/index.html') ctx.waitUntil(track(env, req, { type: 'view' }));
-    { const sr = await seo(req, env, url); if (sr) return sr; }
+    { const sr = await seo(req, env, url, ctx, { products: getProducts, clicks: () => getClicks(env, ctx) }); if (sr) return sr; }
     if (url.pathname === '/api/debug') {
       const info = { version: env.CF_VERSION_METADATA && env.CF_VERSION_METADATA.id, versionAt: env.CF_VERSION_METADATA && env.CF_VERSION_METADATA.timestamp, envKeys: Object.keys(env), hasKeys: !!(env.COUPANG_ACCESS_KEY && env.COUPANG_SECRET_KEY), keyLen: [(env.COUPANG_ACCESS_KEY || '').length, (env.COUPANG_SECRET_KEY || '').length] };
       if (url.searchParams.get('run') === '1' && info.hasKeys && !(await env.DATA.get('lock'))) {

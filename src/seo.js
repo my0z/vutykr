@@ -92,7 +92,7 @@ function build(r, list) {
   };
 }
 
-function inject(html, pg, img) {
+function inject(html, pg, img, boot) {
   const tags = [
     '<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">',
     `<link rel="canonical" href="${pg.canonical}">`,
@@ -111,6 +111,7 @@ function inject(html, pg, img) {
   return html
     .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(pg.title)}</title>`)
     .replace(/<meta name="description"[^>]*>/, `<meta name="description" content="${esc(pg.desc)}">`)
+    .replace('<link rel="stylesheet" href="/style.css">', m => m + (boot ? `\n<script>window.__p=${JSON.stringify(boot).replace(/</g, '\\u003c')}</script>` : ''))
     .replace('</head>', tags + '\n</head>')
     .replace(/<main id="view" class="wrap">[\s\S]*?<\/main>/, () => `<main id="view" class="wrap">${pg.body}</main>`)
     .replace('</body>', () => `<script type="application/json" id="faq-data">${JSON.stringify(SITE.faq).replace(/</g, '\\u003c')}</script>\n</body>`);
@@ -143,7 +144,7 @@ async function llms(env) {
   return new Response(t, { headers: headers('text/plain;charset=utf-8') });
 }
 
-export async function seo(req, env, url) {
+export async function seo(req, env, url, ctx, h = {}) {
   if (req.method !== 'GET' && req.method !== 'HEAD') return null;
   try {
     const p = url.pathname;
@@ -152,14 +153,22 @@ export async function seo(req, env, url) {
     if (p === '/llms.txt') return await llms(env);
     const r = route(p);
     if (!r) return null;
+    const cache = caches.default;
+    const key = new Request(url.origin + url.pathname);
+    if (req.method === 'GET') { const hit = await cache.match(key); if (hit) return hit; }
     const tpl = await env.ASSETS.fetch(new Request(new URL('/', url)));
     if (!tpl.ok) return null;
-    const d = await load(env);
+    const d = h.products ? await h.products(env) : await load(env);
+    let clicks = {};
+    try { if (h.clicks) clicks = await h.clicks(); } catch (e) {}
     const list = (d && d.products) || [];
     const pg = build(r, list);
     const first = list.find(x => x.image);
-    const html = inject(await tpl.text(), pg, first ? abs('/i/' + first.id) : '');
-    return new Response(req.method === 'HEAD' ? null : html, { headers: headers('text/html;charset=utf-8', 300) });
+    const boot = d ? [{ ...d, products: list.map(p => ({ ...p, image: !!p.image })) }, clicks] : null; // 첫 화면에 필요한 데이터를 HTML에 함께 보낸다
+    const html = inject(await tpl.text(), pg, first ? abs('/i/' + first.id) : '', boot);
+    const res = new Response(req.method === 'HEAD' ? null : html, { headers: { 'content-type': 'text/html;charset=utf-8', 'cache-control': 'public,max-age=60,s-maxage=120' } });
+    if (req.method === 'GET' && ctx) ctx.waitUntil(cache.put(key, res.clone()));
+    return res;
   } catch (e) {
     return null;
   }
