@@ -1,3 +1,4 @@
+import { init as initCommunity, removeRow, adminNotice } from './community.js';
 // 접속 기록(D1)과 관리자 통계 페이지(/0)
 let ready;
 function init(env) {
@@ -87,12 +88,24 @@ export async function admin(req, env, url) {
   if (!authed(req, env)) return new Response('로그인이 필요합니다', { status: 401, headers: { ...head, 'www-authenticate': 'Basic realm="stats", charset="UTF-8"' } });
   if (!env.DB) return new Response('D1 데이터베이스가 연결되지 않았습니다', { status: 500, headers: head });
   await init(env);
+  await initCommunity(env);
+
+  if (req.method === 'POST') {
+    const b = await req.json().catch(() => ({}));
+    if (b.a === 'del' && (b.t === 'posts' || b.t === 'comments') && Number(b.id)) { await removeRow(env, b.t, Number(b.id)); return new Response('{"ok":true}', { headers: head }); }
+    if (b.a === 'notice' && b.title && b.body) { await adminNotice(env, b.title, b.body); return new Response('{"ok":true}', { headers: head }); }
+    return new Response('{"error":"bad"}', { status: 400, headers: head });
+  }
 
   const ranges = { 1: '24시간', 7: '7일', 30: '30일', 90: '90일' };
   const d = ranges[url.searchParams.get('d')] ? Number(url.searchParams.get('d')) : 7;
   const since = Date.now() - d * 86400e3;
   const W = 'WHERE bot=0 AND ts>=?';
   const KST = "(ts+32400000)/1000";
+  const [mPosts, mComments] = await Promise.all([
+    q(env, 'SELECT id,board,title,nick,ts,ccount,likes FROM posts WHERE hidden=0 ORDER BY ts DESC LIMIT 25'),
+    q(env, 'SELECT id,pid,body,nick,ts FROM comments WHERE hidden=0 ORDER BY ts DESC LIMIT 20')
+  ]);
   const [tot, daily, hourly, top, country, city, device, browser, os, ref, recent, bots] = await Promise.all([
     q(env, `SELECT SUM(type='view') v, COUNT(DISTINCT CASE WHEN type='view' THEN vid END) u, SUM(type='click') c, COUNT(DISTINCT CASE WHEN type='click' THEN vid END) cu FROM hits ${W}`, since),
     q(env, `SELECT date(${KST},'unixepoch') d, SUM(type='view') v, SUM(type='click') c FROM hits ${W} GROUP BY d ORDER BY d`, since),
@@ -134,7 +147,7 @@ h1{margin:0;font-size:1.5rem}h1 span{color:var(--p1)}header{display:flex;justify
 .chart{display:flex;gap:4px;align-items:flex-end;height:170px;overflow-x:auto}.col{flex:1;min-width:22px;display:flex;flex-direction:column;align-items:center;height:100%}.stack{flex:1;width:100%;display:flex;gap:2px;align-items:flex-end}.stack i{flex:1;border-radius:4px 4px 0 0;min-height:2px}.v{background:var(--p3)}.c{background:var(--p1)}.col small,.hours small{color:var(--mute);font-size:.62rem;margin-top:4px}
 .hours{display:flex;gap:3px;align-items:flex-end;height:120px}.hours div{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}.hours i{width:100%;background:var(--p2);border-radius:3px 3px 0 0;min-height:2px}
 .legend{font-size:.75rem;color:var(--mute);margin-bottom:8px}.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin:0 4px 0 10px}
-table{width:100%;border-collapse:collapse;font-size:.8rem}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);white-space:nowrap}th{color:var(--mute);font-weight:600}.wrap{overflow-x:auto}
+button{background:var(--p1);color:#fff;border:0;border-radius:8px;padding:6px 12px;cursor:pointer;font:inherit}table{width:100%;border-collapse:collapse;font-size:.8rem}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);white-space:nowrap}th{color:var(--mute);font-weight:600}.wrap{overflow-x:auto}
 .tag{padding:2px 8px;border-radius:6px;font-size:.7rem;font-weight:800}.tag.click{background:var(--p1)}.tag.view{background:var(--p3)}
 </style></head><body>
 <header><h1>쁘띠.끄 <span>통계</span></h1><nav class="tabs">${tabs}</nav></header>
@@ -159,6 +172,22 @@ table{width:100%;border-collapse:collapse;font-size:.8rem}th,td{text-align:left;
 <section class="box"><h2>최근 활동</h2><div class="wrap"><table><tr><th>시간</th><th>구분</th><th>내용</th><th>지역</th><th>기기</th><th>브라우저</th><th>OS</th><th>유입</th></tr>
 ${recent.map(r => `<tr><td>${kst(r.ts)}</td><td><span class="tag ${r.type}">${r.type === 'click' ? '클릭' : '방문'}</span></td><td>${esc(r.type === 'click' ? `${r.code} ${r.name}`.slice(0, 40) : '메인')}</td><td>${esc(`${r.country} ${r.city}`.trim())}</td><td>${esc(r.device)}</td><td>${esc(r.browser)}</td><td>${esc(r.os)}</td><td>${esc(r.ref || '직접')}</td></tr>`).join('') || '<tr><td colspan="8" class="mute">기록이 없습니다</td></tr>'}
 </table></div></section>
+<section class="box" style="margin-top:12px"><h2>커뮤니티 관리</h2>
+<div class="wrap"><table><tr><th>번호</th><th>게시판</th><th>제목</th><th>작성자</th><th>댓글</th><th>좋아요</th><th>시간</th><th></th></tr>
+${mPosts.map(r => `<tr><td>${r.id}</td><td>${esc(r.board)}</td><td>${esc(r.title.slice(0, 30))}</td><td>${esc(r.nick)}</td><td>${r.ccount}</td><td>${r.likes}</td><td>${kst(r.ts)}</td><td><button onclick="del('posts',${r.id})">삭제</button></td></tr>`).join('') || '<tr><td colspan="8" class="mute">글이 없습니다</td></tr>'}
+</table></div>
+<h2 style="margin-top:16px">최근 댓글</h2><div class="wrap"><table><tr><th>글</th><th>내용</th><th>작성자</th><th>시간</th><th></th></tr>
+${mComments.map(r => `<tr><td>${r.pid}</td><td>${esc(r.body.slice(0, 40))}</td><td>${esc(r.nick)}</td><td>${kst(r.ts)}</td><td><button onclick="del('comments',${r.id})">삭제</button></td></tr>`).join('') || '<tr><td colspan="5" class="mute">댓글이 없습니다</td></tr>'}
+</table></div>
+<h2 style="margin-top:16px">공지 쓰기</h2>
+<input id="nt" placeholder="제목" style="width:100%;padding:8px;margin-bottom:6px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)">
+<textarea id="nb" rows="4" placeholder="내용" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)"></textarea>
+<button onclick="notice()" style="margin-top:6px">공지 등록</button></section>
+<script>
+async function post(b){const r=await fetch('/0',{method:'POST',body:JSON.stringify(b)});if(!r.ok){alert('실패했습니다');return false}return true}
+async function del(t,id){if(confirm('삭제할까요?')&&await post({a:'del',t,id}))location.reload()}
+async function notice(){const t=document.getElementById('nt').value,b=document.getElementById('nb').value;if(await post({a:'notice',title:t,body:b}))location.reload()}
+</script>
 <p class="mute" style="margin-top:16px">원본 IP는 저장하지 않고 일 단위로 섞은 해시만 사용합니다. 봇은 통계에서 제외됩니다.</p>
 </body></html>`;
   return new Response(html, { headers: head });

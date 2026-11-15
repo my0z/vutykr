@@ -1,4 +1,5 @@
 import { track, admin } from './analytics.js';
+import { handle as community } from './community.js';
 
 const HOST = 'https://api-gateway.coupang.com';
 const BASE = '/v2/providers/affiliate_open_api/apis/openapi/v1/products';
@@ -132,6 +133,7 @@ export default {
     const path = url.pathname;
     if (path === '/0') return admin(req, env, url);
     if (path === '/img') return image(url, ctx);
+    if (/^\/api\/(posts|comments)(\/|$)/.test(path)) return env.DB ? community(req, env, url, ctx) : new Response('{"error":"db"}', { status: 500 });
     if (/^\/[a-z0-9]{4}$/.test(path)) {
       const link = (await getLinks(env))[path.slice(1)];
       if (link) {

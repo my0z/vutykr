@@ -3,48 +3,36 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>쁘띠.끄 | 오늘의 뷰티 픽</title>
-<meta name="description" content="스킨케어 선케어 클렌징 메이크업 인기 뷰티템을 매일 자동으로 업데이트합니다">
+<title>쁘띠.끄 | 뷰티 수다방</title>
+<meta name="description" content="뷰티 후기와 질문과 꿀팁을 나누는 익명 커뮤니티 쁘띠.끄">
 <meta name="theme-color" content="#ff4d8d">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 <header class="nav">
-  <a class="logo" href="/"><span>✦</span> 쁘띠.끄</a>
-  <label class="search"><span>🔍</span><input id="q" type="search" placeholder="제품명을 검색하세요" autocomplete="off"></label>
+  <a class="logo" href="#/"><span>✦</span> 쁘띠.끄</a>
+  <nav id="boards"></nav>
+  <a class="write" href="#/write">✏️ 글쓰기</a>
 </header>
 
-<section class="hero">
-  <i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i>
-  <p class="eyebrow">TODAY'S BEAUTY PICK</p>
-  <h1>오늘 가장 핫한<br><em>뷰티템</em>만 쏙쏙</h1>
-  <p class="sub">스킨케어부터 메이크업까지 인기 상품을 매일 자동으로 모았어요</p>
-  <div class="stats">
-        <div><b id="upd">-</b><span>마지막 업데이트</span></div>
-  </div>
+<section class="banner">
+  <i class="blob b1"></i><i class="blob b2"></i>
+  <h1>오늘 뭐 발랐어? <em>뷰티 수다방</em></h1>
+  <p>후기도 질문도 꿀팁도 편하게 남겨요 가입 없이 닉네임만 있으면 OK</p>
+  <label class="search"><span>🔍</span><input id="q" type="search" placeholder="글 검색" autocomplete="off"></label>
 </section>
 
-<div class="ticker"><div class="track">
-  <span>✦ 수분 폭탄</span><span>✦ 촉촉 광채</span><span>✦ 선케어 필수</span><span>✦ 딥클렌징</span><span>✦ 데일리 메이크업</span><span>✦ 로켓배송 상품</span>
-  <span>✦ 수분 폭탄</span><span>✦ 촉촉 광채</span><span>✦ 선케어 필수</span><span>✦ 딥클렌징</span><span>✦ 데일리 메이크업</span><span>✦ 로켓배송 상품</span>
-</div></div>
-
-<section class="bar">
-  <nav id="tabs" aria-label="카테고리"></nav>
-  <select id="sort" aria-label="정렬">
-    <option value="rank">인기순</option>
-    <option value="low">낮은 가격순</option>
-    <option value="high">높은 가격순</option>
-  </select>
-</section>
-
-<main id="grid" class="grid"></main>
+<div class="layout">
+  <main id="view"></main>
+  <aside id="side"></aside>
+</div>
 
 <footer>
   <div class="logo"><span>✦</span> 쁘띠.끄</div>
   <p>이 사이트는 쿠팡 파트너스 활동의 일환으로 수수료를 제공받을 수 있습니다.</p>
   <p>가격과 재고는 쿠팡에서 수시로 변동되니 구매 전 꼭 확인하세요.</p>
+  <p>게시글의 의견은 작성자의 것이며 쁘띠.끄는 책임지지 않습니다.</p>
 </footer>
 <button id="top" aria-label="맨 위로">↑</button>
 <script src="/app.js"></script>
