@@ -8,16 +8,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: 시크릿 파일 생성
+        env:
+          A: ${{ secrets.COUPANG_ACCESS_KEY }}
+          S: ${{ secrets.COUPANG_SECRET_KEY }}
+          P: ${{ secrets.ADMIN_PASSWORD }}
+        run: |
+          jq -n --arg a "$A" --arg s "$S" --arg p "$P" '{COUPANG_ACCESS_KEY:$a,COUPANG_SECRET_KEY:$s} + (if $p=="" then {} else {ADMIN_PASSWORD:$p} end)' > secrets.json
+          echo "keys: $(jq -r 'keys|join(",")' secrets.json)"
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: "4"
-          postCommands: |
-            printf '%s' "$COUPANG_ACCESS_KEY" | npx wrangler secret put COUPANG_ACCESS_KEY
-            printf '%s' "$COUPANG_SECRET_KEY" | npx wrangler secret put COUPANG_SECRET_KEY
-            if [ -n "$ADMIN_PASSWORD" ]; then printf '%s' "$ADMIN_PASSWORD" | npx wrangler secret put ADMIN_PASSWORD; fi
-        env:
-          COUPANG_ACCESS_KEY: ${{ secrets.COUPANG_ACCESS_KEY }}
-          COUPANG_SECRET_KEY: ${{ secrets.COUPANG_SECRET_KEY }}
-          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          command: deploy --secrets-file secrets.json

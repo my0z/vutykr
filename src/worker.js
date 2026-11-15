@@ -144,7 +144,7 @@ export default {
     }
     if (path === '/' || path === '/index.html') ctx.waitUntil(track(env, req, { type: 'view' }));
     if (url.pathname === '/api/debug') {
-      const info = { envKeys: Object.keys(env), hasKeys: !!(env.COUPANG_ACCESS_KEY && env.COUPANG_SECRET_KEY), keyLen: [(env.COUPANG_ACCESS_KEY || '').length, (env.COUPANG_SECRET_KEY || '').length] };
+      const info = { version: env.CF_VERSION_METADATA && env.CF_VERSION_METADATA.id, versionAt: env.CF_VERSION_METADATA && env.CF_VERSION_METADATA.timestamp, envKeys: Object.keys(env), hasKeys: !!(env.COUPANG_ACCESS_KEY && env.COUPANG_SECRET_KEY), keyLen: [(env.COUPANG_ACCESS_KEY || '').length, (env.COUPANG_SECRET_KEY || '').length] };
       if (url.searchParams.get('run') === '1' && info.hasKeys && !(await env.DATA.get('lock'))) {
         await env.DATA.put('lock', '1', { expirationTtl: 300 });
         info.run = await refresh(env);
