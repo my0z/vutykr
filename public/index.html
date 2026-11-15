@@ -3,22 +3,54 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>뷰티키알 | 뷰티 추천템 모음</title>
-<meta name="description" content="스킨케어 선케어 클렌징 메이크업 추천템을 한곳에서 확인하세요">
+<title>뷰티키알 | 오늘의 뷰티 픽</title>
+<meta name="description" content="스킨케어 선케어 클렌징 메이크업 인기 뷰티템을 매일 자동으로 업데이트합니다">
+<meta name="theme-color" content="#ff4d8d">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-<header class="top">
-  <h1>뷰티키알</h1>
-  <p>매일 쓰는 뷰티템만 골라 모았습니다</p>
+<div class="notice">이 포스팅은 쿠팡 파트너스 활동의 일환으로 이에 따른 일정액의 수수료를 제공받습니다.</div>
+
+<header class="nav">
+  <a class="logo" href="/"><span>✦</span> 뷰티키알</a>
+  <label class="search"><span>🔍</span><input id="q" type="search" placeholder="제품명을 검색하세요" autocomplete="off"></label>
 </header>
-<p class="notice">이 포스팅은 쿠팡 파트너스 활동의 일환으로 이에 따른 일정액의 수수료를 제공받습니다.</p>
-<nav id="tabs" aria-label="카테고리"></nav>
+
+<section class="hero">
+  <i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i>
+  <p class="eyebrow">TODAY'S BEAUTY PICK</p>
+  <h1>오늘 가장 핫한<br><em>뷰티템</em>만 쏙쏙</h1>
+  <p class="sub">스킨케어부터 메이크업까지 인기 상품을 매일 자동으로 모았어요</p>
+  <div class="stats">
+    <div><b id="cnt">0</b><span>추천 상품</span></div>
+    <div><b>6H</b><span>자동 갱신</span></div>
+    <div><b id="upd">-</b><span>마지막 업데이트</span></div>
+  </div>
+</section>
+
+<div class="ticker"><div class="track">
+  <span>✦ 수분 폭탄</span><span>✦ 촉촉 광채</span><span>✦ 선케어 필수</span><span>✦ 딥클렌징</span><span>✦ 데일리 메이크업</span><span>✦ 로켓배송 상품</span>
+  <span>✦ 수분 폭탄</span><span>✦ 촉촉 광채</span><span>✦ 선케어 필수</span><span>✦ 딥클렌징</span><span>✦ 데일리 메이크업</span><span>✦ 로켓배송 상품</span>
+</div></div>
+
+<section class="bar">
+  <nav id="tabs" aria-label="카테고리"></nav>
+  <select id="sort" aria-label="정렬">
+    <option value="rank">인기순</option>
+    <option value="low">낮은 가격순</option>
+    <option value="high">높은 가격순</option>
+  </select>
+</section>
+
 <main id="grid" class="grid"></main>
+
 <footer>
+  <div class="logo"><span>✦</span> 뷰티키알</div>
   <p>이 사이트는 쿠팡 파트너스 활동의 일환으로 수수료를 제공받을 수 있습니다.</p>
-  <p>가격과 재고는 쿠팡에서 변동될 수 있으니 구매 전 확인하세요.</p>
+  <p>가격과 재고는 쿠팡에서 수시로 변동되니 구매 전 꼭 확인하세요.</p>
 </footer>
+<button id="top" aria-label="맨 위로">↑</button>
 <script src="/app.js"></script>
 </body>
 </html>
