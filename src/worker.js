@@ -1,3 +1,4 @@
+import { seo } from './seo.js';
 import { track, admin, clickCounts } from './analytics.js';
 import { handle as community } from './community.js';
 
@@ -169,6 +170,7 @@ export default {
       }
     }
     if (path === '/' || path === '/index.html') ctx.waitUntil(track(env, req, { type: 'view' }));
+    { const sr = await seo(req, env, url); if (sr) return sr; }
     if (url.pathname === '/api/debug') {
       const info = { version: env.CF_VERSION_METADATA && env.CF_VERSION_METADATA.id, versionAt: env.CF_VERSION_METADATA && env.CF_VERSION_METADATA.timestamp, envKeys: Object.keys(env), hasKeys: !!(env.COUPANG_ACCESS_KEY && env.COUPANG_SECRET_KEY), keyLen: [(env.COUPANG_ACCESS_KEY || '').length, (env.COUPANG_SECRET_KEY || '').length] };
       if (url.searchParams.get('run') === '1' && info.hasKeys && !(await env.DATA.get('lock'))) {

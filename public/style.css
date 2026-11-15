@@ -112,3 +112,8 @@ footer{background:var(--card);border-top:1px solid var(--line);color:var(--mute)
 .icons{grid-template-columns:repeat(4,1fr);row-gap:14px}.posts{grid-template-columns:1fr}.rail .pc{flex-basis:160px}.rb{display:none}.slide{flex-direction:column-reverse;align-items:flex-start;justify-content:flex-end}.slide .tx{max-width:100%}.slide .im{width:110px}.car{min-height:400px}
 #allcat{padding:9px 12px;font-size:.82rem}.topbar span{display:none}form.f .two{grid-template-columns:1fr}.ad .th{width:64px;height:64px}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.faq{margin-top:34px}.faq h2{margin:0 0 14px;font-size:1.35rem;font-weight:900;letter-spacing:-.03em}
+.faq details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:8px}
+.faq summary{cursor:pointer;font-weight:800}.faq p{margin:10px 0 0;color:var(--mute);line-height:1.7}
+.ssr h1{font-size:1.5rem;font-weight:900;margin:0 0 8px}.ssr h2{font-size:1.1rem;margin:22px 0 8px}.ssr p{color:var(--mute)}
+.ssr nav{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}.ssr ul{padding-left:18px}.ssr li{margin:4px 0;line-height:1.5}.ssr a:hover{color:var(--p1)}

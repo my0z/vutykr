@@ -24,12 +24,16 @@
 
 
   const ICONS = { '스킨케어': '💧', '선케어': '☀️', '클렌징': '🫧', '메이크업': '💄', '바디헤어': '🧴' };
+  const FAQ = (() => { try { return JSON.parse($('faq-data').textContent); } catch (e) { return []; } })();
+  const faqHtml = () => FAQ.length ? `<section class="faq"><h2>자주 묻는 질문</h2>${FAQ.map(f => `<details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join('')}</section>` : '';
+  const SN = document.body.dataset.name || '', HT = document.body.dataset.home || document.title;
+  const setTitle = t => { document.title = t; };
   let timer;
   const narrow = on => view.classList.toggle('narrow', on);
   const link = (p, extra) => `href="${esc(p.url)}" target="_blank" rel="sponsored noopener nofollow"${extra || ''}`;
 
   function nav(cur) {
-    const items = [['home', '홈', '#/'], ['all', '🛍 전체상품', '#/all'], ...CATS.map(c => [c, c, '#/c/' + encodeURIComponent(c)]), ['talk', '💬 수다방', '#/talk']];
+    const items = [['home', '홈', '/'], ['all', '🛍 전체상품', '/all'], ...CATS.map(c => [c, c, '/c/' + encodeURIComponent(c)]), ['talk', '💬 수다방', '#/talk']];
     $('boards').innerHTML = items.map(([k, v, h]) => `<a href="${h}" class="${k === cur ? 'on' : ''}">${v}</a>`).join('');
     $('drop').innerHTML = `<div class="in">${items.slice(1).map(([k, v, h]) => `<a href="${h}">${v}</a>`).join('')}</div>`;
     $('drop').classList.remove('open');
@@ -41,6 +45,7 @@
     <div class="cn">${esc(p.category)}</div><h3>${esc(p.name)}</h3><div class="pp">${won(p.price)}</div>${clicks[p.id] ? `<div class="hot">🔥 ${clicks[p.id]}회 클릭</div>` : ''}<div class="bt"><span>상품보기</span></div></a>`;
 
   function home() {
+    setTitle(HT);
     narrow(false);
     nav('home');
     const r = ranked();
@@ -63,11 +68,11 @@
     const slides = top3.map((p, i) => `<a class="slide s${i % 4}" ${link(p)}><div class="tx"><small>🏆 오늘의 랭킹 ${i + 1}위</small><h2>${esc(p.name)}</h2><div class="pr">${won(p.price)}</div><span class="go">상품보기 →</span></div><div class="im">${img(p, i === 0)}</div></a>`).join('');
     const cats = CATS.map(c => ({ c, l: take(r.filter(p => p.category === c), 5) })).filter(x => x.l.length);
     view.innerHTML = `
-      <section class="hero"><div class="car" id="car">${slides || '<div class="slide s0 on"><div class="tx"><small>🌸 쁘띠.끄</small><h2>뷰티 인기템을 준비하고 있어요</h2></div></div>'}<button class="cb l" aria-label="이전">‹</button><button class="cb r" aria-label="다음">›</button><div class="dots" id="dots"></div></section>`.replace('</section>', '</div><div class="tiles"><a class="tile t1" href="#/c/%EC%84%A0%EC%BC%80%EC%96%B4"><b>☀️ 선케어 모아보기</b><span>자외선 차단 인기템</span></a><a class="tile t2" href="#/talk"><b>💬 수다방</b><span>후기와 꿀팁 구경하기</span></a></div></section>') + `
-      <section class="icons">${[['전체', '🛍', '#/all'], ...CATS.map(c => [c, ICONS[c], '#/c/' + encodeURIComponent(c)]), ['수다방', '💬', '#/talk']].map(([n, e, h]) => `<a href="${h}"><i>${e}</i>${n}</a>`).join('')}</section>
-      <section class="sec"><div class="sh"><h2>🔥 실시간 <em>BEST 랭킹</em></h2><a href="#/all">전체보기 ›</a></div><div class="railw"><button class="rb l" aria-label="이전">‹</button><div class="rail" id="rail">${railP.map((p, i) => card(p, i, { rank: 1, off: top3.length })).join('') || '<p class="empty">상품을 준비 중이에요</p>'}</div><button class="rb r" aria-label="다음">›</button></div></section>
-      ${cats.map(x => `<section class="sec"><div class="sh"><h2>${ICONS[x.c]} ${esc(x.c)} <em>BEST</em></h2><a href="#/c/${encodeURIComponent(x.c)}">더보기 ›</a></div><div class="pg">${x.l.map((p, i) => card(p, i)).join('')}</div></section>`).join('')}
-      <section class="band"><div class="sh"><h2>💬 수다방 <em>새 글</em></h2><a href="#/talk">더보기 ›</a></div><div class="posts" id="posts"><p class="hint">불러오는 중</p></div><a class="btn main" style="margin-top:14px" href="#/write">✏️ 글쓰기</a></section>`;
+      <section class="hero"><div class="car" id="car">${slides || '<div class="slide s0 on"><div class="tx"><small>🌸 쁘띠.끄</small><h2>뷰티 인기템을 준비하고 있어요</h2></div></div>'}<button class="cb l" aria-label="이전">‹</button><button class="cb r" aria-label="다음">›</button><div class="dots" id="dots"></div></section>`.replace('</section>', '</div><div class="tiles"><a class="tile t1" href="/c/%EC%84%A0%EC%BC%80%EC%96%B4"><b>☀️ 선케어 모아보기</b><span>자외선 차단 인기템</span></a><a class="tile t2" href="#/talk"><b>💬 수다방</b><span>후기와 꿀팁 구경하기</span></a></div></section>') + `
+      <section class="icons">${[['전체', '🛍', '/all'], ...CATS.map(c => [c, ICONS[c], '/c/' + encodeURIComponent(c)]), ['수다방', '💬', '#/talk']].map(([n, e, h]) => `<a href="${h}"><i>${e}</i>${n}</a>`).join('')}</section>
+      <section class="sec"><div class="sh"><h2>🔥 실시간 <em>BEST 랭킹</em></h2><a href="/all">전체보기 ›</a></div><div class="railw"><button class="rb l" aria-label="이전">‹</button><div class="rail" id="rail">${railP.map((p, i) => card(p, i, { rank: 1, off: top3.length })).join('') || '<p class="empty">상품을 준비 중이에요</p>'}</div><button class="rb r" aria-label="다음">›</button></div></section>
+      ${cats.map(x => `<section class="sec"><div class="sh"><h2>${ICONS[x.c]} ${esc(x.c)} <em>BEST</em></h2><a href="/c/${encodeURIComponent(x.c)}">더보기 ›</a></div><div class="pg">${x.l.map((p, i) => card(p, i)).join('')}</div></section>`).join('')}
+      <section class="band"><div class="sh"><h2>💬 수다방 <em>새 글</em></h2><a href="#/talk">더보기 ›</a></div><div class="posts" id="posts"><p class="hint">불러오는 중</p></div><a class="btn main" style="margin-top:14px" href="#/write">✏️ 글쓰기</a></section>${faqHtml()}`;
     // 캐러셀
     const car = $('car'), sl = [...car.querySelectorAll('.slide')];
     let cur = 0;
@@ -88,6 +93,7 @@
   function catalog(cat, kw) {
     narrow(false);
     nav(kw ? '' : cat || 'all');
+    setTitle((kw ? kw + ' 검색' : (cat ? cat + ' 인기 랭킹 TOP' : '전체 상품 인기 랭킹')) + ' | ' + SN);
     let sort = 'rank', shown = 20;
     const title = kw ? `"${esc(kw)}" 검색 결과` : (cat ? esc(cat) : '전체 상품');
     view.innerHTML = `<div class="ph"><h1>${title}</h1><span class="hint" id="cnt"></span></div><div class="tools"><button class="chip on" data-s="rank">인기순</button><button class="chip" data-s="low">낮은 가격순</button><button class="chip" data-s="high">높은 가격순</button></div><div class="pg" id="pg"></div><div id="pmore"></div>`;
@@ -176,7 +182,8 @@
 
   function route() {
     clearInterval(timer);
-    const h = location.hash.replace(/^#/, '') || '/';
+    let h = location.hash.replace(/^#/, '');
+    if (!h) { const pp = decodeURIComponent(location.pathname); h = /^\/(c\/.+|all)$/.test(pp) ? pp : '/'; }
     let m;
     scrollTo(0, 0);
     if ((m = h.match(/^\/p\/(\d+)/))) { narrow(true); show(m[1]); }
@@ -189,13 +196,23 @@
     else home();
   }
 
-  $('sf').addEventListener('submit', e => { e.preventDefault(); const v = $('q').value.trim(); location.hash = v ? '#/s/' + encodeURIComponent(v) : '#/all'; });
+  $('sf').addEventListener('submit', e => { e.preventDefault(); const v = $('q').value.trim(); location.hash = v ? '#/s/' + encodeURIComponent(v) : '/all'; });
   $('allcat').addEventListener('click', () => { const d = $('drop'); const o = d.classList.toggle('open'); $('allcat').setAttribute('aria-expanded', o); });
   document.addEventListener('click', e => { if (!e.target.closest('.cat')) $('drop').classList.remove('open'); });
   const top = $('top');
   top.addEventListener('click', () => scrollTo({ top: 0, behavior: 'smooth' }));
   addEventListener('scroll', () => top.classList.toggle('show', scrollY > 500), { passive: true });
   addEventListener('hashchange', route);
+  addEventListener('popstate', route);
+  document.addEventListener('click', e => {
+    const a = e.target.closest && e.target.closest('a[href^="/"]');
+    if (!a || a.target === '_blank' || e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.button) return;
+    const u = new URL(a.href);
+    if (u.origin !== location.origin || !/^\/(c\/.+|all)?$/.test(u.pathname)) return;
+    e.preventDefault();
+    history.pushState(null, '', u.pathname);
+    route();
+  });
   (async () => {
     try {
       const [p, c] = await (window.__d || Promise.all([fetch('/api/products').then(r => r.json()), fetch('/api/clicks').then(r => r.json())]));
