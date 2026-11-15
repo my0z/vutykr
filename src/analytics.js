@@ -17,6 +17,8 @@ async function sha(s) {
   return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
 }
 
+const HOSTING = /amazon|aws|google|microsoft|azure|digitalocean|ovh|hetzner|linode|vultr|oracle|alibaba|tencent|choopa|leaseweb|contabo|scaleway|datacamp|m247|packet|cherry|kamatera|hostinger|godaddy|rackspace|equinix|colocrossing|psychz|quadranet|cogent|zenlayer|ucloud|huawei|baidu|serverius|stark industries|data center|datacenter|hosting|vps/i;
+
 function parseUA(ua) {
   const bot = /bot|crawl|spider|slurp|facebookexternalhit|preview|monitor|curl|wget|python|headless|lighthouse|go-http|axios|uptime/i.test(ua) ? 1 : 0;
   let device = 'PC';
@@ -46,7 +48,7 @@ export async function track(env, req, ev) {
     if (!env.DB) return;
     await init(env);
     const ua = req.headers.get('user-agent') || '';
-    const { bot, device, browser, os } = parseUA(ua);
+    let { bot, device, browser, os } = parseUA(ua);
     const cf = req.cf || {};
     const ip = req.headers.get('cf-connecting-ip') || '';
     const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
@@ -61,6 +63,18 @@ export async function track(env, req, ev) {
     try { ref = new URL(req.headers.get('referer') || '').hostname; } catch (e) {}
     if (ref.endsWith('vuty.kr')) ref = '';
     const lang = (req.headers.get('accept-language') || '').split(',')[0].slice(0, 12);
+    // 사람처럼 보이는 자동화 트래픽 걸러내기: 호스팅 회사 망과 언어 헤더 없음과 비문서 요청과 짧은 시간의 연속 클릭
+    if (HOSTING.test(String(cf.asOrganization || '')) || !lang) bot = 1;
+    if (ev.type === 'click') {
+      const dest = req.headers.get('sec-fetch-dest');
+      if (dest && dest !== 'document') bot = 1;
+      if (iph) {
+        const burst = await env.DB.prepare("SELECT COUNT(*) n FROM hits WHERE type='click' AND iph=? AND ts>?").bind(iph, Date.now() - 60e3).first();
+        if (burst && burst.n >= 5) bot = 1;
+        const dup = await env.DB.prepare("SELECT 1 x FROM hits WHERE type='click' AND iph=? AND pid=? AND ts>? LIMIT 1").bind(iph, String(ev.pid || ''), Date.now() - 10 * 60e3).first();
+        if (dup) return; // 같은 사람이 같은 상품을 10분 안에 다시 누른 것은 한 번만 센다
+      }
+    }
     await env.DB.prepare('INSERT INTO hits (ts,type,code,pid,name,country,city,device,browser,os,ref,lang,vid,bot,iph) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
       .bind(Date.now(), ev.type, ev.code || '', ev.pid || '', ev.name || '', cf.country || '', cf.city || '', device, browser, os, ref, lang, vid, bot, iph).run();
   } catch (e) { console.error('track', e.message); }
@@ -207,7 +221,7 @@ async function notice(){const t=document.getElementById('nt').value,b=document.g
 export async function clickCounts(env) {
   try {
     await init(env);
-    const rows = await q(env, "SELECT pid, COUNT(*) c FROM hits WHERE type='click' AND bot=0 AND ts>? AND pid<>'' GROUP BY pid", Date.now() - 7 * 86400e3);
+    const rows = await q(env, "SELECT pid, COUNT(DISTINCT CASE WHEN iph<>'' THEN iph ELSE vid END) c FROM hits WHERE type='click' AND bot=0 AND ts>? AND pid<>'' GROUP BY pid", Date.now() - 7 * 86400e3);
     return Object.fromEntries(rows.map(r => [r.pid, r.c]));
   } catch (e) { return {}; }
 }
