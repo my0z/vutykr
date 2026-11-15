@@ -10,7 +10,6 @@
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{margin:0;overflow-x:hidden;font-family:Pretendard Variable,Pretendard,system-ui,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
-.notice{background:var(--ink);color:var(--bg);text-align:center;font-size:.75rem;padding:8px 12px}
 .nav{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:16px;justify-content:space-between;padding:12px clamp(16px,4vw,48px);backdrop-filter:blur(14px);background:color-mix(in srgb,var(--bg) 78%,transparent);border-bottom:1px solid var(--line)}
 .logo{font-weight:900;font-size:1.35rem;text-decoration:none;color:var(--ink);letter-spacing:-.03em}
 .logo span{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
