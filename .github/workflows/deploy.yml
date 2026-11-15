@@ -16,6 +16,8 @@ jobs:
           postCommands: |
             printf '%s' "$COUPANG_ACCESS_KEY" | npx wrangler secret put COUPANG_ACCESS_KEY
             printf '%s' "$COUPANG_SECRET_KEY" | npx wrangler secret put COUPANG_SECRET_KEY
+            if [ -n "$ADMIN_PASSWORD" ]; then printf '%s' "$ADMIN_PASSWORD" | npx wrangler secret put ADMIN_PASSWORD; fi
         env:
           COUPANG_ACCESS_KEY: ${{ secrets.COUPANG_ACCESS_KEY }}
           COUPANG_SECRET_KEY: ${{ secrets.COUPANG_SECRET_KEY }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}

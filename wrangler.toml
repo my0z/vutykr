@@ -10,7 +10,7 @@ routes = [
 [assets]
 directory = "./public"
 binding = "ASSETS"
-run_worker_first = ["/api/*"]
+run_worker_first = ["/*", "!/style.css", "!/app.js", "!/products.json"]
 
 # 6시간마다 쿠팡 파트너스 API로 상품 자동 갱신
 [triggers]
@@ -19,6 +19,10 @@ crons = ["0 */6 * * *"]
 # id 생략 시 배포할 때 wrangler가 자동 생성
 [[kv_namespaces]]
 binding = "DATA"
+
+# 접속 통계용 D1 (id 생략 시 자동 생성)
+[[d1_databases]]
+binding = "DB"
 
 [observability]
 enabled = true

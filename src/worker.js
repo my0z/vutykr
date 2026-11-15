@@ -1,3 +1,5 @@
+import { track, admin } from './analytics.js';
+
 const HOST = 'https://api-gateway.coupang.com';
 const BASE = '/v2/providers/affiliate_open_api/apis/openapi/v1/products';
 
@@ -11,6 +13,24 @@ const CATEGORIES = {
 };
 const BEST_BEAUTY_ID = 1010;
 const PER_KEYWORD = 6;
+
+const ALPHA = '0123456789abcdefghijklmnopqrstuvwxyz';
+function codeFor(id, salt) {
+  let h = 2166136261 >>> 0;
+  const s = id + ':' + salt;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  let out = '';
+  for (let i = 0; i < 4; i++) { out += ALPHA[h % 36]; h = Math.floor(h / 36); }
+  return out;
+}
+
+let linksCache = { t: 0, v: {} };
+async function getLinks(env) {
+  if (Date.now() - linksCache.t < 60000) return linksCache.v;
+  const v = JSON.parse((await env.DATA.get('links')) || '{}');
+  linksCache = { t: Date.now(), v };
+  return v;
+}
 
 const hex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
 
@@ -66,6 +86,24 @@ async function refresh(env) {
     }
   }
   if (products.length) {
+    // 쿠팡 링크를 4자리 짧은 링크로 바꾸고 원본은 따로 보관
+    const links = JSON.parse((await env.DATA.get('links')) || '{}');
+    const byId = {};
+    for (const [c, v] of Object.entries(links)) byId[v.i] = c;
+    for (const p of products) {
+      let c = byId[p.id];
+      if (!c) {
+        let salt = 0;
+        do { c = codeFor(p.id, salt++); } while (links[c] && links[c].i !== p.id);
+        byId[p.id] = c;
+      }
+      links[c] = { u: p.url, n: p.name, i: p.id };
+      p.url = '/' + c;
+    }
+    const keys = Object.keys(links);
+    for (const k of keys.slice(0, Math.max(0, keys.length - 3000))) delete links[k];
+    await env.DATA.put('links', JSON.stringify(links));
+    linksCache = { t: 0, v: {} };
     await env.DATA.put('products', JSON.stringify({ updatedAt: new Date().toISOString(), categories: ['전체', ...Object.keys(CATEGORIES)], products }));
   }
   const status = { at: new Date().toISOString(), count: products.length, errors: errors.slice(0, 8) };
@@ -73,9 +111,35 @@ async function refresh(env) {
   return status;
 }
 
+// 쿠팡 이미지 서버만 허용하는 썸네일 프록시 (엣지 캐시)
+async function image(url, ctx) {
+  let t;
+  try { t = new URL(url.searchParams.get('u') || ''); } catch (e) { return new Response('bad', { status: 400 }); }
+  if (!/^https?:$/.test(t.protocol) || !/(^|\.)coupangcdn\.com$/.test(t.hostname)) return new Response('forbidden', { status: 403 });
+  const key = new Request(url.toString());
+  const hit = await caches.default.match(key);
+  if (hit) return hit;
+  const up = await fetch('https://' + t.host + t.pathname + t.search, { headers: { 'user-agent': 'Mozilla/5.0' }, cf: { cacheTtl: 86400, cacheEverything: true } });
+  if (!up.ok) return new Response('upstream ' + up.status, { status: 502 });
+  const res = new Response(up.body, { headers: { 'content-type': up.headers.get('content-type') || 'image/jpeg', 'cache-control': 'public,max-age=86400' } });
+  ctx.waitUntil(caches.default.put(key, res.clone()));
+  return res;
+}
+
 export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
+    const path = url.pathname;
+    if (path === '/0') return admin(req, env, url);
+    if (path === '/img') return image(url, ctx);
+    if (/^\/[a-z0-9]{4}$/.test(path)) {
+      const link = (await getLinks(env))[path.slice(1)];
+      if (link) {
+        ctx.waitUntil(track(env, req, { type: 'click', code: path.slice(1), pid: link.i, name: link.n }));
+        return new Response(null, { status: 302, headers: { Location: link.u, 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' } });
+      }
+    }
+    if (path === '/' || path === '/index.html') ctx.waitUntil(track(env, req, { type: 'view' }));
     if (url.pathname === '/api/debug') {
       const info = { envKeys: Object.keys(env), hasKeys: !!(env.COUPANG_ACCESS_KEY && env.COUPANG_SECRET_KEY), keyLen: [(env.COUPANG_ACCESS_KEY || '').length, (env.COUPANG_SECRET_KEY || '').length] };
       if (url.searchParams.get('run') === '1' && info.hasKeys && !(await env.DATA.get('lock'))) {

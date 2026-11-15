@@ -23,7 +23,7 @@
     grid.innerHTML = list.map((p, i) => `
       <article class="card" style="animation-delay:${Math.min(i, 12) * 40}ms">
         <div class="img">
-          ${p.image ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy" referrerpolicy="no-referrer">` : '🌸'}
+          ${p.image ? `<img src="/img?u=${encodeURIComponent(p.image)}" alt="${esc(p.name)}" loading="lazy" onerror="this.replaceWith('🌸')">` : '🌸'}
           ${sort === 'rank' && p.rank <= 99 ? `<span class="rank ${p.rank <= 3 ? 'top' : ''}">${p.rank}</span>` : ''}
           ${p.badge ? `<span class="tag">${esc(p.badge)}</span>` : ''}
         </div>
