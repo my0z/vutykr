@@ -192,3 +192,12 @@ async function notice(){const t=document.getElementById('nt').value,b=document.g
 </body></html>`;
   return new Response(html, { headers: head });
 }
+
+// 최근 7일 실제 클릭 수 (봇 제외)
+export async function clickCounts(env) {
+  try {
+    await init(env);
+    const rows = await q(env, "SELECT pid, COUNT(*) c FROM hits WHERE type='click' AND bot=0 AND ts>? AND pid<>'' GROUP BY pid", Date.now() - 7 * 86400e3);
+    return Object.fromEntries(rows.map(r => [r.pid, r.c]));
+  } catch (e) { return {}; }
+}

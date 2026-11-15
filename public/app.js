@@ -1,7 +1,8 @@
 (() => {
   const $ = id => document.getElementById(id);
   const view = $('view'), side = $('side');
-  const BOARDS = [['', '홈'], ['review', '후기'], ['qna', '질문'], ['tip', '꿀팁'], ['free', '자유'], ['notice', '공지'], ['shop', '🛍 쇼핑']];
+  const CATS = ['스킨케어', '선케어', '클렌징', '메이크업', '바디헤어'];
+  let clicks = {};
   const NAME = { notice: '공지', review: '후기', qna: '질문', tip: '꿀팁', free: '자유' };
   let products = { products: [], categories: ['전체'] };
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -13,7 +14,8 @@
   const ls = { get: k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} } };
 
   function nav(cur) {
-    $('boards').innerHTML = BOARDS.map(([k, v]) => `<a href="${k === '' ? '#/' : k === 'shop' ? '#/shop' : '#/b/' + k}" class="${k === cur ? 'on' : ''}">${v}</a>`).join('');
+    const items = [['', '🔥 인기', '#/'], ...CATS.map(c => [c, c, '#/c/' + encodeURIComponent(c)]), ['talk', '💬 수다방', '#/talk']];
+    $('boards').innerHTML = items.map(([k, v, h]) => `<a href="${h}" class="${k === cur ? 'on' : ''}">${v}</a>`).join('');
   }
 
   const adCard = p => `<a class="ad" href="${esc(p.url)}" target="_blank" rel="sponsored noopener nofollow"><div class="th">${img(p)}</div><div class="tx"><small>추천 상품</small><h4>${esc(p.name)}</h4><b>${won(p.price)}</b></div><span class="go">상품보기</span></a>`;
@@ -21,8 +23,31 @@
     <span class="bd ${p.board}">${NAME[p.board] || ''}</span>${p.pinned ? '📌' : ''}<h2>${esc(p.title)}</h2><p class="ex">${esc(p.ex)}</p>
     <div class="meta"><b>${esc(p.nick)}</b><span>${ago(p.ts)}</span><span>👁 ${p.views}</span><span>❤ ${p.likes}</span><span>💬 ${p.ccount}</span></div></a>`;
 
+  // 게시판 형태로 보여주는 상품 목록 (클릭 수는 실제 집계)
+  function board(cat) {
+    nav(cat || '');
+    let sort = 'rank', shown = 30;
+    const q = () => $('q').value.trim().toLowerCase();
+    view.innerHTML = `<div class="tools"><button class="chip on" data-s="rank">인기순</button><button class="chip" data-s="low">낮은 가격</button><button class="chip" data-s="high">높은 가격</button><span class="hint" style="margin-left:auto">${esc(cat || '전체')} 상품</span></div><div id="plist"></div><div id="pmore"></div>`;
+    function draw() {
+      let l = products.products.map((p, i) => ({ ...p, rank: i + 1 })).filter(p => (!cat || p.category === cat) && p.name.toLowerCase().includes(q()));
+      if (sort === 'low') l.sort((a, b) => (a.price || 0) - (b.price || 0));
+      else if (sort === 'high') l.sort((a, b) => (b.price || 0) - (a.price || 0));
+      else l.sort((a, b) => (clicks[b.id] || 0) - (clicks[a.id] || 0) || a.rank - b.rank);
+      $('plist').innerHTML = l.slice(0, shown).map((p, i) => `<a class="row" href="${esc(p.url)}" target="_blank" rel="sponsored noopener nofollow" style="animation-delay:${Math.min(i, 10) * 30}ms">
+        <span class="no ${i < 3 && sort === 'rank' ? 'top' : ''}">${i + 1}</span><span class="th">${img(p)}</span>
+        <span class="tx"><span class="bd">${esc(p.category)}</span>${p.badge ? `<span class="bd notice">${esc(p.badge)}</span>` : ''}<h2>${esc(p.name)}</h2>
+        <span class="meta"><b>${won(p.price)}</b>${p.rocket ? '<span class="rk2">🚀 로켓배송</span>' : ''}${clicks[p.id] ? `<span>🔥 ${clicks[p.id]}회 클릭</span>` : ''}<span>쿠팡 상품</span></span></span><span class="go">상품보기</span></a>`).join('') || '<p class="empty">상품이 없어요</p>';
+      $('pmore').innerHTML = l.length > shown ? '<button class="more">더 보기</button>' : '';
+    }
+    view.querySelector('.tools').addEventListener('click', e => { const b = e.target.closest('[data-s]'); if (!b) return; sort = b.dataset.s; view.querySelectorAll('[data-s]').forEach(x => x.classList.toggle('on', x === b)); draw(); });
+    $('pmore').addEventListener('click', () => { shown += 30; draw(); });
+    board.redraw = draw;
+    draw();
+  }
+
   async function feed(board) {
-    nav(board || '');
+    nav('talk');
     let sort = 'new', page = 1, q = $('q').value.trim();
     const title = board ? NAME[board] : '전체 글';
     view.innerHTML = `<div class="tools"><button class="chip on" data-s="new">최신</button><button class="chip" data-s="hot">🔥 인기</button><span class="hint" style="margin-left:auto">${esc(title)}${q ? ' · "' + esc(q) + '" 검색' : ''}</span></div><div id="list"></div><div id="more"></div>`;
@@ -45,12 +70,11 @@
   }
 
   async function show(id) {
-    nav('');
+    nav('talk');
     view.innerHTML = '<p class="empty">불러오는 중</p>';
     let d;
     try { d = await api('/api/posts/' + id); } catch (e) { view.innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; }
     const p = d.post;
-    nav(p.board);
     view.innerHTML = `<article class="box post"><span class="bd ${p.board}">${NAME[p.board]}</span><h1>${esc(p.title)}</h1>
       <div class="meta"><b>${esc(p.nick)}</b><span>${ago(p.ts)}</span><span>👁 ${p.views + 1}</span></div>
       <div class="body">${esc(p.body).replace(/\n/g, '<br>')}</div>
@@ -71,8 +95,8 @@
   }
 
   function write() {
-    nav('');
-    view.innerHTML = `<section class="box"><h3>글쓰기</h3><form class="f" id="wf">
+    nav('talk');
+    view.innerHTML = `<section class="box"><h3>수다방 글쓰기</h3><form class="f" id="wf">
       <select name="board" required><option value="">게시판 선택</option><option value="review">후기</option><option value="qna">질문</option><option value="tip">꿀팁</option><option value="free">자유</option></select>
       <input name="title" placeholder="제목" maxlength="60" required>
       <textarea name="body" rows="9" placeholder="내용을 입력하세요 (링크와 광고는 쓸 수 없어요)" maxlength="2000" required></textarea>
@@ -104,11 +128,11 @@
   }
 
   async function sidebar() {
-    const hot = await api('/api/posts?sort=hot').catch(() => ({ posts: [] }));
-    const mini = products.products.filter(p => p.image).slice(0, 4);
-    side.innerHTML = `<div class="box hot"><h3>🔥 인기글</h3>${hot.posts.slice(0, 5).map((p, i) => `<a href="#/p/${p.id}"><i>${i + 1}</i><span>${esc(p.title)}</span><em>${p.ccount ? '[' + p.ccount + ']' : ''}</em></a>`).join('') || '<p class="hint">인기글이 곧 올라와요</p>'}</div>
-      ${mini.length ? `<div class="box"><h3>오늘의 픽 <a href="#/shop">전체보기</a></h3><div class="minis">${mini.map(p => `<a class="mini" href="${esc(p.url)}" target="_blank" rel="sponsored noopener nofollow"><div class="pimg">${img(p)}</div><p>${esc(p.name)}</p><b>${won(p.price)}</b></a>`).join('')}</div></div>` : ''}
-      <div class="box"><h3>이용 규칙</h3><ul class="rules"><li>닉네임과 비밀번호만 있으면 글쓰기 OK</li><li>링크와 광고는 자동으로 막혀요</li><li>서로 존중하는 말을 써주세요</li></ul></div>`;
+    const talk = await api('/api/posts?sort=new').catch(() => ({ posts: [] }));
+    const ranked = [...products.products].sort((a, b) => (clicks[b.id] || 0) - (clicks[a.id] || 0)).slice(0, 5);
+    side.innerHTML = `<div class="box hot"><h3>🔥 실시간 인기 상품</h3>${ranked.map((p, i) => `<a href="${esc(p.url)}" target="_blank" rel="sponsored noopener nofollow"><i>${i + 1}</i><span>${esc(p.name)}</span><em>${clicks[p.id] ? clicks[p.id] + '회' : ''}</em></a>`).join('') || '<p class="hint">상품을 준비 중이에요</p>'}</div>
+      <div class="box hot"><h3>💬 수다방 새 글 <a href="#/talk">더보기</a></h3>${talk.posts.slice(0, 5).map(p => `<a href="#/p/${p.id}"><span>${esc(p.title)}</span><em>${p.ccount ? '[' + p.ccount + ']' : ''}</em></a>`).join('') || '<p class="hint">아직 글이 없어요</p>'}<a class="btn main" style="justify-content:center;margin-top:10px;display:flex" href="#/write">✏️ 수다방 글쓰기</a></div>
+      <div class="box"><h3>안내</h3><ul class="rules"><li>상품 클릭 수는 방문자의 실제 클릭을 집계한 값이에요</li><li>상품 링크는 쿠팡 파트너스 링크예요</li><li>가격과 재고는 쿠팡에서 확인하세요</li></ul></div>`;
   }
 
   function route() {
@@ -118,18 +142,20 @@
     if ((m = h.match(/^\/p\/(\d+)/))) show(m[1]);
     else if ((m = h.match(/^\/b\/(\w+)/))) feed(m[1]);
     else if (h === '/write') write();
-    else if (h === '/shop') shop();
-    else feed('');
+    else if (h === '/talk') feed('');
+    else if ((m = h.match(/^\/c\/(.+)/))) board(decodeURIComponent(m[1]));
+    else board('');
   }
 
   let t;
-  $('q').addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { const h = location.hash; if (!/^#\/(b\/\w+)?$/.test(h) && h !== '') location.hash = '#/'; else route(); }, 350); });
+  $('q').addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { const h = location.hash; if (/^#\/(p\/|write)/.test(h)) location.hash = '#/'; else route(); }, 350); });
   const top = $('top');
   top.addEventListener('click', () => scrollTo({ top: 0, behavior: 'smooth' }));
   addEventListener('scroll', () => top.classList.toggle('show', scrollY > 500), { passive: true });
   addEventListener('hashchange', route);
   (async () => {
     try { products = await (await fetch('/api/products')).json(); } catch (e) {}
+    try { clicks = await (await fetch('/api/clicks')).json(); } catch (e) {}
     sidebar();
     route();
   })();
