@@ -7,7 +7,12 @@
   let products = { products: [], categories: ['전체'] };
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const won = n => n ? Number(n).toLocaleString('ko-KR') + '원' : '가격 확인';
-  const img = (p, eager) => p.image ? (eager ? `<img src="/i/${esc(p.id)}" fetchpriority="high" decoding="async" alt="" onerror="this.replaceWith('🌸')">` : `<img data-src="/i/${esc(p.id)}" decoding="async" alt="" onerror="this.replaceWith('🌸')">`) : '🌸';
+  const img = (p, eager, cls) => {
+    if (!p.image) return cls ? '' : '🌸';
+    const err = cls ? 'this.remove()' : "this.replaceWith('🌸')";
+    const c = cls ? ` class="${cls}"` : '';
+    return eager ? `<img${c} src="/i/${esc(p.id)}" fetchpriority="high" decoding="async" alt="" onerror="${err}">` : `<img${c} data-src="/i/${esc(p.id)}" decoding="async" alt="" onerror="${err}">`;
+  };
   // 썸네일은 화면에 들어오기 직전에만 불러온다
   const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => {
     if (!e.isIntersecting) return;
@@ -65,7 +70,7 @@
     let top3 = take(r.filter(p => p.image), 4);
     if (!top3.length) top3 = take(r, 1);
     const railP = take(r, 12);
-    const slides = top3.map((p, i) => `<a class="slide s${i % 4}" ${link(p)}><div class="tx"><small>🏆 오늘의 랭킹 ${i + 1}위</small><h2>${esc(p.name)}</h2><div class="pr">${won(p.price)}</div><span class="go">상품보기 →</span></div><div class="im">${img(p, i === 0)}</div></a>`).join('');
+    const slides = top3.map((p, i) => `<a class="slide s${i % 4}" ${link(p)}><div class="bg">${img(p, i === 0, 'blur')}${img(p, i === 0, 'main')}</div><div class="tx"><small>🏆 오늘의 랭킹 ${i + 1}위</small><h2>${esc(p.name)}</h2><div class="pr">${won(p.price)}</div><span class="go">상품보기 →</span></div></a>`).join('');
     const cats = CATS.map(c => ({ c, l: take(r.filter(p => p.category === c), 5) })).filter(x => x.l.length);
     view.innerHTML = `
       <section class="hero"><div class="car" id="car">${slides || '<div class="slide s0 on"><div class="tx"><small>🌸 쁘띠.끄</small><h2>뷰티 인기템을 준비하고 있어요</h2></div></div>'}<button class="cb l" aria-label="이전">‹</button><button class="cb r" aria-label="다음">›</button><div class="dots" id="dots"></div></section>`.replace('</section>', '</div><div class="tiles"><a class="tile t1" href="/c/%EC%84%A0%EC%BC%80%EC%96%B4"><b>☀️ 선케어 모아보기</b><span>자외선 차단 인기템</span></a><a class="tile t2" href="#/talk"><b>💬 수다방</b><span>후기와 꿀팁 구경하기</span></a></div></section>') + `
