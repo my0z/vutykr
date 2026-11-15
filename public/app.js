@@ -7,7 +7,7 @@
   let products = { products: [], categories: ['전체'] };
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const won = n => n ? Number(n).toLocaleString('ko-KR') + '원' : '가격 확인';
-  const img = p => p.image ? `<img data-src="/img?u=${encodeURIComponent(p.image)}" alt="" onerror="this.replaceWith('🌸')">` : '🌸';
+  const img = p => p.image ? `<img data-src="/img?u=${encodeURIComponent(p.image)}" data-o="${esc(p.image.replace(/^http:/, 'https:'))}" alt="" onerror="if(!this.dataset.f){this.dataset.f=1;this.src=this.dataset.o}else{this.replaceWith('🌸')}">` : '🌸';
   // 썸네일은 화면에 들어오기 직전에만 불러온다
   const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => {
     if (!e.isIntersecting) return;

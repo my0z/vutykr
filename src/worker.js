@@ -116,7 +116,7 @@ async function refresh(env) {
 async function image(url, ctx) {
   let t;
   try { t = new URL(url.searchParams.get('u') || ''); } catch (e) { return new Response('bad', { status: 400 }); }
-  if (!/^https?:$/.test(t.protocol) || !/(^|\.)coupangcdn\.com$/.test(t.hostname)) return new Response('forbidden', { status: 403 });
+  if (!/^https?:$/.test(t.protocol) || !/(^|\.)(coupangcdn|coupang)\.com$/.test(t.hostname)) return new Response('forbidden', { status: 403 });
   const key = new Request(url.toString());
   const hit = await caches.default.match(key);
   if (hit) return hit;
