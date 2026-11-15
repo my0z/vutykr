@@ -45,3 +45,6 @@ persist = true
 
 [observability.issues]
 enabled = true
+
+[images]
+binding = "IMAGES"

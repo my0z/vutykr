@@ -14,7 +14,7 @@
     const el = e.target;
     io.unobserve(el);
     el.src = el.dataset.src;
-  }), { rootMargin: '80px 0px' }) : null;
+  }), { rootMargin: '600px 0px' }) : null;
   const watch = root => root.querySelectorAll && root.querySelectorAll('img[data-src]').forEach(el => { if (io) io.observe(el); else el.src = el.dataset.src; });
   new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1) watch(n); }))).observe(document.body, { childList: true, subtree: true });
   const api = async (u, opt) => { const r = await fetch(u, opt); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || '오류가 발생했어요'); return j; };

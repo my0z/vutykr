@@ -96,6 +96,7 @@ function inject(html, pg, img, boot) {
   const tags = [
     '<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">',
     `<link rel="canonical" href="${pg.canonical}">`,
+    pg.preload ? `<link rel="preload" as="image" href="${pg.preload}" fetchpriority="high">` : '',
     `<meta property="og:type" content="website"><meta property="og:locale" content="ko_KR">`,
     `<meta property="og:site_name" content="${esc(SITE.name)}">`,
     `<meta property="og:title" content="${esc(pg.title)}"><meta property="og:description" content="${esc(pg.desc)}">`,
@@ -164,6 +165,10 @@ export async function seo(req, env, url, ctx, h = {}) {
     const list = (d && d.products) || [];
     const pg = build(r, list);
     const first = list.find(x => x.image);
+    if (r.t === 'home') { // 첫 화면 대표 이미지는 미리 받기 시작한다 (클릭 순위가 앱과 같은 방식)
+      const hero = list.map((p, i) => ({ p, i })).sort((x, y) => (clicks[y.p.id] || 0) - (clicks[x.p.id] || 0) || x.i - y.i).map(x => x.p).find(p => p.image);
+      if (hero) pg.preload = '/i/' + hero.id;
+    }
     const boot = d ? [{ ...d, products: list.map(p => ({ ...p, image: !!p.image })) }, clicks] : null; // 첫 화면에 필요한 데이터를 HTML에 함께 보낸다
     const html = inject(await tpl.text(), pg, first ? abs('/i/' + first.id) : '', boot);
     const res = new Response(req.method === 'HEAD' ? null : html, { headers: { 'content-type': 'text/html;charset=utf-8', 'cache-control': 'public,max-age=60,s-maxage=600' } });

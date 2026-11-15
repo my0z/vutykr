@@ -125,21 +125,33 @@ async function getProducts(env) {
   return v;
 }
 
-async function image(url, ctx, env) {
+async function image(req, url, ctx, env) {
   const id = url.pathname.slice(3);
+  const webp = /image\/webp/.test(req.headers.get('accept') || '');
+  // 캐시를 먼저 확인해서 적중하면 KV도 읽지 않는다
+  const key = new Request(url.origin + url.pathname + (webp ? '?f=w' : '?f=j'));
+  const hit = await caches.default.match(key);
+  if (hit) return hit;
   const data = await getProducts(env);
   const p = data && data.products.find(x => x.id === id);
   if (!p || !p.image) return new Response('not found', { status: 404 });
   let t;
   try { t = new URL(p.image); } catch (e) { return new Response('bad', { status: 400 }); }
   if (!/^https?:$/.test(t.protocol) || !/(^|\.)(coupangcdn|coupang)\.com$/.test(t.hostname)) return new Response('forbidden', { status: 403 });
-  const key = new Request(url.origin + url.pathname);
-  const hit = await caches.default.match(key);
-  if (hit) return hit;
   let up;
   try { up = await fetch('https://' + t.host + t.pathname + t.search, { headers: { 'user-agent': 'Mozilla/5.0' }, cf: { cacheTtl: 86400, cacheEverything: true } }); } catch (e) { return new Response('upstream error', { status: 502 }); }
   if (!up.ok) return new Response('upstream ' + up.status, { status: 502 });
-  const res = new Response(up.body, { headers: { 'content-type': up.headers.get('content-type') || 'image/jpeg', 'cache-control': 'public,max-age=604800' } });
+  const buf = await up.arrayBuffer();
+  let body = buf, type = up.headers.get('content-type') || 'image/jpeg';
+  // 카드에 보이는 크기에 맞춰 줄이고 WebP로 바꿔 용량을 크게 줄인다 (실패하면 원본 그대로)
+  if (env.IMAGES) {
+    try {
+      const out = await env.IMAGES.input(new Response(buf).body).transform({ width: 480, fit: 'scale-down' }).output({ format: webp ? 'image/webp' : 'image/jpeg', quality: 78 });
+      const small = await out.response().arrayBuffer();
+      if (small.byteLength && small.byteLength < buf.byteLength) { body = small; type = webp ? 'image/webp' : 'image/jpeg'; }
+    } catch (e) { console.error('img', e.message); }
+  }
+  const res = new Response(body, { headers: { 'content-type': type, 'cache-control': 'public,max-age=2592000', 'vary': 'Accept' } });
   ctx.waitUntil(caches.default.put(key, res.clone()));
   return res;
 }
@@ -175,7 +187,7 @@ export default {
     const url = new URL(req.url);
     const path = url.pathname;
     if (path === '/0') return admin(req, env, url);
-    if (/^\/i\/\d+$/.test(path)) return image(url, ctx, env);
+    if (/^\/i\/\d+$/.test(path)) return image(req, url, ctx, env);
     if (path === '/api/clicks') return new Response(JSON.stringify(await getClicks(env, ctx)), { headers: { 'content-type': 'application/json', 'cache-control': 'public,max-age=60,stale-while-revalidate=300' } });
     if (/^\/api\/(posts|comments)(\/|$)/.test(path)) {
       if (!env.DB) return new Response('{"error":"db"}', { status: 500 });
