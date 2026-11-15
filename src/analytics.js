@@ -2,10 +2,14 @@ import { init as initCommunity, removeRow, adminNotice } from './community.js';
 // 접속 기록(D1)과 관리자 통계 페이지(/0)
 let ready;
 function init(env) {
-  return (ready ||= env.DB.batch([
-    env.DB.prepare('CREATE TABLE IF NOT EXISTS hits (ts INTEGER, type TEXT, code TEXT, pid TEXT, name TEXT, country TEXT, city TEXT, device TEXT, browser TEXT, os TEXT, ref TEXT, lang TEXT, vid TEXT, bot INTEGER)'),
-    env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_hits_ts ON hits (ts)')
-  ]));
+  return (ready ||= (async () => {
+    await env.DB.prepare('CREATE TABLE IF NOT EXISTS hits (ts INTEGER, type TEXT, code TEXT, pid TEXT, name TEXT, country TEXT, city TEXT, device TEXT, browser TEXT, os TEXT, ref TEXT, lang TEXT, vid TEXT, bot INTEGER)').run();
+    try { await env.DB.prepare('ALTER TABLE hits ADD COLUMN iph TEXT').run(); } catch (e) {} // 이미 있으면 무시
+    await env.DB.batch([
+      env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_hits_ts ON hits (ts)'),
+      env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_hits_iph ON hits (iph, ts)')
+    ]);
+  })());
 }
 
 async function sha(s) {
@@ -47,12 +51,18 @@ export async function track(env, req, ev) {
     const ip = req.headers.get('cf-connecting-ip') || '';
     const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
     const vid = (await sha(`${ip}|${ua}|${day}`)).slice(0, 16); // 원본 IP는 저장하지 않음
+    const iph = ip ? (await sha(`petit-ip|${ip}`)).slice(0, 16) : '';
+    // 같은 IP의 방문은 2시간에 한 번만 집계
+    if (ev.type === 'view' && iph) {
+      const seen = await env.DB.prepare("SELECT 1 x FROM hits WHERE type='view' AND iph=? AND ts>? LIMIT 1").bind(iph, Date.now() - 2 * 3600e3).first();
+      if (seen) return;
+    }
     let ref = '';
     try { ref = new URL(req.headers.get('referer') || '').hostname; } catch (e) {}
     if (ref.endsWith('vuty.kr')) ref = '';
     const lang = (req.headers.get('accept-language') || '').split(',')[0].slice(0, 12);
-    await env.DB.prepare('INSERT INTO hits (ts,type,code,pid,name,country,city,device,browser,os,ref,lang,vid,bot) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
-      .bind(Date.now(), ev.type, ev.code || '', ev.pid || '', ev.name || '', cf.country || '', cf.city || '', device, browser, os, ref, lang, vid, bot).run();
+    await env.DB.prepare('INSERT INTO hits (ts,type,code,pid,name,country,city,device,browser,os,ref,lang,vid,bot,iph) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
+      .bind(Date.now(), ev.type, ev.code || '', ev.pid || '', ev.name || '', cf.country || '', cf.city || '', device, browser, os, ref, lang, vid, bot, iph).run();
   } catch (e) { console.error('track', e.message); }
 }
 
