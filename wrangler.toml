@@ -7,6 +7,11 @@ directory = "./public"
 binding = "ASSETS"
 run_worker_first = ["/api/*"]
 
+routes = [
+  { pattern = "vuty.kr", custom_domain = true },
+  { pattern = "www.vuty.kr", custom_domain = true }
+]
+
 # 6시간마다 쿠팡 파트너스 API로 상품 자동 갱신
 [triggers]
 crons = ["0 */6 * * *"]
