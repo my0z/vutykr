@@ -33,8 +33,8 @@ a{color:inherit}
 .tools{display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap}
 .tools .chip{padding:7px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);cursor:pointer;font:inherit;font-weight:700;font-size:.84rem;color:var(--mute)}
 .tools .chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-.item{display:block;text-decoration:none;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:10px;transition:.2s;opacity:0;animation:in .4s forwards}
-@keyframes in{to{opacity:1}}
+.item{display:block;text-decoration:none;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:10px;transition:.2s;animation:in .4s both}
+@keyframes in{from{opacity:0;transform:translateY(10px)}}
 .item:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:var(--p1)}
 .item.pin{background:linear-gradient(135deg,var(--soft),var(--card))}
 .bd{display:inline-block;font-size:.7rem;font-weight:800;padding:3px 9px;border-radius:7px;background:var(--soft);color:var(--p1);margin-right:6px}
@@ -86,7 +86,7 @@ form.f .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.hp{position:abso
 .card a.go{text-align:center;text-decoration:none;color:#fff;background:var(--grad);padding:10px;border-radius:12px;font-weight:800;font-size:.85rem}
 
 
-.row{display:flex;gap:12px;align-items:center;text-decoration:none;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px;margin-bottom:10px;transition:.2s;opacity:0;animation:in .4s forwards}
+.row{display:flex;gap:12px;align-items:center;text-decoration:none;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px;margin-bottom:10px;transition:.2s;animation:in .4s both}
 .row:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:var(--p1)}
 .row .no{width:30px;text-align:center;font-weight:900;font-size:1.1rem;color:var(--mute);flex:none}.row .no.top{color:var(--p1);font-size:1.3rem}
 .row .th{width:88px;height:88px;border-radius:14px;overflow:hidden;background:var(--soft);display:grid;place-items:center;font-size:1.8rem;flex:none}.row .th img{width:100%;height:100%;object-fit:cover}
@@ -98,4 +98,4 @@ footer{text-align:center;padding:40px 20px 56px;color:var(--mute);font-size:.78r
 #top{position:fixed;right:18px;bottom:18px;width:44px;height:44px;border:0;border-radius:50%;background:var(--grad);color:#fff;font-size:1.1rem;cursor:pointer;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.25s}#top.show{opacity:1;pointer-events:auto}
 @media(max-width:860px){.layout{grid-template-columns:1fr}.write{padding:8px 12px}.nav{flex-wrap:wrap}#boards{order:3;flex:none;width:100%}.minis{grid-template-columns:repeat(4,1fr)}}
 @media(max-width:560px){.minis{grid-template-columns:repeat(2,1fr)}.ad .th{width:64px;height:64px}form.f .two{grid-template-columns:1fr}}
-@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.item{opacity:1}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
