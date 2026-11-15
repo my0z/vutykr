@@ -1,6 +1,6 @@
 (() => {
   const $ = id => document.getElementById(id);
-  const view = $('view'), side = $('side');
+  const view = $('view');
   const CATS = ['스킨케어', '선케어', '클렌징', '메이크업', '바디헤어'];
   let clicks = {};
   const NAME = { notice: '공지', review: '후기', qna: '질문', tip: '꿀팁', free: '자유' };
@@ -22,38 +22,78 @@
   const ago = ts => { const s = (Date.now() - ts) / 1000; if (s < 60) return '방금 전'; if (s < 3600) return Math.floor(s / 60) + '분 전'; if (s < 86400) return Math.floor(s / 3600) + '시간 전'; if (s < 604800) return Math.floor(s / 86400) + '일 전'; const d = new Date(ts); return `${d.getMonth() + 1}/${d.getDate()}`; };
   const ls = { get: k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} } };
 
+
+  const ICONS = { '스킨케어': '💧', '선케어': '☀️', '클렌징': '🫧', '메이크업': '💄', '바디헤어': '🧴' };
+  let timer;
+  const narrow = on => view.classList.toggle('narrow', on);
+  const link = (p, extra) => `href="${esc(p.url)}" target="_blank" rel="sponsored noopener nofollow"${extra || ''}`;
+
   function nav(cur) {
-    const items = [['', '🔥 인기', '#/'], ...CATS.map(c => [c, c, '#/c/' + encodeURIComponent(c)]), ['talk', '💬 수다방', '#/talk']];
+    const items = [['home', '홈', '#/'], ['all', '🛍 전체상품', '#/all'], ...CATS.map(c => [c, c, '#/c/' + encodeURIComponent(c)]), ['talk', '💬 수다방', '#/talk']];
     $('boards').innerHTML = items.map(([k, v, h]) => `<a href="${h}" class="${k === cur ? 'on' : ''}">${v}</a>`).join('');
+    $('drop').innerHTML = `<div class="in">${items.slice(1).map(([k, v, h]) => `<a href="${h}">${v}</a>`).join('')}</div>`;
+    $('drop').classList.remove('open');
+  }
+
+  const ranked = () => products.products.map((p, i) => ({ ...p, rank: i + 1 })).sort((a, b) => (clicks[b.id] || 0) - (clicks[a.id] || 0) || a.rank - b.rank);
+  const card = (p, i, o = {}) => `<a class="pc" ${link(p)} style="animation-delay:${Math.min(i, 10) * 30}ms">
+    <div class="pi">${img(p)}${o.rank ? `<span class="rkb ${i < 3 ? 'top' : ''}">${i + 1}</span>` : ''}${p.rocket ? '<span class="rt">🚀 로켓배송</span>' : ''}</div>
+    <div class="cn">${esc(p.category)}</div><h3>${esc(p.name)}</h3><div class="pp">${won(p.price)}</div>${clicks[p.id] ? `<div class="hot">🔥 ${clicks[p.id]}회 클릭</div>` : ''}<div class="bt"><span>상품보기</span></div></a>`;
+
+  function home() {
+    narrow(false);
+    nav('home');
+    const r = ranked();
+    const top3 = r.filter(p => p.image).slice(0, 4);
+    const slides = (top3.length ? top3 : r.slice(0, 1)).map((p, i) => `<a class="slide s${i % 4}" ${link(p)}><div class="tx"><small>🏆 오늘의 랭킹 ${i + 1}위</small><h2>${esc(p.name)}</h2><div class="pr">${won(p.price)}</div><span class="go">상품보기 →</span></div><div class="im">${img(p)}</div></a>`).join('');
+    const cats = CATS.map(c => ({ c, l: r.filter(p => p.category === c) })).filter(x => x.l.length);
+    view.innerHTML = `
+      <section class="hero"><div class="car" id="car">${slides || '<div class="slide s0 on"><div class="tx"><small>🌸 쁘띠.끄</small><h2>뷰티 인기템을 준비하고 있어요</h2></div></div>'}<button class="cb l" aria-label="이전">‹</button><button class="cb r" aria-label="다음">›</button><div class="dots" id="dots"></div></section>`.replace('</section>', '</div><div class="tiles"><a class="tile t1" href="#/c/%EC%84%A0%EC%BC%80%EC%96%B4"><b>☀️ 선케어 모아보기</b><span>자외선 차단 인기템</span></a><a class="tile t2" href="#/talk"><b>💬 수다방</b><span>후기와 꿀팁 구경하기</span></a></div></section>') + `
+      <section class="icons">${[['전체', '🛍', '#/all'], ...CATS.map(c => [c, ICONS[c], '#/c/' + encodeURIComponent(c)]), ['수다방', '💬', '#/talk']].map(([n, e, h]) => `<a href="${h}"><i>${e}</i>${n}</a>`).join('')}</section>
+      <section class="sec"><div class="sh"><h2>🔥 실시간 <em>BEST 랭킹</em></h2><a href="#/all">전체보기 ›</a></div><div class="railw"><button class="rb l" aria-label="이전">‹</button><div class="rail" id="rail">${r.slice(0, 12).map((p, i) => card(p, i, { rank: 1 })).join('') || '<p class="empty">상품을 준비 중이에요</p>'}</div><button class="rb r" aria-label="다음">›</button></div></section>
+      ${cats.map(x => `<section class="sec"><div class="sh"><h2>${ICONS[x.c]} ${esc(x.c)} <em>BEST</em></h2><a href="#/c/${encodeURIComponent(x.c)}">더보기 ›</a></div><div class="pg">${x.l.slice(0, 5).map((p, i) => card(p, i)).join('')}</div></section>`).join('')}
+      <section class="band"><div class="sh"><h2>💬 수다방 <em>새 글</em></h2><a href="#/talk">더보기 ›</a></div><div class="posts" id="posts"><p class="hint">불러오는 중</p></div><a class="btn main" style="margin-top:14px" href="#/write">✏️ 글쓰기</a></section>`;
+    // 캐러셀
+    const car = $('car'), sl = [...car.querySelectorAll('.slide')];
+    let cur = 0;
+    $('dots').innerHTML = sl.map((_, i) => `<i data-i="${i}"></i>`).join('');
+    const go = i => { cur = (i + sl.length) % sl.length; sl.forEach((s, k) => s.classList.toggle('on', k === cur)); $('dots').querySelectorAll('i').forEach((d, k) => d.classList.toggle('on', k === cur)); };
+    go(0);
+    car.querySelector('.cb.l').onclick = () => go(cur - 1);
+    car.querySelector('.cb.r').onclick = () => go(cur + 1);
+    $('dots').onclick = e => { if (e.target.dataset.i) go(Number(e.target.dataset.i)); };
+    if (sl.length > 1 && !matchMedia('(prefers-reduced-motion: reduce)').matches) timer = setInterval(() => go(cur + 1), 5000);
+    const rail = $('rail');
+    view.querySelector('.rb.l').onclick = () => rail.scrollBy({ left: -rail.clientWidth * .8, behavior: 'smooth' });
+    view.querySelector('.rb.r').onclick = () => rail.scrollBy({ left: rail.clientWidth * .8, behavior: 'smooth' });
+    api('/api/posts?sort=new').then(d => { $('posts').innerHTML = d.posts.slice(0, 3).map(p => `<a class="pt" href="#/p/${p.id}"><span class="bd ${p.board}">${NAME[p.board] || ''}</span><h4>${esc(p.title)}</h4><p>${esc(p.ex)}</p></a>`).join('') || '<p class="hint">아직 글이 없어요</p>'; }).catch(() => {});
+  }
+
+  // 카테고리 / 전체 / 검색 결과 목록 (클릭 수는 실제 집계)
+  function catalog(cat, kw) {
+    narrow(false);
+    nav(kw ? '' : cat || 'all');
+    let sort = 'rank', shown = 20;
+    const title = kw ? `"${esc(kw)}" 검색 결과` : (cat ? esc(cat) : '전체 상품');
+    view.innerHTML = `<div class="ph"><h1>${title}</h1><span class="hint" id="cnt"></span></div><div class="tools"><button class="chip on" data-s="rank">인기순</button><button class="chip" data-s="low">낮은 가격순</button><button class="chip" data-s="high">높은 가격순</button></div><div class="pg" id="pg"></div><div id="pmore"></div>`;
+    function draw() {
+      const k = (kw || '').toLowerCase();
+      let l = ranked().filter(p => (!cat || p.category === cat) && (!k || p.name.toLowerCase().includes(k)));
+      if (sort === 'low') l.sort((a, b) => (a.price || 0) - (b.price || 0));
+      else if (sort === 'high') l.sort((a, b) => (b.price || 0) - (a.price || 0));
+      $('cnt').textContent = `${l.length}개 상품`;
+      $('pg').innerHTML = l.slice(0, shown).map((p, i) => card(p, i, { rank: sort === 'rank' })).join('') || '<p class="empty">상품이 없어요</p>';
+      $('pmore').innerHTML = l.length > shown ? '<button class="more">더 보기</button>' : '';
+    }
+    view.querySelector('.tools').onclick = e => { const b = e.target.closest('[data-s]'); if (!b) return; sort = b.dataset.s; view.querySelectorAll('[data-s]').forEach(x => x.classList.toggle('on', x === b)); draw(); };
+    $('pmore').onclick = () => { shown += 20; draw(); };
+    draw();
   }
 
   const adCard = p => `<a class="ad" href="${esc(p.url)}" target="_blank" rel="sponsored noopener nofollow"><div class="th">${img(p)}</div><div class="tx"><small>추천 상품</small><h4>${esc(p.name)}</h4><b>${won(p.price)}</b></div><span class="go">상품보기</span></a>`;
   const item = (p, i) => `<a class="item ${p.pinned ? 'pin' : ''}" href="#/p/${p.id}" style="animation-delay:${Math.min(i, 10) * 35}ms">
     <span class="bd ${p.board}">${NAME[p.board] || ''}</span>${p.pinned ? '📌' : ''}<h2>${esc(p.title)}</h2><p class="ex">${esc(p.ex)}</p>
     <div class="meta"><b>${esc(p.nick)}</b><span>${ago(p.ts)}</span><span>👁 ${p.views}</span><span>❤ ${p.likes}</span><span>💬 ${p.ccount}</span></div></a>`;
-
-  // 게시판 형태로 보여주는 상품 목록 (클릭 수는 실제 집계)
-  function board(cat) {
-    nav(cat || '');
-    let sort = 'rank', shown = 30;
-    const q = () => $('q').value.trim().toLowerCase();
-    view.innerHTML = `<div class="tools"><button class="chip on" data-s="rank">인기순</button><button class="chip" data-s="low">낮은 가격</button><button class="chip" data-s="high">높은 가격</button><span class="hint" style="margin-left:auto">${esc(cat || '전체')} 상품</span></div><div id="plist"></div><div id="pmore"></div>`;
-    function draw() {
-      let l = products.products.map((p, i) => ({ ...p, rank: i + 1 })).filter(p => (!cat || p.category === cat) && p.name.toLowerCase().includes(q()));
-      if (sort === 'low') l.sort((a, b) => (a.price || 0) - (b.price || 0));
-      else if (sort === 'high') l.sort((a, b) => (b.price || 0) - (a.price || 0));
-      else l.sort((a, b) => (clicks[b.id] || 0) - (clicks[a.id] || 0) || a.rank - b.rank);
-      $('plist').innerHTML = l.slice(0, shown).map((p, i) => `<a class="row" href="${esc(p.url)}" target="_blank" rel="sponsored noopener nofollow" style="animation-delay:${Math.min(i, 10) * 30}ms">
-        <span class="no ${i < 3 && sort === 'rank' ? 'top' : ''}">${i + 1}</span><span class="th">${img(p)}</span>
-        <span class="tx"><span class="bd">${esc(p.category)}</span>${p.badge ? `<span class="bd notice">${esc(p.badge)}</span>` : ''}<h2>${esc(p.name)}</h2>
-        <span class="meta"><b>${won(p.price)}</b>${p.rocket ? '<span class="rk2">🚀 로켓배송</span>' : ''}${clicks[p.id] ? `<span>🔥 ${clicks[p.id]}회 클릭</span>` : ''}<span>쿠팡 상품</span></span></span><span class="go">상품보기</span></a>`).join('') || '<p class="empty">상품이 없어요</p>';
-      $('pmore').innerHTML = l.length > shown ? '<button class="more">더 보기</button>' : '';
-    }
-    view.querySelector('.tools').addEventListener('click', e => { const b = e.target.closest('[data-s]'); if (!b) return; sort = b.dataset.s; view.querySelectorAll('[data-s]').forEach(x => x.classList.toggle('on', x === b)); draw(); });
-    $('pmore').addEventListener('click', () => { shown += 30; draw(); });
-    board.redraw = draw;
-    draw();
-  }
 
   async function feed(board) {
     nav('talk');
@@ -119,45 +159,24 @@
     };
   }
 
-  function shop() {
-    nav('shop');
-    let cur = '전체', sort = 'rank';
-    view.innerHTML = `<div class="tools" id="st"></div><div class="grid" id="sg"></div>`;
-    function draw() {
-      $('st').innerHTML = products.categories.map(c => `<button class="chip ${c === cur ? 'on' : ''}" data-c="${esc(c)}">${esc(c)}</button>`).join('') + `<select id="ss" style="margin-left:auto;padding:7px 10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)"><option value="rank">인기순</option><option value="low">낮은 가격순</option><option value="high">높은 가격순</option></select>`;
-      $('ss').value = sort;
-      let l = products.products.map((p, i) => ({ ...p, rank: i + 1 })).filter(p => cur === '전체' || p.category === cur);
-      if (sort === 'low') l.sort((a, b) => (a.price || 0) - (b.price || 0));
-      if (sort === 'high') l.sort((a, b) => (b.price || 0) - (a.price || 0));
-      $('sg').innerHTML = l.map(p => `<article class="card"><div class="pimg">${img(p)}${sort === 'rank' ? `<span class="rk ${p.rank <= 3 ? 'top' : ''}">${p.rank}</span>` : ''}</div><h4>${esc(p.name)}</h4><div class="pr">${won(p.price)}${p.rocket ? '<small>🚀 로켓배송</small>' : ''}</div><a class="go" href="${esc(p.url)}" target="_blank" rel="sponsored noopener nofollow">상품보기 →</a></article>`).join('') || '<p class="empty">상품이 없어요</p>';
-    }
-    $('st').addEventListener('click', e => { const b = e.target.closest('[data-c]'); if (b) { cur = b.dataset.c; draw(); } });
-    $('st').addEventListener('change', e => { if (e.target.id === 'ss') { sort = e.target.value; draw(); } });
-    draw();
-  }
-
-  async function sidebar() {
-    const talk = await api('/api/posts?sort=new').catch(() => ({ posts: [] }));
-    const ranked = [...products.products].sort((a, b) => (clicks[b.id] || 0) - (clicks[a.id] || 0)).slice(0, 5);
-    side.innerHTML = `<div class="box hot"><h3>🔥 실시간 인기 상품</h3>${ranked.map((p, i) => `<a href="${esc(p.url)}" target="_blank" rel="sponsored noopener nofollow"><i>${i + 1}</i><span>${esc(p.name)}</span><em>${clicks[p.id] ? clicks[p.id] + '회' : ''}</em></a>`).join('') || '<p class="hint">상품을 준비 중이에요</p>'}</div>
-      <div class="box hot"><h3>💬 수다방 새 글 <a href="#/talk">더보기</a></h3>${talk.posts.slice(0, 5).map(p => `<a href="#/p/${p.id}"><span>${esc(p.title)}</span><em>${p.ccount ? '[' + p.ccount + ']' : ''}</em></a>`).join('') || '<p class="hint">아직 글이 없어요</p>'}<a class="btn main" style="justify-content:center;margin-top:10px;display:flex" href="#/write">✏️ 수다방 글쓰기</a></div>
-      <div class="box"><h3>안내</h3><ul class="rules"><li>상품 클릭 수는 방문자의 실제 클릭을 집계한 값이에요</li><li>상품 링크는 쿠팡 파트너스 링크예요</li><li>가격과 재고는 쿠팡에서 확인하세요</li></ul></div>`;
-  }
-
   function route() {
+    clearInterval(timer);
     const h = location.hash.replace(/^#/, '') || '/';
     let m;
     scrollTo(0, 0);
-    if ((m = h.match(/^\/p\/(\d+)/))) show(m[1]);
-    else if ((m = h.match(/^\/b\/(\w+)/))) feed(m[1]);
-    else if (h === '/write') write();
-    else if (h === '/talk') feed('');
-    else if ((m = h.match(/^\/c\/(.+)/))) board(decodeURIComponent(m[1]));
-    else board('');
+    if ((m = h.match(/^\/p\/(\d+)/))) { narrow(true); show(m[1]); }
+    else if ((m = h.match(/^\/b\/(\w+)/))) { narrow(true); feed(m[1]); }
+    else if (h === '/write') { narrow(true); write(); }
+    else if (h === '/talk') { narrow(true); feed(''); }
+    else if ((m = h.match(/^\/c\/(.+)/))) catalog(decodeURIComponent(m[1]));
+    else if ((m = h.match(/^\/s\/(.+)/))) catalog('', decodeURIComponent(m[1]));
+    else if (h === '/all') catalog('');
+    else home();
   }
 
-  let t;
-  $('q').addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { const h = location.hash; if (/^#\/(p\/|write)/.test(h)) location.hash = '#/'; else route(); }, 350); });
+  $('sf').addEventListener('submit', e => { e.preventDefault(); const v = $('q').value.trim(); location.hash = v ? '#/s/' + encodeURIComponent(v) : '#/all'; });
+  $('allcat').addEventListener('click', () => { const d = $('drop'); const o = d.classList.toggle('open'); $('allcat').setAttribute('aria-expanded', o); });
+  document.addEventListener('click', e => { if (!e.target.closest('.cat')) $('drop').classList.remove('open'); });
   const top = $('top');
   top.addEventListener('click', () => scrollTo({ top: 0, behavior: 'smooth' }));
   addEventListener('scroll', () => top.classList.toggle('show', scrollY > 500), { passive: true });
@@ -165,7 +184,6 @@
   (async () => {
     try { products = await (await fetch('/api/products')).json(); } catch (e) {}
     try { clicks = await (await fetch('/api/clicks')).json(); } catch (e) {}
-    sidebar();
     route();
   })();
 })();
