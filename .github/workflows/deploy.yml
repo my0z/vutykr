@@ -13,9 +13,9 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: "4"
-          secrets: |
-            COUPANG_ACCESS_KEY
-            COUPANG_SECRET_KEY
+          postCommands: |
+            printf '%s' "$COUPANG_ACCESS_KEY" | npx wrangler secret put COUPANG_ACCESS_KEY
+            printf '%s' "$COUPANG_SECRET_KEY" | npx wrangler secret put COUPANG_SECRET_KEY
         env:
           COUPANG_ACCESS_KEY: ${{ secrets.COUPANG_ACCESS_KEY }}
           COUPANG_SECRET_KEY: ${{ secrets.COUPANG_SECRET_KEY }}
