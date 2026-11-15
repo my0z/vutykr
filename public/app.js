@@ -31,7 +31,7 @@
         <div class="cat">${esc(p.category)}</div>
         <h2>${esc(p.name)}</h2>
         <div class="price">${p.price ? Number(p.price).toLocaleString('ko-KR') + '원' : '가격 확인'}${p.rocket ? '<small class="rocket">🚀 로켓배송</small>' : ''}</div>
-        <a class="btn" href="${esc(p.url)}" target="_blank" rel="sponsored noopener nofollow">쿠팡에서 보기 →</a>
+        <a class="btn" href="${esc(p.url)}" target="_blank" rel="sponsored noopener nofollow">상품보기 →</a>
       </article>`).join('') || '<p class="empty">검색 결과가 없습니다</p>';
   }
   tabs.addEventListener('click', e => { const b = e.target.closest('button'); if (b) { current = b.dataset.c; view(); } });
