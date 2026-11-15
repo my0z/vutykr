@@ -112,15 +112,28 @@ async function refresh(env) {
   return status;
 }
 
-// 쿠팡 이미지 서버만 허용하는 썸네일 프록시 (엣지 캐시)
-async function image(url, ctx) {
+// 상품 번호로 썸네일을 대신 가져와 원본 주소를 숨기는 프록시 (엣지 캐시)
+let prodCache = { t: 0, v: null };
+async function getProducts(env) {
+  if (Date.now() - prodCache.t < 60000 && prodCache.v) return prodCache.v;
+  const v = JSON.parse((await env.DATA.get('products')) || 'null');
+  prodCache = { t: Date.now(), v };
+  return v;
+}
+
+async function image(url, ctx, env) {
+  const id = url.pathname.slice(3);
+  const data = await getProducts(env);
+  const p = data && data.products.find(x => x.id === id);
+  if (!p || !p.image) return new Response('not found', { status: 404 });
   let t;
-  try { t = new URL(url.searchParams.get('u') || ''); } catch (e) { return new Response('bad', { status: 400 }); }
+  try { t = new URL(p.image); } catch (e) { return new Response('bad', { status: 400 }); }
   if (!/^https?:$/.test(t.protocol) || !/(^|\.)(coupangcdn|coupang)\.com$/.test(t.hostname)) return new Response('forbidden', { status: 403 });
-  const key = new Request(url.toString());
+  const key = new Request(url.origin + url.pathname);
   const hit = await caches.default.match(key);
   if (hit) return hit;
-  const up = await fetch('https://' + t.host + t.pathname + t.search, { headers: { 'user-agent': 'Mozilla/5.0' }, cf: { cacheTtl: 86400, cacheEverything: true } });
+  let up;
+  try { up = await fetch('https://' + t.host + t.pathname + t.search, { headers: { 'user-agent': 'Mozilla/5.0' }, cf: { cacheTtl: 86400, cacheEverything: true } }); } catch (e) { return new Response('upstream error', { status: 502 }); }
   if (!up.ok) return new Response('upstream ' + up.status, { status: 502 });
   const res = new Response(up.body, { headers: { 'content-type': up.headers.get('content-type') || 'image/jpeg', 'cache-control': 'public,max-age=86400' } });
   ctx.waitUntil(caches.default.put(key, res.clone()));
@@ -132,7 +145,7 @@ export default {
     const url = new URL(req.url);
     const path = url.pathname;
     if (path === '/0') return admin(req, env, url);
-    if (path === '/img') return image(url, ctx);
+    if (/^\/i\/\d+$/.test(path)) return image(url, ctx, env);
     if (path === '/api/clicks') return new Response(JSON.stringify(env.DB ? await clickCounts(env) : {}), { headers: { 'content-type': 'application/json', 'cache-control': 'public,max-age=300' } });
     if (/^\/api\/(posts|comments)(\/|$)/.test(path)) return env.DB ? community(req, env, url, ctx) : new Response('{"error":"db"}', { status: 500 });
     if (/^\/[a-z0-9]{4}$/.test(path)) {
@@ -155,7 +168,11 @@ export default {
     }
     if (url.pathname === '/api/products') {
       const stored = await env.DATA.get('products');
-      if (stored) return new Response(stored, { headers: { 'content-type': 'application/json', 'cache-control': 'public,max-age=600' } });
+      if (stored) {
+        const d = JSON.parse(stored);
+        for (const p of d.products) p.image = !!p.image; // 원본 이미지 주소는 숨김
+        return new Response(JSON.stringify(d), { headers: { 'content-type': 'application/json', 'cache-control': 'public,max-age=600' } });
+      }
       // 저장된 상품이 없으면 백그라운드에서 즉시 갱신 (5분 잠금)
       if (env.COUPANG_ACCESS_KEY && !(await env.DATA.get('lock'))) {
         await env.DATA.put('lock', '1', { expirationTtl: 300 });
