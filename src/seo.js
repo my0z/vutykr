@@ -166,7 +166,7 @@ export async function seo(req, env, url, ctx, h = {}) {
     const first = list.find(x => x.image);
     const boot = d ? [{ ...d, products: list.map(p => ({ ...p, image: !!p.image })) }, clicks] : null; // 첫 화면에 필요한 데이터를 HTML에 함께 보낸다
     const html = inject(await tpl.text(), pg, first ? abs('/i/' + first.id) : '', boot);
-    const res = new Response(req.method === 'HEAD' ? null : html, { headers: { 'content-type': 'text/html;charset=utf-8', 'cache-control': 'public,max-age=60,s-maxage=120' } });
+    const res = new Response(req.method === 'HEAD' ? null : html, { headers: { 'content-type': 'text/html;charset=utf-8', 'cache-control': 'public,max-age=60,s-maxage=600' } });
     if (req.method === 'GET' && ctx) ctx.waitUntil(cache.put(key, res.clone()));
     return res;
   } catch (e) {
