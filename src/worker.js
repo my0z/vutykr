@@ -46,6 +46,7 @@ const norm = (p, category, badge = '') => ({
 });
 
 async function refresh(env) {
+  const errors = [];
   const seen = new Set();
   const products = [];
   const add = (list, cat, badge) => {
@@ -57,22 +58,34 @@ async function refresh(env) {
   };
   try {
     add((await call(`${BASE}/bestcategories/${BEST_BEAUTY_ID}`, { limit: 12 }, env)), '스킨케어', 'BEST');
-  } catch (e) { console.error('best', e.message); }
+  } catch (e) { console.error('best', e.message); errors.push('best: ' + e.message); }
   for (const [cat, kws] of Object.entries(CATEGORIES)) {
     for (const kw of kws) {
       try { add(await call(`${BASE}/search`, { keyword: kw, limit: PER_KEYWORD }, env), cat, ''); }
-      catch (e) { console.error('search', kw, e.message); }
+      catch (e) { console.error('search', kw, e.message); errors.push('search ' + kw + ': ' + e.message); }
     }
   }
   if (products.length) {
     await env.DATA.put('products', JSON.stringify({ updatedAt: new Date().toISOString(), categories: ['전체', ...Object.keys(CATEGORIES)], products }));
   }
-  return products.length;
+  const status = { at: new Date().toISOString(), count: products.length, errors: errors.slice(0, 8) };
+  await env.DATA.put('status', JSON.stringify(status));
+  return status;
 }
 
 export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
+    if (url.pathname === '/api/debug') {
+      const info = { hasKeys: !!(env.COUPANG_ACCESS_KEY && env.COUPANG_SECRET_KEY), keyLen: [(env.COUPANG_ACCESS_KEY || '').length, (env.COUPANG_SECRET_KEY || '').length] };
+      if (url.searchParams.get('run') === '1' && info.hasKeys && !(await env.DATA.get('lock'))) {
+        await env.DATA.put('lock', '1', { expirationTtl: 300 });
+        info.run = await refresh(env);
+      }
+      info.status = JSON.parse((await env.DATA.get('status')) || 'null');
+      info.hasProducts = !!(await env.DATA.get('products'));
+      return new Response(JSON.stringify(info, null, 1), { headers: { 'content-type': 'application/json' } });
+    }
     if (url.pathname === '/api/products') {
       const stored = await env.DATA.get('products');
       if (stored) return new Response(stored, { headers: { 'content-type': 'application/json', 'cache-control': 'public,max-age=600' } });
