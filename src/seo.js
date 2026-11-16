@@ -110,7 +110,7 @@ function buildItem(p, list, hist) {
 <div class="ip-price">${p.price ? `${fmt(p.price)}<small>원</small>` : '가격 확인'}</div>
 <p class="ip-note">쿠팡 파트너스 데이터 기준이며 실제 가격과 재고는 쿠팡에서 바뀔 수 있습니다.</p>
 <a class="ip-cta" href="${esc(p.url)}" target="_blank" rel="sponsored nofollow noopener">쿠팡에서 최신 가격 확인하기</a>
-<p class="disc">${esc(DISC)}</p></div></div>
+</div></div>
 <section><h2>상품 한눈에 보기</h2><table class="ip-table"><tbody>${facts.map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join('')}</tbody></table></section>
 <section><h2>가격 변화</h2>${spark(hist)}${trend}<p class="ip-note">여섯 시간마다 쿠팡 파트너스 데이터를 불러올 때 가격이 바뀐 경우만 기록한 값입니다.</p></section>
 <section><h2>${esc(cat)} 가격 비교</h2><table class="ip-table cmp"><thead><tr><th>상품</th><th>쿠팡 판매가</th></tr></thead><tbody>${near.map(x => `<tr class="${x.id === p.id ? 'me' : ''}"><td><a href="/item/${esc(x.id)}">${esc(x.name)}</a></td><td>${fmt(x.price)}원</td></tr>`).join('')}</tbody></table></section>
@@ -232,7 +232,7 @@ export async function seo(req, env, url, ctx, h = {}) {
     const r = route(p);
     if (!r) return null;
     const cache = caches.default;
-    const key = new Request(url.origin + url.pathname);
+    const key = new Request(url.origin + url.pathname + '?v=8');
     if (req.method === 'GET') { const hit = await cache.match(key); if (hit) return hit; }
     const tpl = await env.ASSETS.fetch(new Request(new URL('/', url)));
     if (!tpl.ok) return null;
