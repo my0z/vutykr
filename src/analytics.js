@@ -153,7 +153,7 @@ export async function admin(req, env, url) {
   const bud = await env.DB.prepare('SELECT n FROM budget WHERE day=?').bind(utcDay()).first().catch(() => null);
   let imgq = null;
   try { imgq = JSON.parse((await env.DATA.get('imgq')) || 'null'); } catch (e) {}
-  const usage = { req: bud ? bud.n : 0, lim: Number(env.DAILY_BUDGET || 30000), img: imgq && imgq.m === utcDay().slice(0, 7) ? imgq.n : 0, imgLim: 4000 };
+  const usage = { req: bud ? bud.n : 0, lim: Number(env.DAILY_BUDGET || 300000), img: imgq && imgq.m === utcDay().slice(0, 7) ? imgq.n : 0, imgLim: 4000 };
   const t = tot[0] || {};
   const ctr = t.v ? ((t.c || 0) / t.v * 100).toFixed(1) : '0.0';
   const maxD = Math.max(1, ...daily.map(r => Math.max(r.v, r.c)));
@@ -260,7 +260,7 @@ export async function overBudget(env) {
   try {
     await init(env);
     const r = await env.DB.prepare('SELECT n FROM budget WHERE day=?').bind(utcDay()).first();
-    ob.v = !!r && r.n >= Number(env.DAILY_BUDGET || 30000);
+    ob.v = !!r && r.n >= Number(env.DAILY_BUDGET || 300000);
   } catch (e) {}
   return ob.v;
 }
