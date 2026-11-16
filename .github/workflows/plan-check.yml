@@ -1,0 +1,12 @@
+name: plan-check
+on: workflow_dispatch
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 요금제 조회
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          A: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          curl -s -H "Authorization: Bearer $T" "https://api.cloudflare.com/client/v4/accounts/$A/subscriptions" | jq -c '{success, errors: [.errors[]?.message], plans: [.result[]? | {n: .rate_plan.public_name, id: .rate_plan.id, state: .state}]}'
