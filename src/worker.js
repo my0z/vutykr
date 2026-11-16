@@ -96,6 +96,46 @@ async function allowSearch(env) {
   return true;
 }
 
+
+// 쿠팡 파트너스 API의 이미지 주소(ads-partners)는 실제 이미지 서버로 넘겨주는 중계 주소라서 한꺼번에 많이 열면 막힌다.
+// 갱신할 때 서버가 중계를 한 번만 풀어 실제 CDN 주소를 저장하고 방문자는 CDN에서 바로 받는다.
+const sha16 = async s => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)))].slice(0, 8).map(b => b.toString(16).padStart(2, '0')).join('');
+const isCdn = u => /^https:\/\/[^/]*coupangcdn\.com\//.test(u || '');
+async function resolveImages(env, list, cap = 60) {
+  let map = {};
+  try { map = JSON.parse((await env.DATA.get('imap')) || '{}'); } catch (e) {}
+  const used = new Set();
+  const todo = [];
+  for (const p of list) {
+    if (!/^https:\/\/ads-partners\.coupang\.com\//.test(p.image || '')) continue;
+    const k = await sha16(p.image);
+    used.add(k);
+    if (map[k]) p.image = map[k];
+    else todo.push([p, k]);
+  }
+  let tried = 0;
+  for (let i = 0; i < todo.length && tried < cap; i += 5) {
+    await Promise.all(todo.slice(i, i + 5).map(async ([p, k]) => {
+      tried++;
+      try {
+        const h = { 'user-agent': 'Mozilla/5.0' };
+        let r = await fetch(p.image, { redirect: 'manual', headers: h });
+        let loc = r.headers.get('location');
+        if (r.body) r.body.cancel().catch(() => {});
+        if (!isCdn(loc)) { // 중계가 아니라 다른 방식이면 따라가서 최종 주소를 얻는다
+          r = await fetch(p.image, { headers: h });
+          loc = r.url;
+          if (r.body) r.body.cancel().catch(() => {});
+        }
+        if (isCdn(loc)) { map[k] = loc; p.image = loc; }
+      } catch (e) {}
+    }));
+  }
+  for (const k of Object.keys(map)) if (!used.has(k)) delete map[k];
+  await env.DATA.put('imap', JSON.stringify(map));
+  return { resolved: Object.keys(map).length, pending: todo.filter(([p]) => !isCdn(p.image)).length };
+}
+
 async function refresh(env) {
   const errors = [];
   const seen = new Set();
@@ -144,6 +184,7 @@ async function refresh(env) {
   // 아직 한 번도 불러오지 못한 카테고리는 이전 상품을 그대로 유지한다 (목록이 갑자기 줄지 않게)
   const fresh = new Set(products.map(p => p.category));
   const kept = [];
+  let imgStat = null;
   if (prev && prev.products) {
     for (const p of prev.products) {
       if (fresh.has(p.category) || seen.has(p.id) || names.has(String(p.name || '').toLowerCase().replace(/\s+/g, ''))) continue;
@@ -172,9 +213,10 @@ async function refresh(env) {
     linksCache = { t: 0, v: {} };
     const all = [...products, ...kept.map(({ keep, ...x }) => x)];
     try { await recordPrices(env, all.map(x => ({ ...x }))); } catch (e) { console.error('price', e.message); }
+    try { imgStat = await resolveImages(env, all); } catch (e) { console.error('imgres', e.message); }
     await env.DATA.put('products', JSON.stringify({ updatedAt: new Date().toISOString(), categories: ['전체', ...Object.keys(CATEGORIES)], products: all }));
   }
-  const status = { at: new Date().toISOString(), count: products.length + kept.length, fresh: products.length, searched: done, errors: errors.slice(0, 8) };
+  const status = { at: new Date().toISOString(), count: products.length + kept.length, fresh: products.length, searched: done, img: imgStat, errors: errors.slice(0, 8) };
   await env.DATA.put('status', JSON.stringify(status));
   return status;
 }
