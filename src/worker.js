@@ -12,12 +12,25 @@ const CATEGORIES = {
   '클렌징': ['클렌징폼', '클렌징오일'],
   '메이크업': ['쿠션', '립틴트'],
   '바디헤어': ['샴푸'],
-  '장신구': ['반지', '귀걸이', '목걸이', '팔찌']
+  '의류': ['원피스', '블라우스', '니트 여성', '가디건 여성', '여성 청바지', '스커트', '여성 코트', '여성 패딩'],
+  '신발': ['여성 운동화', '여성 로퍼', '여성 샌들', '여성 부츠'],
+  '가방': ['여성 숄더백', '여성 크로스백', '여성 백팩', '여성 지갑'],
+  '장신구': ['반지', '귀걸이', '목걸이', '팔찌', '헤어핀'],
+  '잡화': ['여성 모자', '스카프', '여성 양말', '여성 벨트', '선글라스']
 };
 const KW_ALL = Object.entries(CATEGORIES).flatMap(([c, ks]) => ks.map(k => [c, k]));
 const PER_RUN = 6; // 한 번에 가장 오래된 검색어 6개만 갱신 (쿠팡 검색 API는 시간당 10회 제한)
-// 이미테이션과 성인용품 등 쿠팡 파트너스 운영정책상 홍보하면 안 되는 상품은 걸러낸다
-const BLOCK = /이미테이션|짝퉁|레플리카|replica|모조품|카피|성인|19금|콘돔|딜도|바이브|자위|애널|러브젤/i;
+// 쿠팡 파트너스 운영정책상 홍보하면 안 되는 상품(이미테이션과 성인용품)과 이 사이트와 맞지 않는 상품을 걸러낸다
+const BLOCK = /이미테이션|짝퉁|레플리카|replica|모조품|카피|정품급|[SA]급|성인|19금|콘돔|딜도|바이브|자위|애널|러브젤|아동|키즈|유아|베이비|(샤넬|구찌|루이비통|프라다|에르메스|디올|버버리|카르티에|까르띠에|티파니|보테가)\s?(st|ST|스타일|풍|느낌|룩)/;
+const MALE = /남성|남자|맨즈|\bmen\b/i;
+const FEMALE = /여성|여자|우먼|woman|women|공용|남녀/i;
+const skipName = nm => BLOCK.test(nm) || (MALE.test(nm) && !FEMALE.test(nm));
+// 패션 베스트 목록은 여러 종류가 섞여 있어서 상품명으로 카테고리를 나눈다
+const classify = nm => /반지|귀걸이|목걸이|팔찌|발찌|헤어핀|브로치/.test(nm) ? '장신구'
+  : /신발|운동화|샌들|슬리퍼|부츠|구두|로퍼|스니커즈|힐/.test(nm) ? '신발'
+  : /가방|백팩|숄더백|크로스백|토트백|클러치|지갑|파우치/.test(nm) ? '가방'
+  : /원피스|블라우스|셔츠|티셔츠|니트|가디건|바지|팬츠|청바지|치마|스커트|자켓|재킷|코트|패딩|후드|맨투맨|점퍼|레깅스/.test(nm) ? '의류' : '잡화';
+const BEST_FASHION_ID = 1001;
 const BEST_BEAUTY_ID = 1010;
 const PER_KEYWORD = 6;
 
@@ -91,7 +104,7 @@ async function refresh(env) {
   const add = (list, cat, badge) => {
     for (const p of list) {
       const nm = String(p.productName || '').toLowerCase().replace(/\s+/g, '');
-      if (!p.productId || seen.has(p.productId) || names.has(nm) || BLOCK.test(String(p.productName || ''))) continue;
+      if (!p.productId || seen.has(p.productId) || names.has(nm) || skipName(String(p.productName || ''))) continue;
       seen.add(p.productId);
       names.add(nm);
       products.push(norm(p, cat, badge));
@@ -108,6 +121,9 @@ async function refresh(env) {
   try {
     pool.__best = { t: Date.now(), items: (await call(`${BASE}/bestcategories/${BEST_BEAUTY_ID}`, { limit: 12 }, env)).map(slim) };
   } catch (e) { console.error('best', e.message); errors.push('best: ' + e.message); }
+  try {
+    pool.__bestf = { t: Date.now(), items: (await call(`${BASE}/bestcategories/${BEST_FASHION_ID}`, { limit: 12 }, env)).map(slim) };
+  } catch (e) { console.error('bestf', e.message); errors.push('bestf: ' + e.message); }
   const order = KW_ALL.slice().sort((a, b) => (((pool[a[1]] && pool[a[1]].t) || 0) - ((pool[b[1]] && pool[b[1]].t) || 0)) || ((have.has(a[0]) ? 1 : 0) - (have.has(b[0]) ? 1 : 0)));
   let done = 0;
   for (const [cat, kw] of order) {
@@ -118,10 +134,11 @@ async function refresh(env) {
       done++;
     } catch (e) { console.error('search', kw, e.message); errors.push('search ' + kw + ': ' + e.message); }
   }
-  for (const k of Object.keys(pool)) if (k !== '__best' && !KW_ALL.some(x => x[1] === k)) delete pool[k];
+  for (const k of Object.keys(pool)) if (k !== '__best' && k !== '__bestf' && !KW_ALL.some(x => x[1] === k)) delete pool[k];
   await env.DATA.put('pool', JSON.stringify(pool));
 
   if (pool.__best) add(pool.__best.items, '스킨케어', 'BEST');
+  if (pool.__bestf) for (const p of pool.__bestf.items) add([p], classify(String(p.productName || '')), 'BEST');
   for (const [cat, kw] of KW_ALL) if (pool[kw]) add(pool[kw].items, cat, '');
 
   // 아직 한 번도 불러오지 못한 카테고리는 이전 상품을 그대로 유지한다 (목록이 갑자기 줄지 않게)

@@ -206,7 +206,7 @@ function robots() {
 async function sitemap(env) {
   const d = await load(env);
   const last = d && d.updatedAt ? String(d.updatedAt).slice(0, 10) : new Date().toISOString().slice(0, 10);
-  const urls = [['/', 1.0], ['/all', 0.8], ...Object.keys(SITE.cats).map(c => [catUrl(c), 0.7]), ...((d && d.products) || []).slice(0, 200).map(x => ['/item/' + x.id, 0.6])];
+  const urls = [['/', 1.0], ['/all', 0.8], ...Object.keys(SITE.cats).map(c => [catUrl(c), 0.7]), ...((d && d.products) || []).slice(0, 400).map(x => ['/item/' + x.id, 0.6])];
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(([u, p]) => `<url><loc>${esc(abs(u))}</loc><lastmod>${last}</lastmod><changefreq>daily</changefreq><priority>${p}</priority></url>`).join('\n')}\n</urlset>\n`;
   return new Response(xml, { headers: headers('application/xml;charset=utf-8') });
 }

@@ -47,7 +47,7 @@ a{color:inherit;text-decoration:none}button{font:inherit}
 .tile b{font-size:1.2rem;font-weight:900}.tile span{font-size:.85rem;opacity:.85}.t1{background:#fff3c4;color:#7a5200}.t2{background:#dff1ff;color:#0b4a7a}
 @media(prefers-color-scheme:dark){.t1{background:#3a2f10;color:#ffe08a}.t2{background:#10283a;color:#a9d8ff}}
 
-.icons{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px 10px;margin-bottom:26px}
+.icons{display:grid;grid-template-columns:repeat(auto-fit,minmax(74px,1fr));gap:8px;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px 10px;margin-bottom:26px}
 .icons a{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:.82rem;font-weight:700}
 .icons i{width:58px;height:58px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-size:1.6rem;font-style:normal;transition:.25s}.icons a:hover i{background:var(--grad);transform:scale(1.1)}
 

@@ -12,9 +12,9 @@ directory = "./public"
 binding = "ASSETS"
 run_worker_first = ["/*", "!/style.css", "!/app.js", "!/products.json", "!/promo/*"]
 
-# 3시간마다 검색어 일부씩 돌아가며 쿠팡 파트너스 API로 상품 자동 갱신
+# 매시간 검색어 일부씩 돌아가며 쿠팡 파트너스 API로 상품 자동 갱신
 [triggers]
-crons = ["0 */3 * * *"]
+crons = ["0 * * * *"]
 
 # id 생략 시 배포할 때 wrangler가 자동 생성
 [[kv_namespaces]]
