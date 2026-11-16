@@ -80,6 +80,9 @@ function spark(h) {
   return `<svg viewBox="0 0 ${W} ${H}" class="spark" role="img" aria-label="가격 변화 그래프"><polyline fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" points="${pts}"/>${h.map((r, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(r.price).toFixed(1)}" r="4" fill="currentColor"/>`).join('')}</svg>`;
 }
 
+// 스레드 공유 창 주소: 상품명과 가격과 이 페이지 주소와 대가성 문구를 글 내용으로 채워 준다 (500자 제한 안쪽)
+const shareUrl = p => 'https://www.threads.net/intent/post?text=' + encodeURIComponent(`${String(p.name).slice(0, 100)}${p.price ? ' ' + p.price + '원' : ''}\n${abs('/item/' + p.id)}\n\n${DISC}`);
+
 function buildItem(p, list, hist) {
   const cat = p.category;
   const same = list.filter(x => x.category === cat);
@@ -110,6 +113,7 @@ function buildItem(p, list, hist) {
 <div class="ip-price">${p.price ? `${fmt(p.price)}<small>원</small>` : '가격 확인'}</div>
 <p class="ip-note">쿠팡 파트너스 데이터 기준이며 실제 가격과 재고는 쿠팡에서 바뀔 수 있습니다.</p>
 <a class="ip-cta" href="${esc(p.url)}" target="_blank" rel="sponsored nofollow noopener">쿠팡에서 최신 가격 확인하기</a>
+<a class="ip-share" href="${esc(shareUrl(p))}" target="_blank" rel="noopener nofollow">스레드에 올리기</a>
 </div></div>
 <section><h2>상품 한눈에 보기</h2><table class="ip-table"><tbody>${facts.map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join('')}</tbody></table></section>
 <section><h2>가격 변화</h2>${spark(hist)}${trend}<p class="ip-note">여섯 시간마다 쿠팡 파트너스 데이터를 불러올 때 가격이 바뀐 경우만 기록한 값입니다.</p></section>
@@ -232,7 +236,7 @@ export async function seo(req, env, url, ctx, h = {}) {
     const r = route(p);
     if (!r) return null;
     const cache = caches.default;
-    const key = new Request(url.origin + url.pathname + '?v=8');
+    const key = new Request(url.origin + url.pathname + '?v=11');
     if (req.method === 'GET') { const hit = await cache.match(key); if (hit) return hit; }
     const tpl = await env.ASSETS.fetch(new Request(new URL('/', url)));
     if (!tpl.ok) return null;

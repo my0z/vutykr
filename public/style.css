@@ -149,3 +149,4 @@ footer .disc{color:var(--ink);max-width:720px;margin:12px auto}
 @media(max-width:760px){.ip-top{grid-template-columns:1fr}.ip-sim{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 .disc-bar{background:var(--card);border-bottom:1px solid var(--line)}.disc-bar .disc{margin:10px 0;text-align:center}
+.ip-share{display:block;text-align:center;margin-top:10px;padding:13px;border-radius:14px;background:#000;color:#fff;font-weight:800;font-size:.95rem}.ip-share:hover{background:#222}
