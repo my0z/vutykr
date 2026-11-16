@@ -11,8 +11,13 @@ const CATEGORIES = {
   '선케어': ['선크림'],
   '클렌징': ['클렌징폼', '클렌징오일'],
   '메이크업': ['쿠션', '립틴트'],
-  '바디헤어': ['샴푸']
+  '바디헤어': ['샴푸'],
+  '장신구': ['반지', '귀걸이', '목걸이', '팔찌']
 };
+const KW_ALL = Object.entries(CATEGORIES).flatMap(([c, ks]) => ks.map(k => [c, k]));
+const PER_RUN = 6; // 한 번에 가장 오래된 검색어 6개만 갱신 (쿠팡 검색 API는 시간당 10회 제한)
+// 이미테이션과 성인용품 등 쿠팡 파트너스 운영정책상 홍보하면 안 되는 상품은 걸러낸다
+const BLOCK = /이미테이션|짝퉁|레플리카|replica|모조품|카피|성인|19금|콘돔|딜도|바이브|자위|애널|러브젤/i;
 const BEST_BEAUTY_ID = 1010;
 const PER_KEYWORD = 6;
 
@@ -86,24 +91,49 @@ async function refresh(env) {
   const add = (list, cat, badge) => {
     for (const p of list) {
       const nm = String(p.productName || '').toLowerCase().replace(/\s+/g, '');
-      if (!p.productId || seen.has(p.productId) || names.has(nm)) continue;
+      if (!p.productId || seen.has(p.productId) || names.has(nm) || BLOCK.test(String(p.productName || ''))) continue;
       seen.add(p.productId);
       names.add(nm);
       products.push(norm(p, cat, badge));
     }
   };
+  const slim = p => ({ productId: p.productId, productName: p.productName, productPrice: p.productPrice, productImage: p.productImage, productUrl: p.productUrl });
+
+  // 검색 결과는 검색어별로 KV에 보관하고 이번에는 가장 오래된 검색어부터 일부만 새로 불러온다
+  let pool = {};
+  try { pool = JSON.parse((await env.DATA.get('pool')) || '{}'); } catch (e) {}
+  let prev = null;
+  try { prev = JSON.parse((await env.DATA.get('products')) || 'null'); } catch (e) {}
+  const have = new Set(((prev && prev.products) || []).map(p => p.category)); // 상품이 아직 없는 카테고리를 먼저 채운다
   try {
-    add((await call(`${BASE}/bestcategories/${BEST_BEAUTY_ID}`, { limit: 12 }, env)), '스킨케어', 'BEST');
+    pool.__best = { t: Date.now(), items: (await call(`${BASE}/bestcategories/${BEST_BEAUTY_ID}`, { limit: 12 }, env)).map(slim) };
   } catch (e) { console.error('best', e.message); errors.push('best: ' + e.message); }
-  for (const [cat, kws] of Object.entries(CATEGORIES)) {
-    for (const kw of kws) {
-      try {
-        if (!(await allowSearch(env))) { errors.push('search ' + kw + ': 시간당 호출 한도 보호로 건너뜀'); continue; }
-        add(await call(`${BASE}/search`, { keyword: kw, limit: PER_KEYWORD }, env), cat, '');
-      }
-      catch (e) { console.error('search', kw, e.message); errors.push('search ' + kw + ': ' + e.message); }
+  const order = KW_ALL.slice().sort((a, b) => (((pool[a[1]] && pool[a[1]].t) || 0) - ((pool[b[1]] && pool[b[1]].t) || 0)) || ((have.has(a[0]) ? 1 : 0) - (have.has(b[0]) ? 1 : 0)));
+  let done = 0;
+  for (const [cat, kw] of order) {
+    if (done >= PER_RUN) break;
+    try {
+      if (!(await allowSearch(env))) { errors.push('search ' + kw + ': 시간당 호출 한도 보호로 건너뜀'); break; }
+      pool[kw] = { t: Date.now(), cat, items: (await call(`${BASE}/search`, { keyword: kw, limit: PER_KEYWORD }, env)).map(slim) };
+      done++;
+    } catch (e) { console.error('search', kw, e.message); errors.push('search ' + kw + ': ' + e.message); }
+  }
+  for (const k of Object.keys(pool)) if (k !== '__best' && !KW_ALL.some(x => x[1] === k)) delete pool[k];
+  await env.DATA.put('pool', JSON.stringify(pool));
+
+  if (pool.__best) add(pool.__best.items, '스킨케어', 'BEST');
+  for (const [cat, kw] of KW_ALL) if (pool[kw]) add(pool[kw].items, cat, '');
+
+  // 아직 한 번도 불러오지 못한 카테고리는 이전 상품을 그대로 유지한다 (목록이 갑자기 줄지 않게)
+  const fresh = new Set(products.map(p => p.category));
+  const kept = [];
+  if (prev && prev.products) {
+    for (const p of prev.products) {
+      if (fresh.has(p.category) || seen.has(p.id) || names.has(String(p.name || '').toLowerCase().replace(/\s+/g, ''))) continue;
+      kept.push({ ...p, keep: true });
     }
   }
+
   if (products.length) {
     // 쿠팡 링크를 4자리 짧은 링크로 바꾸고 원본은 따로 보관
     const links = JSON.parse((await env.DATA.get('links')) || '{}');
@@ -123,10 +153,11 @@ async function refresh(env) {
     for (const k of keys.slice(0, Math.max(0, keys.length - 3000))) delete links[k];
     await env.DATA.put('links', JSON.stringify(links));
     linksCache = { t: 0, v: {} };
-    try { await recordPrices(env, products.map(x => ({ ...x }))); } catch (e) { console.error('price', e.message); }
-    await env.DATA.put('products', JSON.stringify({ updatedAt: new Date().toISOString(), categories: ['전체', ...Object.keys(CATEGORIES)], products }));
+    const all = [...products, ...kept.map(({ keep, ...x }) => x)];
+    try { await recordPrices(env, all.map(x => ({ ...x }))); } catch (e) { console.error('price', e.message); }
+    await env.DATA.put('products', JSON.stringify({ updatedAt: new Date().toISOString(), categories: ['전체', ...Object.keys(CATEGORIES)], products: all }));
   }
-  const status = { at: new Date().toISOString(), count: products.length, errors: errors.slice(0, 8) };
+  const status = { at: new Date().toISOString(), count: products.length + kept.length, fresh: products.length, searched: done, errors: errors.slice(0, 8) };
   await env.DATA.put('status', JSON.stringify(status));
   return status;
 }
