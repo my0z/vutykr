@@ -42,6 +42,7 @@
   const setTitle = t => { document.title = t; };
   let timer;
   const narrow = on => view.classList.toggle('narrow', on);
+  const ilink = p => `href="/item/${esc(p.id)}"`;
   const link = (p, extra) => `href="${esc(p.url)}" target="_blank" rel="sponsored noopener nofollow"${extra || ''}`;
 
   function nav(cur) {
@@ -52,8 +53,8 @@
   }
 
   const ranked = () => products.products.map((p, i) => ({ ...p, rank: i + 1 })).sort((a, b) => (clicks[b.id] || 0) - (clicks[a.id] || 0) || a.rank - b.rank);
-  const card = (p, i, o = {}) => `<a class="pc" ${link(p)} style="animation-delay:${Math.min(i, 10) * 30}ms">
-    <div class="pi">${img(p)}${o.rank ? `<span class="rkb ${i + (o.off || 0) < 3 ? 'top' : ''}">${i + 1 + (o.off || 0)}</span>` : ''}${p.rocket ? '<span class="rt">🚀 로켓배송</span>' : ''}</div>
+  const card = (p, i, o = {}) => `<a class="pc" ${ilink(p)} style="animation-delay:${Math.min(i, 10) * 30}ms">
+    <div class="pi">${img(p)}${o.rank ? `<span class="rkb ${i + (o.off || 0) < 3 ? 'top' : ''}">${i + 1 + (o.off || 0)}</span>` : ''}</div>
     <div class="cn">${esc(p.category)}</div><h3>${esc(p.name)}</h3><div class="pp">${won(p.price)}</div>${clicks[p.id] ? `<div class="hot">🔥 ${clicks[p.id]}회 클릭</div>` : ''}<div class="bt"><span>상품보기</span></div></a>`;
 
   function home() {
@@ -77,7 +78,7 @@
     let top3 = take(r.filter(p => p.image), 4);
     if (!top3.length) top3 = take(r, 1);
     const railP = take(r, 12);
-    const slides = top3.map((p, i) => `<a class="slide s${i % 4}" ${link(p)}><div class="bg">${img(p, i === 0, 'main')}</div><div class="tx"><small>🏆 오늘의 랭킹 ${i + 1}위</small><h2>${esc(p.name)}</h2><div class="pr">${won(p.price)}</div><span class="go">상품보기 →</span></div></a>`).join('');
+    const slides = top3.map((p, i) => `<a class="slide s${i % 4}" ${ilink(p)}><div class="bg">${img(p, i === 0, 'main')}</div><div class="tx"><small>🏆 오늘의 랭킹 ${i + 1}위</small><h2>${esc(p.name)}</h2><div class="pr">${won(p.price)}</div><span class="go">상품보기 →</span></div></a>`).join('');
     const cats = CATS.map(c => ({ c, l: take(r.filter(p => p.category === c), 5) })).filter(x => x.l.length);
     view.innerHTML = `
       <section class="hero"><div class="car" id="car">${slides || '<div class="slide s0 on"><div class="tx"><small>🌸 쁘띠.끄</small><h2>뷰티 인기템을 준비하고 있어요</h2></div></div>'}<button class="cb l" aria-label="이전">‹</button><button class="cb r" aria-label="다음">›</button><div class="dots" id="dots"></div></section>`.replace('</section>', '</div><div class="tiles"><a class="tile t1" href="/c/%EC%84%A0%EC%BC%80%EC%96%B4"><b>☀️ 선케어 모아보기</b><span>자외선 차단 인기템</span></a><a class="tile t2" href="#/talk"><b>💬 수다방</b><span>후기와 꿀팁 구경하기</span></a></div></section>') + `
@@ -124,7 +125,7 @@
     draw();
   }
 
-  const adCard = p => `<a class="ad" href="${esc(p.url)}" target="_blank" rel="sponsored noopener nofollow"><div class="th">${img(p)}</div><div class="tx"><small>추천 상품</small><h4>${esc(p.name)}</h4><b>${won(p.price)}</b></div><span class="go">상품보기</span></a>`;
+  const adCard = p => `<a class="ad" href="/item/${esc(p.id)}"><div class="th">${img(p)}</div><div class="tx"><small>추천 상품</small><h4>${esc(p.name)}</h4><b>${won(p.price)}</b></div><span class="go">상품보기</span></a>`;
   const item = (p, i) => `<a class="item ${p.pinned ? 'pin' : ''}" href="#/p/${p.id}" style="animation-delay:${Math.min(i, 10) * 35}ms">
     <span class="bd ${p.board}">${NAME[p.board] || ''}</span>${p.pinned ? '📌' : ''}<h2>${esc(p.title)}</h2><p class="ex">${esc(p.ex)}</p>
     <div class="meta"><b>${esc(p.nick)}</b><span>${ago(p.ts)}</span><span>👁 ${p.views}</span><span>❤ ${p.likes}</span><span>💬 ${p.ccount}</span></div></a>`;
@@ -196,6 +197,12 @@
   function route() {
     clearInterval(timer);
     let h = location.hash.replace(/^#/, '');
+    if (!h && /^\/item\/\d+$/.test(location.pathname)) {
+      narrow(false);
+      const el = document.querySelector('[data-cat]');
+      nav(el ? el.dataset.cat : '');
+      return;
+    }
     if (!h) { const pp = decodeURIComponent(location.pathname); h = /^\/(c\/.+|all)$/.test(pp) ? pp : '/'; }
     let m;
     scrollTo(0, 0);

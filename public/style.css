@@ -124,3 +124,26 @@ footer{background:var(--card);border-top:1px solid var(--line);color:var(--mute)
 @media(max-width:760px){#promo{aspect-ratio:16/5;margin:8px auto}}
 
 .slide .bg.noimg{display:none}
+
+/* 대가성 문구: 눈에 잘 띄게 */
+.disc{margin:14px 0;padding:12px 14px;border:1.5px solid var(--p1);border-radius:12px;background:var(--soft);color:var(--ink);font-size:.95rem;font-weight:700;line-height:1.5}
+footer .disc{color:var(--ink);max-width:720px;margin:12px auto}
+
+/* 상품 본문 페이지 */
+.ip{max-width:980px;margin:0 auto}
+.crumb{font-size:.82rem;color:var(--mute);margin-bottom:14px}.crumb a:hover{color:var(--p1)}
+.ip-top{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:24px;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:20px;margin-bottom:22px}
+.ip-img{aspect-ratio:1;border-radius:18px;overflow:hidden;background:#fff;display:grid;place-items:center;font-size:4rem}.ip-img img{width:100%;height:100%;object-fit:contain}
+.ip-info h1{margin:8px 0 10px;font-size:1.4rem;line-height:1.4;font-weight:800;word-break:keep-all}
+.ip-price{font-size:2rem;font-weight:900;margin:6px 0}.ip-price small{font-size:1rem;margin-left:2px}
+.ip-note{font-size:.82rem;color:var(--mute);margin:6px 0 12px;line-height:1.5}
+.ip-cta{display:block;text-align:center;background:var(--grad);color:#fff;padding:15px;border-radius:14px;font-weight:900;font-size:1.05rem;margin-top:8px;transition:.2s}.ip-cta:hover{filter:brightness(1.08);transform:translateY(-2px)}
+.ip section{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;margin-bottom:16px}
+.ip h2{margin:0 0 12px;font-size:1.15rem}.ip p{line-height:1.7}
+.ip-table{width:100%;border-collapse:collapse;font-size:.92rem}.ip-table th,.ip-table td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}.ip-table th{width:34%;color:var(--mute);font-weight:700}
+.ip-table.cmp th{width:auto}.ip-table.cmp td:last-child{white-space:nowrap;text-align:right;font-weight:800}.ip-table.cmp tr.me{background:var(--soft)}.ip-table.cmp tr.me a{font-weight:900;color:var(--p1)}
+.spark{width:100%;height:auto;color:var(--p1);background:var(--soft);border-radius:14px;margin-bottom:10px}
+.ip-tips{margin:0;padding-left:20px;line-height:1.8}.ip-tips li{margin-bottom:6px}
+.ip-sim{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.ip-sim a{display:flex;flex-direction:column;gap:6px;font-size:.84rem}
+.ip-sim img,.ip-sim span{width:100%;aspect-ratio:1;object-fit:contain;background:#fff;border-radius:12px;border:1px solid var(--line);display:grid;place-items:center}.ip-sim b{font-weight:600;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.ip-sim em{font-style:normal;font-weight:900}
+@media(max-width:760px){.ip-top{grid-template-columns:1fr}.ip-sim{grid-template-columns:repeat(2,minmax(0,1fr))}}

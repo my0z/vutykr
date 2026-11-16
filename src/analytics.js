@@ -9,7 +9,10 @@ function init(env) {
       env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_hits_ts ON hits (ts)'),
       env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_hits_iph ON hits (iph, ts)'),
       env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_hits_type ON hits (type, bot, ts)'), // 클릭 집계가 방문 행까지 읽지 않게
-      env.DB.prepare('CREATE TABLE IF NOT EXISTS budget (day TEXT PRIMARY KEY, n INTEGER)')
+      env.DB.prepare('CREATE TABLE IF NOT EXISTS budget (day TEXT PRIMARY KEY, n INTEGER)'),
+      env.DB.prepare('CREATE TABLE IF NOT EXISTS price_hist (pid TEXT, ts INTEGER, price INTEGER)'),
+      env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_price_hist ON price_hist (pid, ts)'),
+      env.DB.prepare('CREATE TABLE IF NOT EXISTS price_last (pid TEXT PRIMARY KEY, price INTEGER, ts INTEGER)')
     ]);
   })());
 }
@@ -269,5 +272,30 @@ export async function pruneOld(env) {
     await init(env);
     await env.DB.prepare('DELETE FROM hits WHERE ts<?').bind(Date.now() - 90 * 86400e3).run();
     await env.DB.prepare('DELETE FROM budget WHERE day<?').bind(utcDay(-30)).run();
+    await env.DB.prepare('DELETE FROM price_hist WHERE ts<?').bind(Date.now() - 400 * 86400e3).run();
   } catch (e) {}
+}
+
+// ---- 가격 기록: 값이 바뀐 상품만 한 줄씩 쌓는다 ----
+export async function recordPrices(env, products) {
+  if (!env.DB) return;
+  await init(env);
+  const last = new Map(((await env.DB.prepare('SELECT pid, price FROM price_last').all()).results || []).map(r => [r.pid, r.price]));
+  const now = Date.now();
+  const st = [];
+  for (const p of products) {
+    const pr = Number(p.price) || 0;
+    if (!pr || last.get(String(p.id)) === pr) continue;
+    st.push(env.DB.prepare('INSERT INTO price_hist (pid,ts,price) VALUES (?,?,?)').bind(String(p.id), now, pr));
+    st.push(env.DB.prepare('INSERT INTO price_last (pid,price,ts) VALUES (?,?,?) ON CONFLICT(pid) DO UPDATE SET price=excluded.price, ts=excluded.ts').bind(String(p.id), pr, now));
+  }
+  if (st.length) await env.DB.batch(st);
+}
+
+export async function getHist(env, id) {
+  if (!env.DB) return [];
+  try {
+    await init(env);
+    return ((await env.DB.prepare('SELECT ts, price FROM price_hist WHERE pid=? ORDER BY ts LIMIT 200').bind(String(id)).all()).results) || [];
+  } catch (e) { return []; }
 }

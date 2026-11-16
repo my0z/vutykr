@@ -1,5 +1,5 @@
 import { seo } from './seo.js';
-import { track, admin, clickCounts, countRequest, overBudget, pruneOld } from './analytics.js';
+import { track, admin, clickCounts, countRequest, overBudget, pruneOld, recordPrices, getHist } from './analytics.js';
 import { handle as community } from './community.js';
 
 const HOST = 'https://api-gateway.coupang.com';
@@ -7,11 +7,11 @@ const BASE = '/v2/providers/affiliate_open_api/apis/openapi/v1/products';
 
 // 카테고리별 검색어와 베스트 카테고리 ID 설정
 const CATEGORIES = {
-  '스킨케어': ['토너', '에센스', '크림'],
-  '선케어': ['선크림', '선스틱'],
+  '스킨케어': ['토너', '에센스'],
+  '선케어': ['선크림'],
   '클렌징': ['클렌징폼', '클렌징오일'],
   '메이크업': ['쿠션', '립틴트'],
-  '바디헤어': ['바디로션', '샴푸']
+  '바디헤어': ['샴푸']
 };
 const BEST_BEAUTY_ID = 1010;
 const PER_KEYWORD = 6;
@@ -67,6 +67,18 @@ const norm = (p, category, badge = '') => ({
   badge
 });
 
+// 쿠팡 파트너스 검색 API는 시간당 10회까지라서 안전하게 8회까지만 쓴다 (초과하면 API가 막힐 수 있다)
+async function allowSearch(env) {
+  const hour = Math.floor(Date.now() / 3600e3);
+  let o = null;
+  try { o = JSON.parse((await env.DATA.get('apiq')) || 'null'); } catch (e) {}
+  if (!o || o.h !== hour) o = { h: hour, n: 0 };
+  if (o.n >= 8) return false;
+  o.n++;
+  await env.DATA.put('apiq', JSON.stringify(o), { expirationTtl: 3700 });
+  return true;
+}
+
 async function refresh(env) {
   const errors = [];
   const seen = new Set();
@@ -86,7 +98,10 @@ async function refresh(env) {
   } catch (e) { console.error('best', e.message); errors.push('best: ' + e.message); }
   for (const [cat, kws] of Object.entries(CATEGORIES)) {
     for (const kw of kws) {
-      try { add(await call(`${BASE}/search`, { keyword: kw, limit: PER_KEYWORD }, env), cat, ''); }
+      try {
+        if (!(await allowSearch(env))) { errors.push('search ' + kw + ': 시간당 호출 한도 보호로 건너뜀'); continue; }
+        add(await call(`${BASE}/search`, { keyword: kw, limit: PER_KEYWORD }, env), cat, '');
+      }
       catch (e) { console.error('search', kw, e.message); errors.push('search ' + kw + ': ' + e.message); }
     }
   }
@@ -109,6 +124,7 @@ async function refresh(env) {
     for (const k of keys.slice(0, Math.max(0, keys.length - 3000))) delete links[k];
     await env.DATA.put('links', JSON.stringify(links));
     linksCache = { t: 0, v: {} };
+    try { await recordPrices(env, products.map(x => ({ ...x }))); } catch (e) { console.error('price', e.message); }
     await env.DATA.put('products', JSON.stringify({ updatedAt: new Date().toISOString(), categories: ['전체', ...Object.keys(CATEGORIES)], products }));
   }
   const status = { at: new Date().toISOString(), count: products.length, errors: errors.slice(0, 8) };
@@ -222,7 +238,7 @@ export default {
       }
     }
     if (path === '/' || path === '/index.html') ctx.waitUntil(track(env, req, { type: 'view' }));
-    { const sr = await seo(req, env, url, ctx, { products: getProducts, clicks: () => getClicks(env, ctx) }); if (sr) return sr; }
+    { const sr = await seo(req, env, url, ctx, { products: getProducts, clicks: () => getClicks(env, ctx), hist: id => getHist(env, id) }); if (sr) return sr; }
     if (url.pathname === '/api/debug') {
       const info = { version: env.CF_VERSION_METADATA && env.CF_VERSION_METADATA.id, versionAt: env.CF_VERSION_METADATA && env.CF_VERSION_METADATA.timestamp, envKeys: Object.keys(env), hasKeys: !!(env.COUPANG_ACCESS_KEY && env.COUPANG_SECRET_KEY), keyLen: [(env.COUPANG_ACCESS_KEY || '').length, (env.COUPANG_SECRET_KEY || '').length] };
       if (url.searchParams.get('run') === '1' && info.hasKeys && !(await env.DATA.get('lock'))) {
