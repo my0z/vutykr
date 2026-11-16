@@ -9,9 +9,16 @@
   const won = n => n ? Number(n).toLocaleString('ko-KR') + '원' : '가격 확인';
   const img = (p, eager, cls) => {
     if (!p.image) return cls ? '' : '🌸';
-    const err = cls ? 'this.remove()' : "this.replaceWith('🌸')";
     const c = cls ? ` class="${cls}"` : '';
-    return eager ? `<img${c} src="/i/${esc(p.id)}" fetchpriority="high" decoding="async" alt="" onerror="${err}">` : `<img${c} data-src="/i/${esc(p.id)}" decoding="async" alt="" onerror="${err}">`;
+    const a = `data-id="${esc(p.id)}" data-b="${cls ? 1 : ''}" decoding="async" alt="" onerror="__ie(this)"`;
+    return eager ? `<img${c} src="/i/${esc(p.id)}" fetchpriority="high" ${a}>` : `<img${c} data-src="/i/${esc(p.id)}" ${a}>`;
+  };
+  // 이미지 로딩에 실패하면 두 번까지 다시 시도하고 그래도 안 되면 대체 표시
+  window.__ie = el => {
+    const n = +el.dataset.t || 0;
+    if (n < 2) { el.dataset.t = n + 1; setTimeout(() => { el.src = `/i/${el.dataset.id}?r=${n + 1}`; }, 1000 * (n + 1)); }
+    else if (el.dataset.b) el.parentNode.classList.add('noimg');
+    else el.replaceWith('🌸');
   };
   // 썸네일은 화면에 들어오기 직전에만 불러온다
   const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => {
