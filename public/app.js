@@ -9,14 +9,15 @@
   const won = n => n ? Number(n).toLocaleString('ko-KR') + '원' : '가격 확인';
   const img = (p, eager, cls) => {
     if (!p.image) return cls ? '' : '🌸';
+    const u = esc(String(p.image).replace(/^http:/, 'https:'));
     const c = cls ? ` class="${cls}"` : '';
-    const a = `data-id="${esc(p.id)}" data-b="${cls ? 1 : ''}" decoding="async" alt="" onerror="__ie(this)"`;
-    return eager ? `<img${c} src="/i/${esc(p.id)}" fetchpriority="high" ${a}>` : `<img${c} data-src="/i/${esc(p.id)}" ${a}>`;
+    const a = `data-u="${u}" data-b="${cls ? 1 : ''}" decoding="async" referrerpolicy="no-referrer" alt="" onerror="__ie(this)"`;
+    return eager ? `<img${c} src="${u}" fetchpriority="high" ${a}>` : `<img${c} data-src="${u}" ${a}>`;
   };
   // 이미지 로딩에 실패하면 두 번까지 다시 시도하고 그래도 안 되면 대체 표시
   window.__ie = el => {
     const n = +el.dataset.t || 0;
-    if (n < 2) { el.dataset.t = n + 1; setTimeout(() => { el.src = `/i/${el.dataset.id}?r=${n + 1}`; }, 1000 * (n + 1)); }
+    if (n < 2) { el.dataset.t = n + 1; setTimeout(() => { el.removeAttribute('src'); el.src = el.dataset.u; }, 1000 * (n + 1)); }
     else if (el.dataset.b) el.parentNode.classList.add('noimg');
     else el.replaceWith('🌸');
   };

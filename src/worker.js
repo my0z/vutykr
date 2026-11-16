@@ -61,9 +61,8 @@ const norm = (p, category, badge = '') => ({
   category,
   name: p.productName,
   price: p.productPrice,
-  image: p.productImage,
+  image: String(p.productImage || '').replace(/^http:/, 'https:'),
   url: p.productUrl,
-  rocket: !!p.isRocket,
   badge
 });
 
@@ -254,7 +253,7 @@ export default {
       if (hit) return hit;
       const d = await getProducts(env);
       if (d) {
-        const body = JSON.stringify({ ...d, products: d.products.map(p => ({ ...p, image: !!p.image })) }); // 원본 이미지 주소는 숨김
+        const body = JSON.stringify({ ...d, products: d.products.map(({ rocket, ...x }) => x) });
         return edgeJson(url, ctx, 300, async () => body);
       }
       // 저장된 상품이 없으면 백그라운드에서 즉시 갱신 (5분 잠금)

@@ -147,3 +147,5 @@ footer .disc{color:var(--ink);max-width:720px;margin:12px auto}
 .ip-sim{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.ip-sim a{display:flex;flex-direction:column;gap:6px;font-size:.84rem}
 .ip-sim img,.ip-sim span{width:100%;aspect-ratio:1;object-fit:contain;background:#fff;border-radius:12px;border:1px solid var(--line);display:grid;place-items:center}.ip-sim b{font-weight:600;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.ip-sim em{font-style:normal;font-weight:900}
 @media(max-width:760px){.ip-top{grid-template-columns:1fr}.ip-sim{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.disc-bar{background:var(--card);border-bottom:1px solid var(--line)}.disc-bar .disc{margin:10px 0;text-align:center}
