@@ -98,7 +98,8 @@
     const rail = $('rail');
     view.querySelector('.rb.l').onclick = () => rail.scrollBy({ left: -rail.clientWidth * .8, behavior: 'smooth' });
     view.querySelector('.rb.r').onclick = () => rail.scrollBy({ left: rail.clientWidth * .8, behavior: 'smooth' });
-    api('/api/posts?sort=new').then(d => { $('posts').innerHTML = d.posts.slice(0, 3).map(p => `<a class="pt" href="#/p/${p.id}"><span class="bd ${p.board}">${NAME[p.board] || ''}</span><h4>${esc(p.title)}</h4><p>${esc(p.ex)}</p></a>`).join('') || '<p class="hint">아직 글이 없어요</p>'; }).catch(() => {});
+    const loadPosts = () => api('/api/posts?sort=new').then(d => { $('posts').innerHTML = d.posts.slice(0, 3).map(p => `<a class="pt" href="#/p/${p.id}"><span class="bd ${p.board}">${NAME[p.board] || ''}</span><h4>${esc(p.title)}</h4><p>${esc(p.ex)}</p></a>`).join('') || '<p class="hint">아직 글이 없어요</p>'; }).catch(() => {});
+    if (io) { const po = new IntersectionObserver(es => { if (es[0].isIntersecting) { po.disconnect(); loadPosts(); } }, { rootMargin: '300px' }); po.observe($('posts')); } else loadPosts();
   }
 
   // 카테고리 / 전체 / 검색 결과 목록 (클릭 수는 실제 집계)

@@ -7,7 +7,9 @@ function init(env) {
     try { await env.DB.prepare('ALTER TABLE hits ADD COLUMN iph TEXT').run(); } catch (e) {} // 이미 있으면 무시
     await env.DB.batch([
       env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_hits_ts ON hits (ts)'),
-      env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_hits_iph ON hits (iph, ts)')
+      env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_hits_iph ON hits (iph, ts)'),
+      env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_hits_type ON hits (type, bot, ts)'), // 클릭 집계가 방문 행까지 읽지 않게
+      env.DB.prepare('CREATE TABLE IF NOT EXISTS budget (day TEXT PRIMARY KEY, n INTEGER)')
     ]);
   })());
 }
@@ -46,6 +48,7 @@ function parseUA(ua) {
 export async function track(env, req, ev) {
   try {
     if (!env.DB) return;
+    if (await overBudget(env)) return; // 오늘 요청 한도에 가까우면 기록 쓰기를 멈춘다
     await init(env);
     const ua = req.headers.get('user-agent') || '';
     let { bot, device, browser, os } = parseUA(ua);
@@ -144,6 +147,10 @@ export async function admin(req, env, url) {
     q(env, 'SELECT * FROM hits WHERE bot=0 ORDER BY ts DESC LIMIT 40'),
     q(env, 'SELECT COUNT(*) c FROM hits WHERE bot=1 AND ts>=?', since)
   ]);
+  const bud = await env.DB.prepare('SELECT n FROM budget WHERE day=?').bind(utcDay()).first().catch(() => null);
+  let imgq = null;
+  try { imgq = JSON.parse((await env.DATA.get('imgq')) || 'null'); } catch (e) {}
+  const usage = { req: bud ? bud.n : 0, lim: Number(env.DAILY_BUDGET || 30000), img: imgq && imgq.m === utcDay().slice(0, 7) ? imgq.n : 0, imgLim: 4000 };
   const t = tot[0] || {};
   const ctr = t.v ? ((t.c || 0) / t.v * 100).toFixed(1) : '0.0';
   const maxD = Math.max(1, ...daily.map(r => Math.max(r.v, r.c)));
@@ -181,6 +188,8 @@ button{background:var(--p1);color:#fff;border:0;border-radius:8px;padding:6px 12
 <div class="kpi"><b>${num(t.c)}</b><span>상품 클릭</span></div>
 <div class="kpi"><b>${ctr}%</b><span>클릭률</span></div>
 <div class="kpi"><b>${num(bots[0] && bots[0].c)}</b><span>제외된 봇</span></div>
+<div class="kpi"><b>${num(usage.req)}</b><span>오늘 요청 추정 (한도 ${num(usage.lim)})</span></div>
+<div class="kpi"><b>${num(usage.img)}</b><span>이번 달 이미지 변환 (한도 ${num(usage.imgLim)})</span></div>
 </section>
 <section class="box"><h2>일별 추이 (한국시간)</h2><div class="legend"><i style="background:var(--p3)"></i>방문<i style="background:var(--p1)"></i>클릭</div>${chart}</section>
 <section class="grid" style="margin-top:12px">
@@ -224,4 +233,41 @@ export async function clickCounts(env) {
     const rows = await q(env, "SELECT pid, COUNT(DISTINCT CASE WHEN iph<>'' THEN iph ELSE vid END) c FROM hits WHERE type='click' AND bot=0 AND ts>? AND pid<>'' GROUP BY pid", Date.now() - 7 * 86400e3);
     return Object.fromEntries(rows.map(r => [r.pid, r.c]));
   } catch (e) { return {}; }
+}
+
+// ---- 무료 한도 보호 ----
+const utcDay = (off = 0) => new Date(Date.now() + off * 86400e3).toISOString().slice(0, 10);
+
+// 요청 수는 5%만 표본으로 세어서 D1 쓰기를 아낀다 (표본 한 번에 20 증가)
+export function countRequest(env, ctx) {
+  if (!env.DB || Math.random() >= 0.05) return;
+  ctx.waitUntil((async () => {
+    try {
+      await init(env);
+      await env.DB.prepare('INSERT INTO budget (day,n) VALUES (?,20) ON CONFLICT(day) DO UPDATE SET n=n+20').bind(utcDay()).run();
+    } catch (e) {}
+  })());
+}
+
+let ob = { t: 0, v: false };
+export async function overBudget(env) {
+  if (!env.DB) return false;
+  if (Date.now() - ob.t < 60000) return ob.v;
+  ob.t = Date.now();
+  try {
+    await init(env);
+    const r = await env.DB.prepare('SELECT n FROM budget WHERE day=?').bind(utcDay()).first();
+    ob.v = !!r && r.n >= Number(env.DAILY_BUDGET || 30000);
+  } catch (e) {}
+  return ob.v;
+}
+
+// 오래된 접속 기록은 90일 뒤 지워 DB 읽기량과 용량을 일정하게 유지
+export async function pruneOld(env) {
+  try {
+    if (!env.DB) return;
+    await init(env);
+    await env.DB.prepare('DELETE FROM hits WHERE ts<?').bind(Date.now() - 90 * 86400e3).run();
+    await env.DB.prepare('DELETE FROM budget WHERE day<?').bind(utcDay(-30)).run();
+  } catch (e) {}
 }

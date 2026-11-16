@@ -1,5 +1,5 @@
 import { seo } from './seo.js';
-import { track, admin, clickCounts } from './analytics.js';
+import { track, admin, clickCounts, countRequest, overBudget, pruneOld } from './analytics.js';
 import { handle as community } from './community.js';
 
 const HOST = 'https://api-gateway.coupang.com';
@@ -125,6 +125,14 @@ async function getProducts(env) {
   return v;
 }
 
+const ym = () => new Date().toISOString().slice(0, 7);
+async function imgUsed(env) {
+  try { const o = JSON.parse((await env.DATA.get('imgq')) || 'null'); return o && o.m === ym() ? o.n : 0; } catch (e) { return 0; }
+}
+async function bumpImg(env) {
+  try { await env.DATA.put('imgq', JSON.stringify({ m: ym(), n: (await imgUsed(env)) + 1 })); } catch (e) {}
+}
+
 async function image(req, url, ctx, env) {
   const id = url.pathname.slice(3);
   const webp = /image\/webp/.test(req.headers.get('accept') || '');
@@ -144,11 +152,12 @@ async function image(req, url, ctx, env) {
   const buf = await up.arrayBuffer();
   let body = buf, type = up.headers.get('content-type') || 'image/jpeg';
   // 카드에 보이는 크기에 맞춰 줄이고 WebP로 바꿔 용량을 크게 줄인다 (실패하면 원본 그대로)
-  if (env.IMAGES) {
+  // 무료 한도(월 5000장)를 넘지 않도록 WebP 요청만 변환하고 월 4000장까지만 변환한다
+  if (env.IMAGES && webp && !(await overBudget(env)) && (await imgUsed(env)) < 4000) {
     try {
-      const out = await env.IMAGES.input(new Response(buf).body).transform({ width: 480, fit: 'scale-down' }).output({ format: webp ? 'image/webp' : 'image/jpeg', quality: 78 });
+      const out = await env.IMAGES.input(new Response(buf).body).transform({ width: 480, fit: 'scale-down' }).output({ format: 'image/webp', quality: 78 });
       const small = await out.response().arrayBuffer();
-      if (small.byteLength && small.byteLength < buf.byteLength) { body = small; type = webp ? 'image/webp' : 'image/jpeg'; }
+      if (small.byteLength && small.byteLength < buf.byteLength) { body = small; type = 'image/webp'; ctx.waitUntil(bumpImg(env)); }
     } catch (e) { console.error('img', e.message); }
   }
   const res = new Response(body, { headers: { 'content-type': type, 'cache-control': 'public,max-age=2592000', 'vary': 'Accept' } });
@@ -186,6 +195,7 @@ export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
     const path = url.pathname;
+    countRequest(env, ctx);
     if (path === '/0') return admin(req, env, url);
     if (/^\/i\/\d+$/.test(path)) return image(req, url, ctx, env);
     if (path === '/api/clicks') return new Response(JSON.stringify(await getClicks(env, ctx)), { headers: { 'content-type': 'application/json', 'cache-control': 'public,max-age=60,stale-while-revalidate=300' } });
@@ -241,6 +251,7 @@ export default {
     return env.ASSETS.fetch(req);
   },
   async scheduled(_evt, env, ctx) {
+    ctx.waitUntil(pruneOld(env));
     ctx.waitUntil(refresh(env));
   }
 };
