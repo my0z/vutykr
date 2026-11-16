@@ -239,9 +239,14 @@ async function edgeJson(url, ctx, ttl, make) {
 }
 
 // 클릭 집계는 KV에 저장해 두고 오래되면 뒤에서 갱신한다 (요청이 D1을 기다리지 않게)
+let clicksMemo = { t: 0, o: null };
 async function getClicks(env, ctx) {
   let o = null;
-  try { o = JSON.parse((await env.DATA.get('clicks', { cacheTtl: 60 })) || 'null'); } catch (e) {}
+  if (clicksMemo.o && Date.now() - clicksMemo.t < 60000) o = clicksMemo.o; // 같은 인스턴스에서는 KV를 다시 읽지 않는다
+  else {
+    try { o = JSON.parse((await env.DATA.get('clicks', { cacheTtl: 60 })) || 'null'); } catch (e) {}
+    clicksMemo = { t: Date.now(), o };
+  }
   if (env.DB && (!o || Date.now() - o.t > 600000)) {
     ctx.waitUntil((async () => {
       try {
@@ -314,7 +319,7 @@ export default {
     return env.ASSETS.fetch(req);
   },
   async scheduled(_evt, env, ctx) {
-    ctx.waitUntil(pruneOld(env));
+    if (new Date().getUTCHours() === 20) ctx.waitUntil(pruneOld(env)); // 하루에 한 번만 오래된 기록 정리
     ctx.waitUntil(refresh(env));
   }
 };

@@ -153,7 +153,8 @@ export async function admin(req, env, url) {
   const bud = await env.DB.prepare('SELECT n FROM budget WHERE day=?').bind(utcDay()).first().catch(() => null);
   let imgq = null;
   try { imgq = JSON.parse((await env.DATA.get('imgq')) || 'null'); } catch (e) {}
-  const usage = { req: bud ? bud.n : 0, lim: Number(env.DAILY_BUDGET || 300000), img: imgq && imgq.m === utcDay().slice(0, 7) ? imgq.n : 0, imgLim: 4000 };
+  const month = await env.DB.prepare('SELECT SUM(n) s FROM budget WHERE day>=?').bind(utcDay().slice(0, 7) + '-01').first().catch(() => null);
+  const usage = { month: month && month.s ? month.s : 0, req: bud ? bud.n : 0, lim: Number(env.DAILY_BUDGET || 300000), img: imgq && imgq.m === utcDay().slice(0, 7) ? imgq.n : 0, imgLim: 4000 };
   const t = tot[0] || {};
   const ctr = t.v ? ((t.c || 0) / t.v * 100).toFixed(1) : '0.0';
   const maxD = Math.max(1, ...daily.map(r => Math.max(r.v, r.c)));
@@ -191,7 +192,8 @@ button{background:var(--p1);color:#fff;border:0;border-radius:8px;padding:6px 12
 <div class="kpi"><b>${num(t.c)}</b><span>상품 클릭</span></div>
 <div class="kpi"><b>${ctr}%</b><span>클릭률</span></div>
 <div class="kpi"><b>${num(bots[0] && bots[0].c)}</b><span>제외된 봇</span></div>
-<div class="kpi"><b>${num(usage.req)}</b><span>오늘 요청 추정 (한도 ${num(usage.lim)})</span></div>
+<div class="kpi"><b>${num(usage.req)}</b><span>오늘 요청 추정 (경고 기준 ${num(usage.lim)})</span></div>
+<div class="kpi"><b>${num(usage.month)}</b><span>이번 달 요청 추정 (계정 포함 1000만)</span></div>
 <div class="kpi"><b>${num(usage.img)}</b><span>이번 달 이미지 변환 (한도 ${num(usage.imgLim)})</span></div>
 </section>
 <section class="box"><h2>일별 추이 (한국시간)</h2><div class="legend"><i style="background:var(--p3)"></i>방문<i style="background:var(--p1)"></i>클릭</div>${chart}</section>
