@@ -76,15 +76,19 @@
       }
       return out;
     };
-    let top3 = take(r.filter(p => p.image), 4);
-    if (!top3.length) top3 = take(r, 1);
+    // 실시간 BEST 랭킹은 순위대로 먼저 뽑는다 — 작업: 2026-11-17 18:09
     const railP = take(r, 12);
-    const slides = top3.map((p, i) => `<a class="slide s${i % 4}" ${ilink(p)}><div class="bg">${img(p, i === 0, 'main')}</div><div class="tx"><small>🏆 오늘의 랭킹 ${i + 1}위</small><h2>${esc(p.name)}</h2><div class="pr">${won(p.price)}</div><span class="go">상품보기 →</span></div></a>`).join('');
+    // 메인 배너는 홈을 불러올 때마다 이미지가 있는 상품 중 4개를 무작위로 뽑는다 (BEST 랭킹에 나온 상품은 제외) — 작업: 2026-11-17 18:09
+    const pool = r.filter(p => p.image);
+    for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+    let top3 = take(pool, 4);
+    if (!top3.length) top3 = take(r, 1);
+    const slides = top3.map((p, i) => `<a class="slide s${i % 4}" ${ilink(p)}><div class="bg">${img(p, i === 0, 'main')}</div><div class="tx"><small>🌸 오늘의 추천</small><h2>${esc(p.name)}</h2><div class="pr">${won(p.price)}</div><span class="go">상품보기 →</span></div></a>`).join('');
     const cats = CATS.map(c => ({ c, l: take(r.filter(p => p.category === c), 5) })).filter(x => x.l.length);
     view.innerHTML = `
       <section class="hero"><div class="car" id="car">${slides || '<div class="slide s0 on"><div class="tx"><small>🌸 쁘띠.끄</small><h2>인기템을 준비하고 있어요</h2></div></div>'}<button class="cb l" aria-label="이전">‹</button><button class="cb r" aria-label="다음">›</button><div class="dots" id="dots"></div></section>`.replace('</section>', '</div><div class="tiles"><a class="tile t1" href="/c/%EC%9D%98%EB%A5%98"><b>👗 여성 패션 모아보기</b><span>의류와 신발과 가방과 장신구</span></a><a class="tile t2" href="#/talk"><b>💬 수다방</b><span>후기와 꿀팁 구경하기</span></a></div></section>') + `
       <section class="icons">${[['전체', '🛍', '/all'], ...CATS.map(c => [c, ICONS[c], '/c/' + encodeURIComponent(c)]), ['수다방', '💬', '#/talk']].map(([n, e, h]) => `<a href="${h}"><i>${e}</i>${n}</a>`).join('')}</section>
-      <section class="sec"><div class="sh"><h2>🔥 실시간 <em>BEST 랭킹</em></h2><a href="/all">전체보기 ›</a></div><div class="railw"><button class="rb l" aria-label="이전">‹</button><div class="rail" id="rail">${railP.map((p, i) => card(p, i, { rank: 1, off: top3.length })).join('') || '<p class="empty">상품을 준비 중이에요</p>'}</div><button class="rb r" aria-label="다음">›</button></div></section>
+      <section class="sec"><div class="sh"><h2>🔥 실시간 <em>BEST 랭킹</em></h2><a href="/all">전체보기 ›</a></div><div class="railw"><button class="rb l" aria-label="이전">‹</button><div class="rail" id="rail">${railP.map((p, i) => card(p, i, { rank: 1 })).join('') || '<p class="empty">상품을 준비 중이에요</p>'}</div><button class="rb r" aria-label="다음">›</button></div></section>
       ${cats.map(x => `<section class="sec"><div class="sh"><h2>${ICONS[x.c]} ${esc(x.c)} <em>BEST</em></h2><a href="/c/${encodeURIComponent(x.c)}">더보기 ›</a></div><div class="pg">${x.l.map((p, i) => card(p, i)).join('')}</div></section>`).join('')}
       <section class="band"><div class="sh"><h2>💬 수다방 <em>새 글</em></h2><a href="#/talk">더보기 ›</a></div><div class="posts" id="posts"><p class="hint">불러오는 중</p></div><a class="btn main" style="margin-top:14px" href="#/write">✏️ 글쓰기</a></section>${faqHtml()}`;
     // 캐러셀
