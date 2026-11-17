@@ -100,7 +100,8 @@
     car.querySelector('.cb.l').onclick = () => go(cur - 1);
     car.querySelector('.cb.r').onclick = () => go(cur + 1);
     $('dots').onclick = e => { if (e.target.dataset.i) go(Number(e.target.dataset.i)); };
-    if (sl.length > 1 && !matchMedia('(prefers-reduced-motion: reduce)').matches) timer = setInterval(() => go(cur + 1), 5000);
+    // 메인 배너는 5초마다 자동으로 넘어간다 (모션 줄이기 설정이어도 멈추지 않는다 — 1번 상품에서 멈춰 보이던 문제 수정) — 작업: 2026-11-17 18:16
+    if (sl.length > 1) timer = setInterval(() => go(cur + 1), 5000);
     const rail = $('rail');
     view.querySelector('.rb.l').onclick = () => rail.scrollBy({ left: -rail.clientWidth * .8, behavior: 'smooth' });
     view.querySelector('.rb.r').onclick = () => rail.scrollBy({ left: rail.clientWidth * .8, behavior: 'smooth' });
