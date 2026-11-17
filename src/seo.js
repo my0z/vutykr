@@ -53,7 +53,8 @@ function route(p) {
 }
 
 
-const fmt = n => Number(n).toLocaleString('ko-KR');
+const NF = new Intl.NumberFormat('ko-KR');
+const fmt = n => NF.format(Number(n));
 const mdate = ts => { const d = new Date(ts + 9 * 3600e3); return `${d.getUTCMonth() + 1}월 ${d.getUTCDate()}일`; };
 
 // 상품명에 용량이 하나만 적혀 있을 때만 단위 가격을 추정한다 (묶음 상품은 계산하지 않는다)
@@ -142,7 +143,7 @@ function build(r, list) {
     }
     body += `</section>${faqHtml()}`;
     return {
-      title: SITE.title, desc: SITE.desc, canonical: abs('/'), body,
+      home: true, title: SITE.title, desc: SITE.desc, canonical: abs('/'), body,
       ld: [
         ld({ '@type': 'WebSite', name: SITE.name, url: abs('/'), description: SITE.desc, inLanguage: 'ko-KR' }),
         ld({ '@type': 'Organization', name: SITE.name, url: abs('/'), description: SITE.desc }),
@@ -173,6 +174,15 @@ function build(r, list) {
   };
 }
 
+// 메인 배너 상품은 방문마다 무작위라서 서버가 미리 받게 할 수 없다.
+// 데이터가 HTML에 들어 있으니 스크립트보다 먼저 같은 규칙으로 첫 배너 상품을 뽑아 이미지를 바로 받기 시작한다 (app.js가 같은 상품을 쓴다).
+const HERO_JS = `(function(){try{var d=window.__p[0].products,c=window.__p[1]||{},u={},n=0,k=function(p){return 'n:'+String(p.name).toLowerCase().replace(/\\s+/g,'')};
+var r=d.map(function(p,i){return{p:p,i:i}}).sort(function(a,b){return(c[b.p.id]||0)-(c[a.p.id]||0)||a.i-b.i}).map(function(x){return x.p});
+for(var i=0;i<r.length&&n<12;i++){var p=r[i];if(u[p.id]||u[k(p)])continue;u[p.id]=u[k(p)]=1;n++}
+var e=r.filter(function(p){return p.image&&!u[p.id]&&!u[k(p)]});if(!e.length)return;var h=e[Math.floor(Math.random()*e.length)];window.__h=h.id;
+var s=String(h.image).replace(/^http:/,'https:').replace(/^https:\\/\\/(?:image\\d+|img\\d+[a-z]?|static)\\.coupangcdn\\.com(\\/image\\/)/,'https://image1.coupangcdn.com$1');
+var l=document.createElement('link');l.rel='preload';l.as='image';l.href=s;l.setAttribute('fetchpriority','high');l.referrerPolicy='no-referrer';document.head.appendChild(l)}catch(e){}})();`;
+
 function inject(html, pg, img, boot) {
   const tags = [
     '<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">',
@@ -193,7 +203,7 @@ function inject(html, pg, img, boot) {
   return html
     .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(pg.title)}</title>`)
     .replace(/<meta name="description"[^>]*>/, `<meta name="description" content="${esc(pg.desc)}">`)
-    .replace(/<link rel="stylesheet" href="\/style\.css[^"]*">/, m => m + (boot ? `\n<script>window.__p=${JSON.stringify(boot).replace(/</g, '\\u003c')}</script>` : ''))
+    .replace(/<link rel="stylesheet" href="\/style\.css[^"]*">/, m => m + (boot ? `\n<script>window.__p=${JSON.stringify(boot).replace(/</g, '\\u003c')}</script>` + (pg.home ? `\n<script>${HERO_JS}</script>` : '') : ''))
     .replace('</head>', tags + '\n</head>')
     .replace(/<main id="view" class="wrap">[\s\S]*?<\/main>/, () => `<main id="view" class="wrap">${pg.body}</main>`)
     .replace('</body>', () => `<script type="application/json" id="faq-data">${JSON.stringify(SITE.faq).replace(/</g, '\\u003c')}</script>\n</body>`);
@@ -237,7 +247,7 @@ export async function seo(req, env, url, ctx, h = {}) {
     const r = route(p);
     if (!r) return null;
     const cache = caches.default;
-    const key = new Request(url.origin + url.pathname + '?v=14');
+    const key = new Request(url.origin + url.pathname + '?v=15');
     const gen = async () => {
       const t0 = Date.now();
       // 템플릿과 상품과 클릭과 가격 기록을 동시에 읽는다
@@ -258,10 +268,6 @@ export async function seo(req, env, url, ctx, h = {}) {
       const pg = build(rr, list);
       if (rr.t === 'item' && rr.p.image) pg.preload = rr.p.image;
       const first = list.find(x => x.image);
-      if (rr.t === 'home') { // 첫 화면 대표 이미지는 미리 받기 시작한다 (클릭 순위가 앱과 같은 방식)
-        const hero = list.map((p, i) => ({ p, i })).sort((x, y) => (clicks[y.p.id] || 0) - (clicks[x.p.id] || 0) || x.i - y.i).map(x => x.p).find(p => p.image);
-        if (hero) pg.preload = hero.image;
-      }
       // 상품 본문 페이지는 상품 목록이 필요 없어서 비워 용량을 줄인다
       const boot = d ? [rr.t === 'item' ? { updatedAt: d.updatedAt, categories: d.categories, meta: d.meta, products: [] } : { ...d, products: list.map(({ rocket, ...x }) => x) }, clicks] : null;
       const html = inject(await tpl.text(), pg, (rr.t === 'item' ? (rr.p.image || '') : first ? first.image : ''), boot);

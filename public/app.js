@@ -6,16 +6,24 @@
   const NAME = { notice: '공지', review: '후기', qna: '질문', tip: '꿀팁', free: '자유' };
   let products = { products: [], categories: ['전체'] };
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const won = n => n ? Number(n).toLocaleString('ko-KR') + '원' : '가격 확인';
-  const img = (p, eager, cls) => {
+  const nf = new Intl.NumberFormat('ko-KR');
+  const won = n => n ? nf.format(Number(n)) + '원' : '가격 확인';
+  // 쿠팡 이미지 서버는 image3 img4a static 등 호스트가 20개 넘게 나뉘어 있어 호스트마다 연결을 새로 맺는다.
+  // 같은 경로를 image1 하나로 받으면 연결 하나를 재사용한다. 실패하면 원래 주소로 한 번 더 시도한다.
+  const SHARD = /^https:\/\/(?:image\d+|img\d+[a-z]?|static)\.coupangcdn\.com(\/image\/)/;
+  const img = (p, eager, cls, later) => {
     if (!p.image) return cls ? '' : '🌸';
-    const u = esc(String(p.image).replace(/^http:/, 'https:'));
+    const o = String(p.image).replace(/^http:/, 'https:');
+    const f = o.replace(SHARD, 'https://image1.coupangcdn.com$1');
+    const u = esc(f);
     const c = cls ? ` class="${cls}"` : '';
-    const a = `data-u="${u}" data-b="${cls ? 1 : ''}" decoding="async" referrerpolicy="no-referrer" alt="" onerror="__ie(this)"`;
-    return eager ? `<img${c} src="${u}" fetchpriority="high" ${a}>` : `<img${c} data-src="${u}" ${a}>`;
+    const a = `data-u="${u}"${f !== o ? ` data-o="${esc(o)}"` : ''} data-b="${cls ? 1 : ''}" decoding="async" referrerpolicy="no-referrer" alt="" onerror="__ie(this)"`;
+    if (eager) return `<img${c} src="${u}" fetchpriority="high" ${a}>`;
+    return later ? `<img${c} data-later="${u}" ${a}>` : `<img${c} data-src="${u}" ${a}>`;
   };
   // 이미지 로딩에 실패하면 두 번까지 다시 시도하고 그래도 안 되면 대체 표시
   window.__ie = el => {
+    if (el.dataset.o && !el.dataset.f) { el.dataset.f = 1; el.dataset.u = el.dataset.o; el.src = el.dataset.o; return; } // 다른 서버 주소로 즉시 한 번 더
     const n = +el.dataset.t || 0;
     if (n < 2) { el.dataset.t = n + 1; setTimeout(() => { el.removeAttribute('src'); el.src = el.dataset.u; }, 1000 * (n + 1)); }
     else if (el.dataset.b) el.parentNode.classList.add('noimg');
@@ -54,7 +62,7 @@
   }
 
   const ranked = () => products.products.map((p, i) => ({ ...p, rank: i + 1 })).sort((a, b) => (clicks[b.id] || 0) - (clicks[a.id] || 0) || a.rank - b.rank);
-  const card = (p, i, o = {}) => `<a class="pc" ${ilink(p)} style="animation-delay:${Math.min(i, 10) * 30}ms">
+  const card = (p, i, o = {}) => `<a class="pc${i < 8 ? ' a' : ''}" ${ilink(p)}${i < 8 ? ` style="animation-delay:${i * 30}ms"` : ''}>
     <div class="pi">${img(p)}${o.rank ? `<span class="rkb ${i + (o.off || 0) < 3 ? 'top' : ''}">${i + 1 + (o.off || 0)}</span>` : ''}</div>
     <div class="cn">${esc(p.category)}</div><h3>${esc(p.name)}</h3><div class="pp">${won(p.price)}</div><div class="bt"><span>상품보기</span></div></a>`;
 
@@ -81,9 +89,14 @@
     // 메인 배너는 홈을 불러올 때마다 이미지가 있는 상품 중 4개를 무작위로 뽑는다 (BEST 랭킹에 나온 상품은 제외) — 작업: 2026-11-17 18:09
     const pool = r.filter(p => p.image);
     for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+    if (window.__h) { // HTML이 미리 이미지를 받기 시작한 상품을 첫 슬라이드로 쓴다
+      const k = pool.findIndex(p => p.id === window.__h);
+      if (k > 0) pool.unshift(pool.splice(k, 1)[0]);
+      window.__h = null;
+    }
     let top3 = take(pool, 4);
     if (!top3.length) top3 = take(r, 1);
-    const slides = top3.map((p, i) => `<a class="slide s${i % 4}" ${ilink(p)}><div class="bg">${img(p, i === 0, 'main')}</div><div class="tx"><small>🌸 오늘의 추천</small><h2>${esc(p.name)}</h2><div class="pr">${won(p.price)}</div><span class="go">상품보기 →</span></div></a>`).join('');
+    const slides = top3.map((p, i) => `<a class="slide s${i % 4}" ${ilink(p)}><div class="bg">${img(p, i === 0, 'main', i > 0)}</div><div class="tx"><small>🌸 오늘의 추천</small><h2>${esc(p.name)}</h2><div class="pr">${won(p.price)}</div><span class="go">상품보기 →</span></div></a>`).join('');
     const cats = CATS.map(c => ({ c, l: take(r.filter(p => p.category === c), 5) })).filter(x => x.l.length);
     view.innerHTML = `
       <section class="hero"><div class="car" id="car">${slides || '<div class="slide s0 on"><div class="tx"><small>🌸 쁘띠.끄</small><h2>인기템을 준비하고 있어요</h2></div></div>'}<button class="cb l" aria-label="이전">‹</button><button class="cb r" aria-label="다음">›</button><div class="dots" id="dots"></div></section>`.replace('</section>', '</div><div class="tiles"><a class="tile t1" href="/c/%EC%9D%98%EB%A5%98"><b>👗 여성 패션 모아보기</b><span>의류와 신발과 가방과 장신구</span></a><a class="tile t2" href="#/talk"><b>💬 수다방</b><span>후기와 꿀팁 구경하기</span></a></div></section>') + `
@@ -95,8 +108,10 @@
     const car = $('car'), sl = [...car.querySelectorAll('.slide')];
     let cur = 0;
     $('dots').innerHTML = sl.map((_, i) => `<i data-i="${i}"></i>`).join('');
-    const go = i => { cur = (i + sl.length) % sl.length; sl.forEach((s, k) => s.classList.toggle('on', k === cur)); $('dots').querySelectorAll('i').forEach((d, k) => d.classList.toggle('on', k === cur)); };
+    const warm = k => { const im = sl[(k + sl.length) % sl.length].querySelector('img[data-later]'); if (im) { im.src = im.dataset.later; im.removeAttribute('data-later'); } };
+    const go = i => { cur = (i + sl.length) % sl.length; warm(cur); warm(cur + 1); sl.forEach((s, k) => s.classList.toggle('on', k === cur)); $('dots').querySelectorAll('i').forEach((d, k) => d.classList.toggle('on', k === cur)); };
     go(0);
+    setTimeout(() => warm(1), 2500);
     car.querySelector('.cb.l').onclick = () => go(cur - 1);
     car.querySelector('.cb.r').onclick = () => go(cur + 1);
     $('dots').onclick = e => { if (e.target.dataset.i) go(Number(e.target.dataset.i)); };
