@@ -22,7 +22,7 @@ window.__d = window.__p ? Promise.resolve(window.__p) : Promise.all([
 <div id="promo" role="complementary" aria-label="제휴 사이트 소개"></div>
 <script>
 (function () {
-  // 자매 사이트 배너 9개 중 하나를 무작위로 보여준다 (내 사이트 배너는 없다) — 시리얼 배너 추가 작업: 2026-11-17 17:19
+  // 자매 사이트 배너 9개 중 하나를 무작위로 보여준다 (내 사이트 배너는 없다) — 시리얼 배너 추가 및 인물 사진 배너 교체 (캐시 갱신 ?v=2) 작업: 2026-11-17 17:58
   var B = [
     ['b1','자동차용품 인기 랭킹 한눈에','https://bodcar.com/'],
     ['b2','차박 준비물 베스트 모아보기','https://bodcar.com/c/%EC%B0%A8%EB%B0%95%EC%BA%A0%ED%95%91'],
@@ -37,7 +37,7 @@ window.__d = window.__p ? Promise.resolve(window.__p) : Promise.all([
   var b = B[Math.floor(Math.random() * B.length)], el = document.getElementById('promo');
   if (!b || !el) return;
   var u = b[2] + (b[2].indexOf('?') < 0 ? '?' : '&') + 'utm_source=vuty.kr&utm_medium=banner&utm_campaign=' + b[0];
-  el.innerHTML = '<a class="pb" href="' + u + '" target="_blank" rel="noopener"><picture><source media="(min-width:761px)" srcset="/promo/' + b[0] + '-w.webp"><img src="/promo/' + b[0] + '-n.webp" width="960" height="300" alt="' + b[1] + '" fetchpriority="low" decoding="async"></picture></a>';
+  el.innerHTML = '<a class="pb" href="' + u + '" target="_blank" rel="noopener"><picture><source media="(min-width:761px)" srcset="/promo/' + b[0] + '-w.webp?v=2"><img src="/promo/' + b[0] + '-n.webp?v=2" width="960" height="300" alt="' + b[1] + '" fetchpriority="low" decoding="async"></picture></a>';
 })();
 </script>
 <div class="topbar"><div class="in"><span>🌸 여성 뷰티와 패션 인기템을 매일 자동으로 업데이트해요</span><nav><a href="#/talk">수다방</a><a href="#/write">글쓰기</a></nav></div></div>
