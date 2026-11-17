@@ -193,7 +193,7 @@ function inject(html, pg, img, boot) {
   return html
     .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(pg.title)}</title>`)
     .replace(/<meta name="description"[^>]*>/, `<meta name="description" content="${esc(pg.desc)}">`)
-    .replace('<link rel="stylesheet" href="/style.css">', m => m + (boot ? `\n<script>window.__p=${JSON.stringify(boot).replace(/</g, '\\u003c')}</script>` : ''))
+    .replace(/<link rel="stylesheet" href="\/style\.css[^"]*">/, m => m + (boot ? `\n<script>window.__p=${JSON.stringify(boot).replace(/</g, '\\u003c')}</script>` : ''))
     .replace('</head>', tags + '\n</head>')
     .replace(/<main id="view" class="wrap">[\s\S]*?<\/main>/, () => `<main id="view" class="wrap">${pg.body}</main>`)
     .replace('</body>', () => `<script type="application/json" id="faq-data">${JSON.stringify(SITE.faq).replace(/</g, '\\u003c')}</script>\n</body>`);
