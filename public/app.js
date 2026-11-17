@@ -117,6 +117,11 @@
     $('dots').onclick = e => { if (e.target.dataset.i) go(Number(e.target.dataset.i)); };
     // 메인 배너는 5초마다 자동으로 넘어간다 (모션 줄이기 설정이어도 멈추지 않는다 — 1번 상품에서 멈춰 보이던 문제 수정) — 작업: 2026-11-17 18:16
     if (sl.length > 1) timer = setInterval(() => go(cur + 1), 5000);
+    // 화면 밖 구역은 그리기를 건너뛰지만 화면 가까이(1200px) 오면 미리 그려서 이미지가 늦게 뜨지 않게 한다
+    if (io) {
+      const so = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.style.contentVisibility = 'visible'; so.unobserve(e.target); } }), { rootMargin: '1200px 0px' });
+      view.querySelectorAll('.sec,.band').forEach(x => so.observe(x));
+    }
     const rail = $('rail');
     view.querySelector('.rb.l').onclick = () => rail.scrollBy({ left: -rail.clientWidth * .8, behavior: 'smooth' });
     view.querySelector('.rb.r').onclick = () => rail.scrollBy({ left: rail.clientWidth * .8, behavior: 'smooth' });
