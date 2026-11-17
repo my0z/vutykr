@@ -56,7 +56,7 @@
   const ranked = () => products.products.map((p, i) => ({ ...p, rank: i + 1 })).sort((a, b) => (clicks[b.id] || 0) - (clicks[a.id] || 0) || a.rank - b.rank);
   const card = (p, i, o = {}) => `<a class="pc" ${ilink(p)} style="animation-delay:${Math.min(i, 10) * 30}ms">
     <div class="pi">${img(p)}${o.rank ? `<span class="rkb ${i + (o.off || 0) < 3 ? 'top' : ''}">${i + 1 + (o.off || 0)}</span>` : ''}</div>
-    <div class="cn">${esc(p.category)}</div><h3>${esc(p.name)}</h3><div class="pp">${won(p.price)}</div>${clicks[p.id] ? `<div class="hot">🔥 ${clicks[p.id]}회 클릭</div>` : ''}<div class="bt"><span>상품보기</span></div></a>`;
+    <div class="cn">${esc(p.category)}</div><h3>${esc(p.name)}</h3><div class="pp">${won(p.price)}</div><div class="bt"><span>상품보기</span></div></a>`;
 
   function home() {
     setTitle(HT);
