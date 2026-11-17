@@ -3,6 +3,8 @@ import { init as initCommunity, removeRow, adminNotice } from './community.js';
 let ready;
 function init(env) {
   return (ready ||= (async () => {
+    // 표가 이미 다 있으면 만들기 쿼리 열 개를 건너뛴다 (새 실행 환경마다 반복되던 약 0.5초 지연 제거)
+    try { const r = await env.DB.prepare("SELECT COUNT(*) n FROM sqlite_master WHERE name IN ('hits','budget','price_hist','price_last','idx_hits_ts','idx_hits_iph','idx_hits_type','idx_price_hist')").first(); if (r && r.n >= 8) return; } catch (e) {}
     await env.DB.prepare('CREATE TABLE IF NOT EXISTS hits (ts INTEGER, type TEXT, code TEXT, pid TEXT, name TEXT, country TEXT, city TEXT, device TEXT, browser TEXT, os TEXT, ref TEXT, lang TEXT, vid TEXT, bot INTEGER)').run();
     try { await env.DB.prepare('ALTER TABLE hits ADD COLUMN iph TEXT').run(); } catch (e) {} // 이미 있으면 무시
     await env.DB.batch([
@@ -296,8 +298,7 @@ export async function recordPrices(env, products) {
 
 export async function getHist(env, id) {
   if (!env.DB) return [];
-  try {
-    await init(env);
-    return ((await env.DB.prepare('SELECT ts, price FROM price_hist WHERE pid=? ORDER BY ts LIMIT 200').bind(String(id)).all()).results) || [];
-  } catch (e) { return []; }
+  const q = () => env.DB.prepare('SELECT ts, price FROM price_hist WHERE pid=? ORDER BY ts LIMIT 200').bind(String(id)).all();
+  try { return (await q()).results || []; } // 표가 있으면 초기화 없이 바로 조회
+  catch (e) { try { await init(env); return (await q()).results || []; } catch (e2) { return []; } }
 }

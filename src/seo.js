@@ -226,6 +226,7 @@ async function llms(env) {
   return new Response(t, { headers: headers('text/plain;charset=utf-8') });
 }
 
+const busy = new Set();
 export async function seo(req, env, url, ctx, h = {}) {
   if (req.method !== 'GET' && req.method !== 'HEAD') return null;
   try {
@@ -236,31 +237,52 @@ export async function seo(req, env, url, ctx, h = {}) {
     const r = route(p);
     if (!r) return null;
     const cache = caches.default;
-    const key = new Request(url.origin + url.pathname + '?v=11');
-    if (req.method === 'GET') { const hit = await cache.match(key); if (hit) return hit; }
-    const tpl = await env.ASSETS.fetch(new Request(new URL('/', url)));
-    if (!tpl.ok) return null;
-    const d = h.products ? await h.products(env) : await load(env);
-    let clicks = {};
-    try { if (h.clicks) clicks = await h.clicks(); } catch (e) {}
-    const list = (d && d.products) || [];
-    if (r.t === 'item') {
-      r.p = list.find(x => x.id === r.id);
-      if (!r.p) return null;
-      try { r.hist = h.hist ? await h.hist(r.id) : []; } catch (e) { r.hist = []; }
+    const key = new Request(url.origin + url.pathname + '?v=14');
+    const gen = async () => {
+      const t0 = Date.now();
+      // 템플릿과 상품과 클릭과 가격 기록을 동시에 읽는다
+      const [tpl, d, clicks, hist] = await Promise.all([
+        env.ASSETS.fetch(new Request(new URL('/', url))),
+        h.products ? h.products(env) : load(env),
+        h.clicks ? h.clicks().catch(() => ({})) : {},
+        r.t === 'item' && h.hist ? h.hist(r.id).catch(() => []) : []
+      ]);
+      if (!tpl.ok) return null;
+      const list = (d && d.products) || [];
+      const rr = { ...r };
+      if (r.t === 'item') {
+        rr.p = list.find(x => x.id === r.id);
+        if (!rr.p) return null;
+        rr.hist = hist;
+      }
+      const pg = build(rr, list);
+      if (rr.t === 'item' && rr.p.image) pg.preload = rr.p.image;
+      const first = list.find(x => x.image);
+      if (rr.t === 'home') { // 첫 화면 대표 이미지는 미리 받기 시작한다 (클릭 순위가 앱과 같은 방식)
+        const hero = list.map((p, i) => ({ p, i })).sort((x, y) => (clicks[y.p.id] || 0) - (clicks[x.p.id] || 0) || x.i - y.i).map(x => x.p).find(p => p.image);
+        if (hero) pg.preload = hero.image;
+      }
+      // 상품 본문 페이지는 상품 목록이 필요 없어서 비워 용량을 줄인다
+      const boot = d ? [rr.t === 'item' ? { updatedAt: d.updatedAt, categories: d.categories, meta: d.meta, products: [] } : { ...d, products: list.map(({ rocket, ...x }) => x) }, clicks] : null;
+      const html = inject(await tpl.text(), pg, (rr.t === 'item' ? (rr.p.image || '') : first ? first.image : ''), boot);
+      // 브라우저에는 1분 엣지에는 하루 보관하고 5분이 지나면 보여 주면서 뒤에서 새로 만든다
+      return new Response(html, { headers: { 'content-type': 'text/html;charset=utf-8', 'cache-control': 'public,max-age=60,s-maxage=86400', 'x-gen': String(Date.now()), 'server-timing': `gen;dur=${Date.now() - t0}` } });
+    };
+    if (req.method === 'GET') {
+      const hit = await cache.match(key);
+      if (hit) {
+        const age = Date.now() - Number(hit.headers.get('x-gen') || 0);
+        if (age > 300000 && ctx && !busy.has(key.url)) {
+          busy.add(key.url);
+          ctx.waitUntil((async () => { try { const n = await gen(); if (n) await cache.put(key, n); } catch (e) {} finally { busy.delete(key.url); } })());
+        }
+        return hit;
+      }
     }
-    const pg = build(r, list);
-    if (r.t === 'item' && r.p.image) pg.preload = r.p.image;
-    const first = list.find(x => x.image);
-    if (r.t === 'home') { // 첫 화면 대표 이미지는 미리 받기 시작한다 (클릭 순위가 앱과 같은 방식)
-      const hero = list.map((p, i) => ({ p, i })).sort((x, y) => (clicks[y.p.id] || 0) - (clicks[x.p.id] || 0) || x.i - y.i).map(x => x.p).find(p => p.image);
-      if (hero) pg.preload = hero.image;
-    }
-    const boot = d ? [{ ...d, products: list.map(({ rocket, ...x }) => x) }, clicks] : null; // 첫 화면에 필요한 데이터를 HTML에 함께 보낸다
-    const html = inject(await tpl.text(), pg, (r.t === 'item' ? (r.p.image || '') : first ? first.image : ''), boot);
-    const res = new Response(req.method === 'HEAD' ? null : html, { headers: { 'content-type': 'text/html;charset=utf-8', 'cache-control': 'public,max-age=60,s-maxage=600' } });
+    const res = await gen();
+    if (!res) return null;
     if (req.method === 'GET' && ctx) ctx.waitUntil(cache.put(key, res.clone()));
-    return res;
+    return req.method === 'HEAD' ? new Response(null, res) : res;
   } catch (e) {
     return null;
   }

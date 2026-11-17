@@ -59,7 +59,7 @@ a{color:inherit;text-decoration:none}button{font:inherit}
 .rb{position:absolute;top:38%;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--card);box-shadow:0 6px 16px -6px #0005;cursor:pointer;z-index:2;font-size:1.1rem}.rb.l{left:-14px}.rb.r{right:-14px}
 
 .pg{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
-.pc{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:10px;transition:.25s;animation:in .4s both}
+.pc{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:10px;transition:.25s}
 .pc:hover{transform:translateY(-6px);box-shadow:var(--shadow);border-color:var(--p1)}
 .pi{position:relative;aspect-ratio:1;border-radius:13px;overflow:hidden;background:var(--soft);display:grid;place-items:center;font-size:2.4rem}.pi img{width:100%;height:100%;object-fit:cover;transition:transform .4s}.pc:hover .pi img{transform:scale(1.06)}
 .rkb{position:absolute;left:0;top:0;min-width:34px;height:34px;padding:0 8px;border-radius:0 0 12px 0;background:var(--ink);color:var(--bg);font-weight:900;display:grid;place-items:center}.rkb.top{background:var(--grad);color:#fff}
@@ -82,7 +82,7 @@ a{color:inherit;text-decoration:none}button{font:inherit}
 .empty{text-align:center;color:var(--mute);padding:56px 0;grid-column:1/-1}.hint{color:var(--mute);font-size:.8rem}
 
 .box{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;margin-bottom:16px}.box h3{margin:0 0 12px;font-size:1rem}
-.item{display:block;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:10px;transition:.2s;animation:in .4s both}
+.item{display:block;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:10px;transition:.2s}
 .item:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:var(--p1)}.item.pin{background:linear-gradient(135deg,var(--soft),var(--card))}
 .bd{display:inline-block;font-size:.7rem;font-weight:800;padding:3px 9px;border-radius:7px;background:var(--soft);color:var(--p1);margin-right:6px}.bd.notice{background:var(--grad);color:#fff}
 .item h2{margin:8px 0 4px;font-size:1.05rem;font-weight:800;line-height:1.4}
@@ -151,3 +151,6 @@ footer .disc{color:var(--ink);max-width:720px;margin:12px auto}
 
 .disc-bar{background:var(--card);border-bottom:1px solid var(--line)}.disc-bar .disc{margin:10px 0;text-align:center}
 .ip-share{display:block;text-align:center;margin-top:10px;padding:13px;border-radius:14px;background:#000;color:#fff;font-weight:800;font-size:.95rem}.ip-share:hover{background:#222}
+/* 속도: 화면 밖 구역은 그리기를 건너뛰고 카드 등장 애니메이션은 없앤다 */
+.sec,.band,.faq{content-visibility:auto;contain-intrinsic-size:auto 460px}
+.pc,.item{animation:none!important}
