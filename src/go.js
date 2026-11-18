@@ -3,7 +3,7 @@ import { DISC } from '../sites/index.js';
 import { themeCss, logoSvg } from './shell.js';
 
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const SECONDS = 5;
+const SECONDS = 3;
 
 export function goPage(site, code, p) {
   const go = `/${code}?go=1`;
