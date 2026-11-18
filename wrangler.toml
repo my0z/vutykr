@@ -16,13 +16,16 @@ run_worker_first = ["/*", "!/style.css", "!/app.js", "!/products.json", "!/promo
 [triggers]
 crons = ["0 * * * *"]
 
-# id 생략 시 배포할 때 wrangler가 자동 생성
+# 쁘띠.끄 저장소 (기존 것을 그대로 연결)
 [[kv_namespaces]]
 binding = "DATA"
+id = "8bdd6ff58a6248e0b310bf0d2e5235c6"
 
-# 접속 통계용 D1 (id 생략 시 자동 생성)
+# 접속 통계용 D1
 [[d1_databases]]
 binding = "DB"
+database_name = "vutykr-db"
+database_id = "e78175ae-17e1-40da-bbf6-2773bb8a18fb"
 
 # 쁘띠.끄 외 두 사이트의 기존 저장소 (데이터 이전 없이 그대로 연결)
 [[kv_namespaces]]
