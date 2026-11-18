@@ -5,7 +5,7 @@ const BASE = '/v2/providers/affiliate_open_api/apis/openapi/v1/products';
 
 
 // 쿠팡 파트너스 운영정책상 홍보하면 안 되는 상품(이미테이션과 성인용품)을 모든 사이트에서 거른다. 사이트마다 더 거를 것은 설정의 block과 reject에 둔다
-const BASE_BLOCK = '이미테이션|짝퉁|레플리카|replica|모조품|카피|정품급|[SA]급|성인용품|19금|콘돔|딜도|바이브|자위|애널|러브젤';
+const BASE_BLOCK = '이미테이션|짝퉁|레플리카|replica|모조품|카피|정품급|[SA]급|성인용품|19금|콘돔|딜도|바이브|자위|애널|러브젤|진동기|오나홀|섹스|최음|리얼돌|흥분';
 const PER_RUN = 7; // 한 번에 가장 오래된 검색어 7개만 갱신 (세 사이트가 같은 쿠팡 키를 나눠 쓰고 시간당 10회 제한이 있다)
 const BEST_TTL = 6 * 3600e3; // 베스트 목록은 6시간마다 다시 부른다
 const PER_KEYWORD = 6;
