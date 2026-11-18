@@ -6,7 +6,13 @@ let ready;
 function init(env) {
   return (ready ||= (async () => {
     // 표가 이미 다 있으면 만들기 쿼리 열 개를 건너뛴다 (새 실행 환경마다 반복되던 약 0.5초 지연 제거)
-    try { const r = await env.DB.prepare("SELECT COUNT(*) n FROM sqlite_master WHERE name IN ('hits','budget','price_hist','price_last','idx_hits_ts','idx_hits_iph','idx_hits_type','idx_price_hist')").first(); if (r && r.n >= 8) return; } catch (e) {}
+    try { const r = await env.DB.prepare("SELECT COUNT(*) n FROM sqlite_master WHERE name IN ('hits','budget','price_hist','price_last','idx_hits_ts','idx_hits_iph','idx_hits_type','idx_price_hist')").first(); if (r && r.n >= 8) {
+      // 표는 다 있어도 새 열(ipm)이 없으면 한 번 추가한다
+      const c = await env.DB.prepare("SELECT COUNT(*) n FROM pragma_table_info('hits') WHERE name='ipm'").first();
+      if (c && c.n > 0) return;
+      try { await env.DB.prepare('ALTER TABLE hits ADD COLUMN ipm TEXT').run(); } catch (e) {}
+      return;
+    } } catch (e) {}
     await env.DB.prepare('CREATE TABLE IF NOT EXISTS hits (ts INTEGER, type TEXT, code TEXT, pid TEXT, name TEXT, country TEXT, city TEXT, device TEXT, browser TEXT, os TEXT, ref TEXT, lang TEXT, vid TEXT, bot INTEGER)').run();
     try { await env.DB.prepare('ALTER TABLE hits ADD COLUMN iph TEXT').run(); } catch (e) {} // 이미 있으면 무시
     try { await env.DB.prepare('ALTER TABLE hits ADD COLUMN ipm TEXT').run(); } catch (e) {} // 셋째 자리를 가린 IP
