@@ -61,7 +61,12 @@ export default {
     const ids = (env.CRON_SITES || Object.keys(SITES).join(',')).split(',').map(s => s.trim()).filter(id => SITES[id]);
     const hour = new Date().getUTCHours();
     if (ids.length) {
-      const site = SITES[ids[hour % ids.length]];
+      // 상품이 아직 하나도 없는 새 사이트가 있으면 순서와 상관없이 먼저 채운다
+      let site = SITES[ids[hour % ids.length]];
+      for (const id of ids) {
+        const e = bind(env, SITES[id]);
+        if (e && !(await e.DATA.get('products'))) { site = SITES[id]; break; }
+      }
       const senv = bind(env, site);
       if (senv) ctx.waitUntil(engineFor(site).refresh(senv));
     }
