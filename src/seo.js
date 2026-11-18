@@ -1,5 +1,6 @@
 // SEO와 AEO 공용 모듈: 메타태그 JSON-LD 서버 렌더링 sitemap robots llms.txt
 import { DISC } from '../sites/index.js';
+import { indexNowKey } from './indexnow.js';
 
 // 사이트 설정을 받아 그 사이트의 서버 렌더링과 sitemap과 robots와 llms.txt를 만든다
 export function createSeo(SITE) {
@@ -34,12 +35,22 @@ const crumbs = items => ld({
   '@type': 'BreadcrumbList',
   itemListElement: items.map(([n, u], i) => ({ '@type': 'ListItem', position: i + 1, name: n, item: abs(u) }))
 });
-const faqLd = () => ld({
+const faqLd = (faq = SITE.faq) => ld({
   '@type': 'FAQPage',
-  mainEntity: SITE.faq.map(f => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } }))
+  mainEntity: faq.map(f => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } }))
 });
 const li = list => `<ul>${list.map(p => `<li><a href="${esc(p.url)}" rel="sponsored nofollow">${esc(p.name)}</a> ${won(p.price)}</li>`).join('')}</ul>`;
-const faqHtml = () => `<section class="faq"><h2>자주 묻는 질문</h2>${SITE.faq.map(f => `<details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join('')}</section>`;
+const faqHtml = (faq = SITE.faq) => `<section class="faq"><h2>자주 묻는 질문</h2>${faq.map(f => `<details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join('')}</section>`;
+// 분야마다 질문과 답을 만든다 (검색엔진과 AI 답변이 그대로 가져갈 수 있게 짧고 분명한 문장으로 쓴다)
+const catFaq = c => {
+  const cfg = SITE.cats[c];
+  return [
+    { q: `${c} 고를 때 무엇을 확인하나요`, a: (cfg.tips || []).join(' ') },
+    { q: `${c} 인기 순위는 어떻게 정하나요`, a: `쿠팡의 판매 데이터와 인기 순위를 기준으로 상품을 모아 ${SITE.refresh} 같은 상품은 중복 없이 한 번만 보여 드립니다.` },
+    { q: `${c} 가격은 실시간인가요`, a: '쿠팡 기준으로 주기적으로 갱신되며 실제 가격과 재고는 쿠팡에서 바뀔 수 있으니 구매 전에 꼭 확인하세요.' },
+    { q: `${c} 상품은 어디서 구매하나요`, a: `상품을 누르면 안내 페이지를 거쳐 쿠팡으로 이동하며 구매와 배송과 교환과 환불은 쿠팡에서 직접 처리합니다. ${SITE.name} 사이트는 상품을 소개만 하는 사이트입니다.` }
+  ];
+};
 const nav = () => `<nav><a href="/">홈</a> <a href="/all">전체 상품</a> ${Object.keys(SITE.cats).map(c => `<a href="${catUrl(c)}">${esc(c)}</a>`).join(' ')}</nav>`;
 
 function route(p) {
@@ -169,11 +180,12 @@ function build(r, list) {
   const cfg = SITE.cats[r.c];
   return {
     title: `${r.c} 인기 랭킹 TOP | ${SITE.name}`, desc: cfg.intro, canonical: abs(catUrl(r.c)),
-    body: `<section class="ssr"><h1>${esc(r.c)} 인기 랭킹</h1><p>${esc(cfg.intro)}</p>${nav()}${li(l.slice(0, 40))}</section>`,
+    body: `<section class="ssr"><h1>${esc(r.c)} 인기 랭킹</h1><p>${esc(cfg.intro)}</p>${nav()}${li(l.slice(0, 40))}<h2>${esc(r.c)} 고를 때 확인할 점</h2><ul>${(cfg.tips || []).map(t => `<li>${esc(t)}</li>`).join('')}</ul></section>${faqHtml(catFaq(r.c))}`,
     ld: [
       crumbs([['홈', '/'], [r.c, catUrl(r.c)]]),
       ld({ '@type': 'CollectionPage', name: `${r.c} 인기 랭킹`, url: abs(catUrl(r.c)), description: cfg.intro, inLanguage: 'ko-KR' }),
-      ld(itemList(l.slice(0, 20), `${SITE.name} ${r.c} 인기 랭킹`))
+      ld(itemList(l.slice(0, 20), `${SITE.name} ${r.c} 인기 랭킹`)),
+      faqLd(catFaq(r.c))
     ]
   };
 }
@@ -190,6 +202,9 @@ var l=document.createElement('link');l.rel='preload';l.as='image';l.href=s;l.set
 function inject(html, pg, img, boot) {
   const tags = [
     '<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">',
+    SITE.verify && SITE.verify.naver ? `<meta name="naver-site-verification" content="${esc(SITE.verify.naver)}">` : '',
+    SITE.verify && SITE.verify.google ? `<meta name="google-site-verification" content="${esc(SITE.verify.google)}">` : '',
+    SITE.verify && SITE.verify.bing ? `<meta name="msvalidate.01" content="${esc(SITE.verify.bing)}">` : '',
     `<link rel="canonical" href="${pg.canonical}">`,
     pg.preload ? `<link rel="preload" as="image" href="${pg.preload}" fetchpriority="high" referrerpolicy="no-referrer">` : '',
     `<meta property="og:type" content="website"><meta property="og:locale" content="ko_KR">`,
@@ -240,6 +255,20 @@ async function llms(env) {
   return new Response(t, { headers: headers('text/plain;charset=utf-8') });
 }
 
+// 사이트 전체 내용을 한 문서로 (AI 검색이 한 번에 읽도록)
+async function llmsFull(env) {
+  const d = await load(env);
+  const list = (d && d.products) || [];
+  let t = `# ${SITE.name} 전체 안내\n\n> ${SITE.desc}\n\n${SITE.intro}\n\n`;
+  for (const [c, cfg] of Object.entries(SITE.cats)) {
+    t += `## ${c}\n\n${cfg.intro}\n\n주소: ${abs(catUrl(c))}\n\n고를 때 확인할 점\n${(cfg.tips || []).map(x => `- ${x}`).join('\n')}\n\n`;
+    const l = list.filter(p => p.category === c).slice(0, 10);
+    if (l.length) t += `현재 인기 상품\n${l.map((p, i) => `${i + 1}. ${p.name} (${won(p.price)}) ${abs('/item/' + p.id)}`).join('\n')}\n\n`;
+  }
+  t += `## 자주 묻는 질문\n\n${SITE.faq.map(f => `### ${f.q}\n${f.a}\n`).join('\n')}\n## 안내\n\n- ${DISC}\n- 상품 판매와 배송은 쿠팡에서 직접 처리하며 가격과 재고는 수시로 바뀝니다\n`;
+  return new Response(t, { headers: headers('text/plain;charset=utf-8') });
+}
+
 const busy = new Set();
 // 탭 아이콘은 사이트 로고를 그대로 쓴다
   function favicon() {
@@ -256,10 +285,12 @@ async function seo(req, env, url, ctx, h = {}) {
     if (p === '/robots.txt') return robots();
     if (p === '/sitemap.xml') return await sitemap(env);
     if (p === '/llms.txt') return await llms(env);
+    if (p === '/llms-full.txt') return await llmsFull(env);
+    if (/^\/[0-9a-f]{32}\.txt$/.test(p) && p === `/${await indexNowKey(SITE)}.txt`) return new Response(p.slice(1, 33), { headers: { 'content-type': 'text/plain;charset=utf-8', 'cache-control': 'public,max-age=86400' } });
     const r = route(p);
     if (!r) return null;
     const cache = caches.default;
-    const key = new Request(url.origin + url.pathname + '?v=23&s=' + SITE.id);
+    const key = new Request(url.origin + url.pathname + '?v=24&s=' + SITE.id);
     const gen = async () => {
       const t0 = Date.now();
       // 템플릿과 상품과 클릭과 가격 기록을 동시에 읽는다

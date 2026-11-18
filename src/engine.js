@@ -1,5 +1,6 @@
 // 사이트 하나가 하는 일 전부 (상품 갱신과 짧은 링크와 이미지와 요청 처리) — 사이트마다 설정만 다르고 코드는 이 하나를 같이 쓴다
 import { goPage } from './go.js';
+import { pingIndexNow } from './indexnow.js';
 const HOST = 'https://api-gateway.coupang.com';
 const BASE = '/v2/providers/affiliate_open_api/apis/openapi/v1/products';
 
@@ -309,6 +310,15 @@ async function refresh(env) {
     try { await recordPrices(env, all.map(x => ({ ...x }))); } catch (e) { console.error('price', e.message); }
     try { imgStat = await resolveImages(env, all); } catch (e) { console.error('imgres', e.message); }
     await env.DATA.put('products', JSON.stringify({ updatedAt: new Date().toISOString(), categories: ['전체', ...Object.keys(CATEGORIES)], products: all }));
+    // 새로 들어온 상품 페이지와 그 분야 페이지를 검색엔진에 바로 알린다 (IndexNow)
+    try {
+      const had = new Set(((prev && prev.products) || []).map(p => p.id));
+      const fresh = all.filter(p => !had.has(p.id));
+      if (fresh.length) {
+        const cats = [...new Set(fresh.map(p => p.category))].map(c => `${SITE.host}/c/${encodeURIComponent(c)}`);
+        console.log('indexnow', await pingIndexNow(SITE, [`${SITE.host}/`, `${SITE.host}/all`, ...cats, ...fresh.slice(0, 90).map(p => `${SITE.host}/item/${p.id}`)]));
+      }
+    } catch (e) { console.error('indexnow', e.message); }
   }
   const status = { at: new Date().toISOString(), count: products.length + kept.length, fresh: products.length, searched: done, img: imgStat, errors: errors.slice(0, 8) };
   await env.DATA.put('status', JSON.stringify(status));
