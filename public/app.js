@@ -53,7 +53,7 @@
   const setTitle = t => { document.title = t; };
   let timer;
   const narrow = on => view.classList.toggle('narrow', on);
-  const ilink = p => `href="/item/${esc(p.id)}"`;
+  const ilink = p => link(p); // 상품을 누르면 본문 페이지를 거치지 않고 바로 쿠팡으로 간다
   const link = (p, extra) => `href="${esc(p.url)}" target="_blank" rel="sponsored noopener nofollow"${extra || ''}`;
 
   function nav(cur) {
@@ -153,7 +153,7 @@
     draw();
   }
 
-  const adCard = p => `<a class="ad" href="/item/${esc(p.id)}"><div class="th">${img(p)}</div><div class="tx"><small>추천 상품</small><h4>${esc(p.name)}</h4><b>${won(p.price)}</b></div><span class="go">상품보기</span></a>`;
+  const adCard = p => `<a class="ad" ${link(p)}><div class="th">${img(p)}</div><div class="tx"><small>추천 상품</small><h4>${esc(p.name)}</h4><b>${won(p.price)}</b></div><span class="go">상품보기</span></a>`;
   const item = (p, i) => `<a class="item ${p.pinned ? 'pin' : ''}" href="#/p/${p.id}" style="animation-delay:${Math.min(i, 10) * 35}ms">
     <span class="bd ${p.board}">${NAME[p.board] || ''}</span>${p.pinned ? '📌' : ''}<h2>${esc(p.title)}</h2><p class="ex">${esc(p.ex)}</p>
     <div class="meta"><b>${esc(p.nick)}</b><span>${ago(p.ts)}</span><span>👁 ${p.views}</span><span>❤ ${p.likes}</span><span>💬 ${p.ccount}</span></div></a>`;
