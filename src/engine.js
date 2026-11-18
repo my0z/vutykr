@@ -1,4 +1,5 @@
 // 사이트 하나가 하는 일 전부 (상품 갱신과 짧은 링크와 이미지와 요청 처리) — 사이트마다 설정만 다르고 코드는 이 하나를 같이 쓴다
+import { goPage } from './go.js';
 const HOST = 'https://api-gateway.coupang.com';
 const BASE = '/v2/providers/affiliate_open_api/apis/openapi/v1/products';
 
@@ -341,8 +342,13 @@ const handler = {
     if (/^\/[a-z0-9]{4}$/.test(path)) {
       const link = (await getLinks(env))[path.slice(1)];
       if (link) {
-        ctx.waitUntil(track(env, req, { type: 'click', code: path.slice(1), pid: link.i, name: link.n }));
-        return new Response(null, { status: 302, headers: { Location: link.u, 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' } });
+        const code = path.slice(1);
+        const direct = () => new Response(null, { status: 302, headers: { Location: link.u, 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' } });
+        if (url.searchParams.get('go')) return direct(); // 안내 페이지에서 넘어온 요청은 이미 센 클릭이라 다시 세지 않고 바로 보낸다
+        ctx.waitUntil(track(env, req, { type: 'click', code, pid: link.i, name: link.n }));
+        if (/bot|spider|crawl|slurp|preview|facebookexternalhit|curl|python|go-http|monitor/i.test(req.headers.get('user-agent') || '')) return direct(); // 검색 로봇과 링크 검사기는 바로 보낸다
+        const d = await getProducts(env).catch(() => null);
+        return goPage(SITE, code, ((d && d.products) || []).find(x => x.id === link.i));
       }
     }
     if (path === '/' || path === '/index.html') ctx.waitUntil(track(env, req, { type: 'view' }));

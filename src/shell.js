@@ -10,7 +10,7 @@ export function logoSvg(site, c1, c2) {
   return `<svg class="mk" viewBox="0 0 32 32" aria-hidden="true">${g}</svg>`;
 }
 
-function themeCss(t) {
+export function themeCss(t) {
   const L = t.light, D = t.dark, T = t.tiles;
   const vars = o => Object.entries(o).filter(([, v]) => v).map(([k, v]) => `--${k}:${v}`).join(';');
   return `:root{${vars(L)};--grad:linear-gradient(135deg,var(--p1),var(--p2))}`
