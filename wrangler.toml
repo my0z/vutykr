@@ -11,6 +11,8 @@ routes = [
   { pattern = "www.seareal.kr", custom_domain = true },
   { pattern = "zakgong.com", custom_domain = true },
   { pattern = "www.zakgong.com", custom_domain = true },
+  { pattern = "zakgong.co.kr", custom_domain = true },
+  { pattern = "www.zakgong.co.kr", custom_domain = true },
   { pattern = "zakgong.kr", custom_domain = true },
   { pattern = "www.zakgong.kr", custom_domain = true }
 ]
