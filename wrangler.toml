@@ -8,7 +8,9 @@ routes = [
   { pattern = "bodcar.com", custom_domain = true },
   { pattern = "www.bodcar.com", custom_domain = true },
   { pattern = "seareal.kr", custom_domain = true },
-  { pattern = "www.seareal.kr", custom_domain = true }
+  { pattern = "www.seareal.kr", custom_domain = true },
+  { pattern = "zakgong.com", custom_domain = true },
+  { pattern = "www.zakgong.com", custom_domain = true }
 ]
 
 # 작공은 아직 운영 전환 전이라 도메인 연결 없음 (전환할 때 routes에 추가)
@@ -61,7 +63,7 @@ database_id = "692419d4-f1d8-4a1f-98f9-0f9e1326b738"
 
 # 갱신 담당 사이트 (전환 전에는 vuty만 / 전환 후 "vuty,bodcar,seareal")
 [vars]
-CRON_SITES = "vuty,bodcar,seareal"
+CRON_SITES = "vuty,bodcar,seareal,zakgong"
 
 [version_metadata]
 binding = "CF_VERSION_METADATA"
