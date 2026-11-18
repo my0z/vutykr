@@ -157,3 +157,5 @@ footer .disc{color:var(--ink);max-width:720px;margin:12px auto}
 .rail{contain:layout}
 
 .feebar{background:var(--soft);border-bottom:1px solid var(--line);color:var(--mute);font-size:min(.74rem,2.3vw);line-height:1.4;text-align:center;padding:6px 0;white-space:nowrap;overflow:hidden}
+
+.gl{display:inline-block;margin:0 0 12px;padding:8px 14px;border-radius:99px;background:var(--soft);color:var(--p1);font-weight:800;font-size:.86rem}.gd h1{margin:0 0 8px;font-size:1.5rem}.gd .ip-tips{padding-left:20px;line-height:1.8}

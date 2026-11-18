@@ -23,7 +23,7 @@ export function themeCss(t) {
 export function clientSite(site) {
   return {
     id: site.id, name: site.name, empty: site.emptyIcon, heroEmpty: site.heroEmpty, tiles: site.tiles,
-    cats: Object.keys(site.cats), icons: Object.fromEntries(Object.entries(site.cats).map(([c, v]) => [c, v.icon]))
+    cats: Object.keys(site.cats), guides: Object.keys(site.guides || {}), icons: Object.fromEntries(Object.entries(site.cats).map(([c, v]) => [c, v.icon]))
   };
 }
 

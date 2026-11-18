@@ -54,11 +54,20 @@ const catFaq = c => {
 };
 const nav = () => `<nav><a href="/">홈</a> <a href="/all">전체 상품</a> ${Object.keys(SITE.cats).map(c => `<a href="${catUrl(c)}">${esc(c)}</a>`).join(' ')}</nav>`;
 
+const guideUrl = c => '/guide/' + encodeURIComponent(c);
+const hasGuide = c => !!(SITE.guides && SITE.guides[c]);
+
 function route(p) {
   if (p === '/' || p === '/index.html') return { t: 'home' };
   if (p === '/all') return { t: 'all' };
   const im = p.match(/^\/item\/(\d{1,20})$/);
   if (im) return { t: 'item', id: im[1] };
+  const gm = p.match(/^\/guide\/(.+)$/);
+  if (gm) {
+    let c = '';
+    try { c = decodeURIComponent(gm[1]); } catch (e) { return null; }
+    if (hasGuide(c)) return { t: 'guide', c };
+  }
   const m = p.match(/^\/c\/(.+)$/);
   if (m) {
     let c = '';
@@ -153,8 +162,33 @@ ${similar.length ? `<section><h2>같은 카테고리의 다른 상품</h2><div c
   };
 }
 
+function buildGuide(c, list) {
+  const g = SITE.guides[c];
+  const items = list.filter(p => p.category === c).slice(0, 5);
+  const title = `${c} 구매 가이드 | ${SITE.name}`;
+  const desc = g.lead.slice(0, 150);
+  const body = `<article class="ip gd ssr" data-cat="${esc(c)}">
+<nav class="crumb"><a href="/">홈</a> › <a href="${catUrl(c)}">${esc(c)}</a> › <span>구매 가이드</span></nav>
+<section><h1>${esc(c)} 구매 가이드</h1><p>${esc(g.lead)}</p></section>
+${g.sections.map(([h, t]) => `<section><h2>${esc(h)}</h2><p>${esc(t)}</p></section>`).join('')}
+<section><h2>구매 전 체크리스트</h2><ul class="ip-tips">${g.check.map(x => `<li>${esc(x)}</li>`).join('')}</ul></section>
+${items.length ? `<section><h2>${esc(c)} 인기 상품</h2><ul class="ip-tips">${items.map(p => `<li><a href="${esc(p.url)}" target="_blank" rel="sponsored nofollow noopener">${esc(p.name)}</a> ${won(p.price)}</li>`).join('')}</ul></section>` : ''}
+<p class="ip-note"><a href="${catUrl(c)}">${esc(c)} 인기 랭킹 전체 보기</a> 가격과 재고는 쿠팡에서 바뀔 수 있습니다. ${esc(SITE.name)} 사이트는 상품을 소개만 하는 사이트이며 판매 당사자가 아닙니다.</p>
+</article>${faqHtml(catFaq(c))}`;
+  const img = (items.find(p => p.image) || {}).image;
+  return {
+    title, desc, canonical: abs(guideUrl(c)), body,
+    ld: [
+      crumbs([['홈', '/'], [c, catUrl(c)], ['구매 가이드', guideUrl(c)]]),
+      ld({ '@type': 'Article', headline: `${c} 구매 가이드`, description: desc, inLanguage: 'ko-KR', datePublished: '2026-11-19', dateModified: '2026-11-19', image: img || undefined, author: { '@type': 'Organization', name: SITE.name }, publisher: { '@type': 'Organization', name: SITE.name }, mainEntityOfPage: abs(guideUrl(c)) }),
+      faqLd(catFaq(c))
+    ]
+  };
+}
+
 function build(r, list) {
   if (r.t === 'item') return buildItem(r.p, list, r.hist || []);
+  if (r.t === 'guide') return buildGuide(r.c, list);
   const top = list.slice(0, 20);
   if (r.t === 'home') {
     let body = `<section class="ssr"><h1>${esc(SITE.h1)}</h1><p>${esc(SITE.intro)}</p>${nav()}`;
@@ -163,6 +197,7 @@ function build(r, list) {
       const l = list.filter(p => p.category === c).slice(0, 5);
       if (l.length) body += `<h2><a href="${catUrl(c)}">${esc(c)} 인기 랭킹</a></h2>${li(l)}`;
     }
+    if (SITE.guides) body += `<h2>분야별 구매 가이드</h2><ul>${Object.keys(SITE.guides).map(c => `<li><a href="${guideUrl(c)}">${esc(c)} 구매 가이드</a></li>`).join('')}</ul>`;
     body += `</section>${faqHtml()}`;
     return {
       home: true, title: SITE.title, desc: SITE.desc, canonical: abs('/'), body,
@@ -187,7 +222,7 @@ function build(r, list) {
   const cfg = SITE.cats[r.c];
   return {
     title: `${r.c} 인기 랭킹 TOP | ${SITE.name}`, desc: cfg.intro, canonical: abs(catUrl(r.c)),
-    body: `<section class="ssr"><h1>${esc(r.c)} 인기 랭킹</h1><p>${esc(cfg.intro)}</p>${nav()}${li(l.slice(0, 40))}<h2>${esc(r.c)} 고를 때 확인할 점</h2><ul>${(cfg.tips || []).map(t => `<li>${esc(t)}</li>`).join('')}</ul></section>${faqHtml(catFaq(r.c))}`,
+    body: `<section class="ssr"><h1>${esc(r.c)} 인기 랭킹</h1><p>${esc(cfg.intro)}</p>${nav()}${li(l.slice(0, 40))}${hasGuide(r.c) ? `<p><a href="${guideUrl(r.c)}">${esc(r.c)} 구매 가이드 보기</a></p>` : ''}<h2>${esc(r.c)} 고를 때 확인할 점</h2><ul>${(cfg.tips || []).map(t => `<li>${esc(t)}</li>`).join('')}</ul></section>${faqHtml(catFaq(r.c))}`,
     ld: [
       crumbs([['홈', '/'], [r.c, catUrl(r.c)]]),
       ld({ '@type': 'CollectionPage', name: `${r.c} 인기 랭킹`, url: abs(catUrl(r.c)), description: cfg.intro, inLanguage: 'ko-KR' }),
@@ -246,7 +281,7 @@ function robots() {
 async function sitemap(env) {
   const d = await load(env);
   const last = d && d.updatedAt ? String(d.updatedAt).slice(0, 10) : new Date().toISOString().slice(0, 10);
-  const urls = [['/', 1.0], ['/all', 0.8], ...Object.keys(SITE.cats).map(c => [catUrl(c), 0.7]), ...((d && d.products) || []).slice(0, 2000).map(x => ['/item/' + x.id, 0.6])];
+  const urls = [['/', 1.0], ['/all', 0.8], ...Object.keys(SITE.cats).map(c => [catUrl(c), 0.7]), ...Object.keys(SITE.guides || {}).map(c => [guideUrl(c), 0.8]), ...((d && d.products) || []).slice(0, 2000).map(x => ['/item/' + x.id, 0.6])];
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(([u, p]) => `<url><loc>${esc(abs(u))}</loc><lastmod>${last}</lastmod><changefreq>daily</changefreq><priority>${p}</priority></url>`).join('\n')}\n</urlset>\n`;
   return new Response(xml, { headers: headers('application/xml;charset=utf-8') });
 }
@@ -256,6 +291,7 @@ async function llms(env) {
   const list = (d && d.products) || [];
   let t = `# ${SITE.name}\n\n> ${SITE.desc}\n\n${SITE.intro}\n\n## 주요 페이지\n\n- [홈](${abs('/')}): ${SITE.tagline} 실시간 BEST 랭킹\n- [전체 상품](${abs('/all')}): 전체 랭킹\n`;
   for (const [c, cfg] of Object.entries(SITE.cats)) t += `- [${c}](${abs(catUrl(c))}): ${cfg.intro}\n`;
+  if (SITE.guides) t += `\n## 구매 가이드\n\n${Object.keys(SITE.guides).map(c => `- [${c} 구매 가이드](${abs(guideUrl(c))}): ${SITE.guides[c].lead}`).join('\n')}\n`;
   t += `\n## 자주 묻는 질문\n\n${SITE.faq.map(f => `### ${f.q}\n${f.a}\n`).join('\n')}`;
   if (list.length) t += `\n## 현재 인기 상품\n\n${list.slice(0, 10).map((p, i) => `${i + 1}. ${p.name} (${won(p.price)})`).join('\n')}\n`;
   t += `\n## 안내\n\n- ${DISC}\n- 상품 판매와 배송은 쿠팡에서 직접 처리하며 가격과 재고는 수시로 바뀝니다\n- 사이트맵: ${abs('/sitemap.xml')}\n`;
@@ -268,7 +304,7 @@ async function llmsFull(env) {
   const list = (d && d.products) || [];
   let t = `# ${SITE.name} 전체 안내\n\n> ${SITE.desc}\n\n${SITE.intro}\n\n`;
   for (const [c, cfg] of Object.entries(SITE.cats)) {
-    t += `## ${c}\n\n${cfg.intro}\n\n주소: ${abs(catUrl(c))}\n\n고를 때 확인할 점\n${(cfg.tips || []).map(x => `- ${x}`).join('\n')}\n\n`;
+    t += `## ${c}\n\n${cfg.intro}\n\n주소: ${abs(catUrl(c))}\n\n고를 때 확인할 점\n${(cfg.tips || []).map(x => `- ${x}`).join('\n')}\n\n${hasGuide(c) ? `구매 가이드 (${abs(guideUrl(c))})\n${SITE.guides[c].lead}\n${SITE.guides[c].sections.map(([h, x]) => `- ${h}: ${x}`).join('\n')}\n체크리스트: ${SITE.guides[c].check.join(' / ')}\n\n` : ''}`;
     const l = list.filter(p => p.category === c).slice(0, 10);
     if (l.length) t += `현재 인기 상품\n${l.map((p, i) => `${i + 1}. ${p.name} (${won(p.price)}) ${abs('/item/' + p.id)}`).join('\n')}\n\n`;
   }
@@ -297,7 +333,7 @@ async function seo(req, env, url, ctx, h = {}) {
     const r = route(p);
     if (!r) return null;
     const cache = caches.default;
-    const key = new Request(url.origin + url.pathname + '?v=25&s=' + SITE.id);
+    const key = new Request(url.origin + url.pathname + '?v=26&s=' + SITE.id);
     const gen = async () => {
       const t0 = Date.now();
       // 템플릿과 상품과 클릭과 가격 기록을 동시에 읽는다
