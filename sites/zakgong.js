@@ -3,6 +3,7 @@ export default {
   id: 'zakgong',
   domains: ['zakgong.com', 'www.zakgong.com'],
   host: 'https://zakgong.com',
+  redirects: ['zakgong.co.kr', 'www.zakgong.co.kr', 'zakgong.kr', 'www.zakgong.kr'], // 이 주소로 들어오면 대표 주소로 옮겨 준다
   name: 'ZAKGONG',
   mark: '🔧',
   icon: '🔧',

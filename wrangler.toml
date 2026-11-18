@@ -10,7 +10,11 @@ routes = [
   { pattern = "seareal.kr", custom_domain = true },
   { pattern = "www.seareal.kr", custom_domain = true },
   { pattern = "zakgong.com", custom_domain = true },
-  { pattern = "www.zakgong.com", custom_domain = true }
+  { pattern = "www.zakgong.com", custom_domain = true },
+  { pattern = "zakgong.co.kr", custom_domain = true },
+  { pattern = "www.zakgong.co.kr", custom_domain = true },
+  { pattern = "zakgong.kr", custom_domain = true },
+  { pattern = "www.zakgong.kr", custom_domain = true }
 ]
 
 # 작공은 아직 운영 전환 전이라 도메인 연결 없음 (전환할 때 routes에 추가)

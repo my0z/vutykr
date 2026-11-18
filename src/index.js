@@ -1,5 +1,5 @@
 // 진입점: 방문한 주소로 어느 사이트인지 찾아 그 사이트의 설정과 저장소로 요청을 처리한다
-import { SITES, DEFAULT_SITE, siteForHost } from '../sites/index.js';
+import { SITES, DEFAULT_SITE, siteForHost, redirectForHost } from '../sites/index.js';
 import { createCommunity } from './community.js';
 import { createAnalytics } from './analytics.js';
 import { createSeo } from './seo.js';
@@ -46,6 +46,8 @@ function pick(url, req) {
 export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
+    const to = redirectForHost(url.hostname); // 다른 주소로 들어오면 경로와 검색어를 그대로 두고 대표 주소로 영구 이동
+    if (to) return Response.redirect(to + url.pathname + url.search, 301);
     const { site, set } = pick(url, req);
     const senv = bind(env, site);
     if (!senv) return new Response('이 사이트의 저장소가 연결되지 않았습니다', { status: 503 });

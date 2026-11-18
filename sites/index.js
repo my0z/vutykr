@@ -32,4 +32,7 @@ export const PROMOS = [
 
 // 방문한 주소로 어느 사이트인지 찾는다
 const BY_HOST = new Map(Object.values(SITES).flatMap(s => s.domains.map(d => [d, s])));
+// 대표 주소로 옮겨 줄 다른 주소들 (사이트 설정의 redirects)
+const REDIRECTS = new Map(Object.values(SITES).flatMap(s => (s.redirects || []).map(d => [d, s.host])));
+export const redirectForHost = host => REDIRECTS.get(String(host || '').toLowerCase()) || null;
 export const siteForHost = host => BY_HOST.get(String(host || '').toLowerCase()) || null;
