@@ -118,10 +118,10 @@ function authed(req, env) {
 
 const q = async (env, sql, ...b) => (await env.DB.prepare(sql).bind(...b).all()).results || [];
 
-function bars(rows, label = r => r.k) {
+function bars(rows, label = r => r.k, link = null) {
   const max = Math.max(1, ...rows.map(r => r.c));
   if (!rows.length) return '<p class="mute">데이터가 없습니다</p>';
-  return rows.map(r => `<div class="row"><span class="lb">${esc(label(r))}</span><span class="bar"><i style="width:${Math.round(r.c / max * 100)}%"></i></span><b>${num(r.c)}</b></div>`).join('');
+  return rows.map(r => `<div class="row"><span class="lb">${link && link(r) ? `<a href="${esc(link(r))}" target="_blank" rel="noopener nofollow">${esc(label(r))}</a>` : esc(label(r))}</span><span class="bar"><i style="width:${Math.round(r.c / max * 100)}%"></i></span><b>${num(r.c)}</b></div>`).join('');
 }
 
 async function admin(req, env, url) {
@@ -211,7 +211,7 @@ button{background:var(--p1);color:#fff;border:0;border-radius:8px;padding:6px 12
 </section>
 <section class="box"><h2>일별 추이 (한국시간)</h2><div class="legend"><i style="background:var(--p3)"></i>방문<i style="background:var(--p1)"></i>클릭</div>${chart}</section>
 <section class="grid" style="margin-top:12px">
-<div class="box"><h2>인기 상품 클릭 TOP</h2>${bars(top, r => `${r.code} ${r.name}`)}</div>
+<div class="box"><h2>인기 상품 클릭 TOP</h2>${bars(top, r => `${r.code} ${r.name}`, r => r.code ? `${SITE.host}/${r.code}?go=1` : '')}</div>
 <div class="box"><h2>시간대별 방문</h2>${hours}</div>
 <div class="box"><h2>유입 경로</h2>${bars(ref)}</div>
 <div class="box"><h2>국가</h2>${bars(country)}</div>
@@ -222,7 +222,7 @@ button{background:var(--p1);color:#fff;border:0;border-radius:8px;padding:6px 12
 <div class="box"><h2>접속 IP TOP (셋째 자리 가림)</h2>${bars(ips)}</div>
 </section>
 <section class="box"><h2>최근 활동</h2><div class="wrap"><table><tr><th>시간</th><th>구분</th><th>내용</th><th>지역</th><th>기기</th><th>브라우저</th><th>OS</th><th>IP</th><th>유입</th></tr>
-${recent.map(r => `<tr><td>${kst(r.ts)}</td><td><span class="tag ${r.type}">${r.type === 'click' ? '클릭' : '방문'}</span></td><td>${esc(r.type === 'click' ? `${r.code} ${r.name}`.slice(0, 40) : '메인')}</td><td>${esc(`${r.country} ${r.city}`.trim())}</td><td>${esc(r.device)}</td><td>${esc(r.browser)}</td><td>${esc(r.os)}</td><td>${esc(r.ipm || '')}</td><td>${esc(r.ref || '직접')}</td></tr>`).join('') || '<tr><td colspan="9" class="mute">기록이 없습니다</td></tr>'}
+${recent.map(r => `<tr><td>${kst(r.ts)}</td><td><span class="tag ${r.type}">${r.type === 'click' ? '클릭' : '방문'}</span></td><td>${r.type === 'click' && r.code ? `<a href="${esc(SITE.host)}/${esc(r.code)}?go=1" target="_blank" rel="noopener nofollow">${esc(`${r.code} ${r.name}`.slice(0, 40))}</a>` : esc(r.type === 'click' ? `${r.code} ${r.name}`.slice(0, 40) : '메인')}</td><td>${esc(`${r.country} ${r.city}`.trim())}</td><td>${esc(r.device)}</td><td>${esc(r.browser)}</td><td>${esc(r.os)}</td><td>${esc(r.ipm || '')}</td><td>${esc(r.ref || '직접')}</td></tr>`).join('') || '<tr><td colspan="9" class="mute">기록이 없습니다</td></tr>'}
 </table></div></section>
 <section class="box" style="margin-top:12px"><h2>커뮤니티 관리</h2>
 <div class="wrap"><table><tr><th>번호</th><th>게시판</th><th>제목</th><th>작성자</th><th>댓글</th><th>좋아요</th><th>시간</th><th></th></tr>
