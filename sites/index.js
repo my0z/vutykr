@@ -6,10 +6,15 @@ import guideVuty from './guides/vuty.js';
 import guideBodcar from './guides/bodcar.js';
 import guideSeareal from './guides/seareal.js';
 import guideZakgong from './guides/zakgong.js';
+import moreVuty from './guides/vuty-more.js';
+import moreBodcar from './guides/bodcar-more.js';
+import moreSeareal from './guides/seareal-more.js';
+import moreZakgong from './guides/zakgong-more.js';
 import zakgong from './zakgong.js';
 
 // 분야별 구매 가이드 글을 각 사이트 설정에 붙인다 (새 사이트는 sites/guides/<이름>.js 를 만들고 여기에 한 줄을 더한다)
-vuty.guides = guideVuty; bodcar.guides = guideBodcar; seareal.guides = guideSeareal; zakgong.guides = guideZakgong;
+const withMore = (g, more) => { for (const [c, v] of Object.entries(g)) v.sections = [...v.sections, ...(more[c] || [])]; return g; };
+vuty.guides = withMore(guideVuty, moreVuty); bodcar.guides = withMore(guideBodcar, moreBodcar); seareal.guides = withMore(guideSeareal, moreSeareal); zakgong.guides = withMore(guideZakgong, moreZakgong);
 
 export const SITES = { vuty, bodcar, seareal, zakgong };
 export const DEFAULT_SITE = 'vuty'; // 등록되지 않은 주소(workers.dev 등)로 들어오면 보여 줄 사이트
