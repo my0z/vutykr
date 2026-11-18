@@ -2,8 +2,9 @@
 import vuty from './vuty.js';
 import bodcar from './bodcar.js';
 import seareal from './seareal.js';
+import zakgong from './zakgong.js';
 
-export const SITES = { vuty, bodcar, seareal };
+export const SITES = { vuty, bodcar, seareal, zakgong };
 export const DEFAULT_SITE = 'vuty'; // 등록되지 않은 주소(workers.dev 등)로 들어오면 보여 줄 사이트
 
 // 쿠팡 파트너스 경제적 이해관계 표시 문구 (공식 예시 문장과 같은 뜻으로 쉼표만 뺐다)
