@@ -139,6 +139,10 @@ export function createSite(SITE, mods) {
   const REJECT = (SITE.reject || []).map(r => [new RegExp(r.when, 'i'), new RegExp(r.unless, 'i')]);
   const skipName = nm => BLOCK.test(nm) || REJECT.some(([w, u]) => w.test(nm) && !u.test(nm));
   const RULES = (SITE.classify || []).map(([c, r]) => [c, new RegExp(r)]);
+  // strict 사이트는 검색 결과가 그 분야 단어를 이름에 담고 있을 때만 그 분야에 넣는다 (쿠팡 검색이 엉뚱한 상품을 섞어 주는 것을 막는다)
+  const MUST = {};
+  if (SITE.strict) for (const [c, re] of RULES) (MUST[c] ||= []).push(re);
+  const okCat = (c, nm) => !MUST[c] || MUST[c].some(re => re.test(String(nm || '')));
   const classify = nm => { for (const [c, re] of RULES) if (re.test(nm)) return c; return ''; }; // 분류할 수 없으면 베스트에서 뺀다
 
 let linksCache = { t: 0, v: {} };
@@ -154,6 +158,7 @@ let prodCache = { t: 0, v: null };
 async function getProducts(env) {
   if (Date.now() - prodCache.t < 60000 && prodCache.v) return prodCache.v;
   const v = JSON.parse((await env.DATA.get('products', { cacheTtl: 60 })) || 'null');
+  if (v && v.products) v.products = v.products.filter(p => okCat(p.category, p.name)); // 이미 저장된 엉뚱한 상품도 바로 숨긴다
   prodCache = { t: Date.now(), v };
   return v;
 }
@@ -219,7 +224,7 @@ async function refresh(env) {
   const add = (list, cat, badge) => {
     for (const p of list) {
       const nm = String(p.productName || '').toLowerCase().replace(/\s+/g, '');
-      if (!p.productId || seen.has(p.productId) || names.has(nm) || skipName(String(p.productName || ''))) continue;
+      if (!p.productId || seen.has(p.productId) || names.has(nm) || skipName(String(p.productName || '')) || !okCat(cat, p.productName)) continue;
       seen.add(p.productId);
       names.add(nm);
       products.push(norm(p, cat, badge));
@@ -282,7 +287,7 @@ async function refresh(env) {
   let imgStat = null;
   if (prev && prev.products) {
     for (const p of prev.products) {
-      if (fresh.has(p.category) || seen.has(p.id) || names.has(String(p.name || '').toLowerCase().replace(/\s+/g, ''))) continue;
+      if (!okCat(p.category, p.name) || fresh.has(p.category) || seen.has(p.id) || names.has(String(p.name || '').toLowerCase().replace(/\s+/g, ''))) continue;
       kept.push({ ...p, keep: true });
     }
   }
