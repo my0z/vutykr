@@ -1,0 +1,32 @@
+name: staging
+# 운영 도메인과 크론 없이 임시 주소(workers.dev)에만 올려 실제 데이터로 세 사이트를 미리 확인한다
+on:
+  push:
+    branches: [multisite]
+  workflow_dispatch:
+jobs:
+  staging:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 임시 설정 만들기
+        run: |
+          python3 - <<'PY'
+          import re
+          s = open('wrangler.toml', encoding='utf-8').read()
+          s = s.replace('name = "vutykr"', 'name = "vutykr-staging"', 1)
+          s = re.sub(r'routes = \[.*?\]\n', 'workers_dev = true\n', s, flags=re.S)
+          s = re.sub(r'\[triggers\]\ncrons = \[.*?\]\n', '', s, flags=re.S)
+          open('wrangler.staging.toml', 'w', encoding='utf-8').write(s)
+          PY
+          grep -n "^name\|workers_dev\|crons\|routes" wrangler.staging.toml
+      - name: 시크릿 파일 생성
+        env:
+          P: ${{ secrets.ADMIN_PASSWORD }}
+        run: jq -n --arg p "$P" '(if $p=="" then {} else {ADMIN_PASSWORD:$p} end)' > secrets.json
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          command: deploy -c wrangler.staging.toml --secrets-file secrets.json
