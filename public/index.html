@@ -3,14 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>쁘띠.끄 | 여성 뷰티와 패션 인기템 랭킹 쇼핑</title>
-<meta name="description" content="여성 뷰티와 의류 신발 가방 장신구 인기템 랭킹을 쿠팡 기준으로 매일 자동 업데이트합니다">
-<meta name="theme-color" content="#ff4d8d">
+<title>{{TITLE}}</title>
+<meta name="description" content="{{DESC}}">
+<meta name="theme-color" content="{{THEME_COLOR}}">
 <link rel="preconnect" href="https://ads-partners.coupang.com">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"></noscript>
 <link rel="stylesheet" href="/style.css?v=3">
+<style id="theme">{{THEME_CSS}}</style>
+<script>window.__site={{SITE_JSON}}</script>
 <script>
 // 스크립트 로딩과 동시에 상품 데이터를 먼저 요청
 window.__d = window.__p ? Promise.resolve(window.__p) : Promise.all([
@@ -19,33 +21,23 @@ window.__d = window.__p ? Promise.resolve(window.__p) : Promise.all([
 ]);
 </script>
 </head>
-<body data-name="쁘띠.끄" data-home="쁘띠.끄 | 여성 뷰티와 패션 인기템 랭킹 쇼핑">
+<body data-name="{{NAME}}" data-home="{{TITLE}}">
 <div id="promo" role="complementary" aria-label="제휴 사이트 소개"></div>
 <script>
 (function () {
   // 자매 사이트 배너 9개 중 하나를 무작위로 보여준다 (내 사이트 배너는 없다) — 시리얼 배너 추가 및 인물 사진 배경 배너로 교체 (캐시 갱신 ?v=5) 작업: 2026-11-17 18:09
-  var B = [
-    ['b1','자동차용품 인기 랭킹 한눈에','https://bodcar.com/'],
-    ['b2','차박 준비물 베스트 모아보기','https://bodcar.com/c/%EC%B0%A8%EB%B0%95%EC%BA%A0%ED%95%91'],
-    ['b3','블랙박스와 엔진오일 인기템','https://bodcar.com/c/%EB%B8%94%EB%9E%99%EB%B0%95%EC%8A%A4'],
-    ['u1','USB.KR 전자기기 가격 비교','https://usb.kr/'],
-    ['u2','차량용 전자기기 모아보기','https://usb.kr/category/car'],
-    ['u3','쿠팡 골드박스 전자기기 핫딜','https://usb.kr/deals'],
-    ['s1','바다의 모든 것 인기 랭킹','https://seareal.kr/'],
-    ['s2','바다낚시 용품 모아보기','https://seareal.kr/c/%EB%82%9A%EC%8B%9C%EB%8C%80%EB%A6%B4'],
-    ['s3','신선 수산물 인기템 모아보기','https://seareal.kr/c/%ED%8C%A8%EB%A5%98']
-  ];
+  var B = {{PROMOS}};
   var b = B[Math.floor(Math.random() * B.length)], el = document.getElementById('promo');
   if (!b || !el) return;
-  var u = b[2] + (b[2].indexOf('?') < 0 ? '?' : '&') + 'utm_source=vuty.kr&utm_medium=banner&utm_campaign=' + b[0];
+  var u = b[2] + (b[2].indexOf('?') < 0 ? '?' : '&') + 'utm_source={{HOSTNAME}}&utm_medium=banner&utm_campaign=' + b[0];
   el.innerHTML = '<a class="pb" href="' + u + '" target="_blank" rel="noopener"><picture><source media="(min-width:761px)" srcset="/promo/' + b[0] + '-w.webp?v=5"><img src="/promo/' + b[0] + '-n.webp?v=5" width="960" height="300" alt="' + b[1] + '" fetchpriority="low" decoding="async"></picture></a>';
 })();
 </script>
-<div class="topbar"><div class="in"><span>🌸 여성 뷰티와 패션 인기템을 매일 자동으로 업데이트해요</span><nav><a href="#/talk">수다방</a><a href="#/write">글쓰기</a></nav></div></div>
+<div class="topbar"><div class="in"><span>{{TOPBAR}}</span><nav><a href="#/talk">수다방</a><a href="#/write">글쓰기</a></nav></div></div>
 
 <header class="head"><div class="in">
-  <a class="logo" href="/"><span>✦</span> 쁘띠.끄</a>
-  <form id="sf" class="sbox" role="search"><input id="q" type="search" placeholder="찾고 싶은 상품을 검색해보세요" autocomplete="off"><button aria-label="검색">🔍</button></form>
+  <a class="logo" href="/"><span>{{MARK}}</span> {{NAME}}</a>
+  <form id="sf" class="sbox" role="search"><input id="q" type="search" placeholder="{{SEARCH}}" autocomplete="off"><button aria-label="검색">🔍</button></form>
   <a class="hl" href="#/talk"><b>💬</b><small>수다방</small></a>
 </div></header>
 
@@ -59,11 +51,11 @@ window.__d = window.__p ? Promise.resolve(window.__p) : Promise.all([
 
 <footer>
   <div class="in">
-    <div class="logo"><span>✦</span> 쁘띠.끄</div>
-    <p class="disc">이 포스팅은 쿠팡 파트너스 활동의 일환으로 이에 따른 일정액의 수수료를 제공받습니다.</p>
+    <div class="logo"><span>{{MARK}}</span> {{NAME}}</div>
+    <p class="disc">{{DISC}}</p>
     <p>가격과 재고는 쿠팡에서 수시로 변동되니 구매 전 꼭 확인하세요.</p>
-    <p>상품 판매와 배송과 교환과 환불은 쿠팡에서 직접 처리하며 쁘띠.끄는 판매 당사자가 아닙니다.</p>
-    <p>게시글의 의견은 작성자의 것이며 쁘띠.끄는 책임지지 않습니다.</p>
+    <p>상품 판매와 배송과 교환과 환불은 쿠팡에서 직접 처리하며 {{NAME}} 사이트는 판매 당사자가 아닙니다.</p>
+    <p>게시글의 의견은 작성자의 것이며 {{NAME}} 사이트는 책임지지 않습니다.</p>
   </div>
 </footer>
 <button id="top" aria-label="맨 위로">↑</button>

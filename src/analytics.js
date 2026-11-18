@@ -1,5 +1,7 @@
-import { init as initCommunity, removeRow, adminNotice } from './community.js';
-// 접속 기록(D1)과 관리자 통계 페이지(/0)
+// 접속 기록(D1)과 관리자 통계 페이지(/0) — 사이트 설정과 커뮤니티를 받아 그 사이트용으로 만든다
+const esc0 = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+export function createAnalytics(SITE, community) {
+const { init: initCommunity, removeRow, adminNotice } = community;
 let ready;
 function init(env) {
   return (ready ||= (async () => {
@@ -50,7 +52,7 @@ function parseUA(ua) {
   return { bot, device, browser, os };
 }
 
-export async function track(env, req, ev) {
+async function track(env, req, ev) {
   try {
     if (!env.DB) return;
     if (await overBudget(env)) return; // 오늘 요청 한도에 가까우면 기록 쓰기를 멈춘다
@@ -69,7 +71,7 @@ export async function track(env, req, ev) {
     }
     let ref = '';
     try { ref = new URL(req.headers.get('referer') || '').hostname; } catch (e) {}
-    if (ref.endsWith('vuty.kr')) ref = '';
+    if (SITE.domains.some(d => ref === d || ref.endsWith('.' + d.replace(/^www\./, '')))) ref = '';
     const lang = (req.headers.get('accept-language') || '').split(',')[0].slice(0, 12);
     // 사람처럼 보이는 자동화 트래픽 걸러내기: 호스팅 회사 망과 언어 헤더 없음과 비문서 요청과 짧은 시간의 연속 클릭
     if (HOSTING.test(String(cf.asOrganization || '')) || !lang) bot = 1;
@@ -114,7 +116,7 @@ function bars(rows, label = r => r.k) {
   return rows.map(r => `<div class="row"><span class="lb">${esc(label(r))}</span><span class="bar"><i style="width:${Math.round(r.c / max * 100)}%"></i></span><b>${num(r.c)}</b></div>`).join('');
 }
 
-export async function admin(req, env, url) {
+async function admin(req, env, url) {
   const head = { 'content-type': 'text/html;charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex' };
   if (!env.ADMIN_PASSWORD) return new Response('<meta charset="utf-8"><body style="font-family:sans-serif;padding:40px">통계 페이지를 쓰려면 GitHub 시크릿 ADMIN_PASSWORD를 등록하고 다시 배포하세요.', { status: 503, headers: head });
   if (!authed(req, env)) return new Response('로그인이 필요합니다', { status: 401, headers: { ...head, 'www-authenticate': 'Basic realm="stats", charset="UTF-8"' } });
@@ -168,10 +170,10 @@ export async function admin(req, env, url) {
   const kst = ts => new Date(ts + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' ');
   const tabs = Object.entries(ranges).map(([k, v]) => `<a href="/0?d=${k}" class="${Number(k) === d ? 'on' : ''}">${v}</a>`).join('');
 
-  const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>통계 | 쁘띠.끄</title>
+  const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>통계 | ${esc0(SITE.name)}</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
-:root{--bg:#120c10;--card:#1d1419;--line:#33232c;--ink:#fbeef3;--mute:#a58f9a;--p1:#ff4d8d;--p2:#ff8a5c;--p3:#8b5cf6}
+:root{--bg:${SITE.theme.dark.bg};--card:${SITE.theme.dark.card};--line:${SITE.theme.dark.line};--ink:${SITE.theme.dark.ink};--mute:${SITE.theme.dark.mute};--p1:${SITE.theme.light.p1};--p2:${SITE.theme.light.p2};--p3:${SITE.theme.light.p3}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Pretendard Variable,Pretendard,system-ui,sans-serif;padding:20px clamp(14px,4vw,40px) 60px}
 h1{margin:0;font-size:1.5rem}h1 span{color:var(--p1)}header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px}
 .tabs a{color:var(--mute);text-decoration:none;padding:8px 14px;border:1px solid var(--line);border-radius:999px;margin-left:6px;font-size:.85rem}.tabs a.on{background:linear-gradient(135deg,var(--p1),var(--p2));color:#fff;border-color:transparent}
@@ -187,7 +189,7 @@ h1{margin:0;font-size:1.5rem}h1 span{color:var(--p1)}header{display:flex;justify
 button{background:var(--p1);color:#fff;border:0;border-radius:8px;padding:6px 12px;cursor:pointer;font:inherit}table{width:100%;border-collapse:collapse;font-size:.8rem}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);white-space:nowrap}th{color:var(--mute);font-weight:600}.wrap{overflow-x:auto}
 .tag{padding:2px 8px;border-radius:6px;font-size:.7rem;font-weight:800}.tag.click{background:var(--p1)}.tag.view{background:var(--p3)}
 </style></head><body>
-<header><h1>쁘띠.끄 <span>통계</span></h1><nav class="tabs">${tabs}</nav></header>
+<header><h1>${esc0(SITE.name)} <span>통계</span></h1><nav class="tabs">${tabs}</nav></header>
 <section class="kpis">
 <div class="kpi"><b>${num(t.v)}</b><span>방문 (페이지뷰)</span></div>
 <div class="kpi"><b>${num(t.u)}</b><span>방문자 (일 기준)</span></div>
@@ -234,7 +236,7 @@ async function notice(){const t=document.getElementById('nt').value,b=document.g
 }
 
 // 최근 7일 실제 클릭 수 (봇 제외)
-export async function clickCounts(env) {
+async function clickCounts(env) {
   try {
     await init(env);
     const rows = await q(env, "SELECT pid, COUNT(DISTINCT CASE WHEN iph<>'' THEN iph ELSE vid END) c FROM hits WHERE type='click' AND bot=0 AND ts>? AND pid<>'' GROUP BY pid", Date.now() - 7 * 86400e3);
@@ -246,7 +248,7 @@ export async function clickCounts(env) {
 const utcDay = (off = 0) => new Date(Date.now() + off * 86400e3).toISOString().slice(0, 10);
 
 // 요청 수는 5%만 표본으로 세어서 D1 쓰기를 아낀다 (표본 한 번에 20 증가)
-export function countRequest(env, ctx) {
+function countRequest(env, ctx) {
   if (!env.DB || Math.random() >= 0.05) return;
   ctx.waitUntil((async () => {
     try {
@@ -257,7 +259,7 @@ export function countRequest(env, ctx) {
 }
 
 let ob = { t: 0, v: false };
-export async function overBudget(env) {
+async function overBudget(env) {
   if (!env.DB) return false;
   if (Date.now() - ob.t < 60000) return ob.v;
   ob.t = Date.now();
@@ -270,7 +272,7 @@ export async function overBudget(env) {
 }
 
 // 오래된 접속 기록은 90일 뒤 지워 DB 읽기량과 용량을 일정하게 유지
-export async function pruneOld(env) {
+async function pruneOld(env) {
   try {
     if (!env.DB) return;
     await init(env);
@@ -281,7 +283,7 @@ export async function pruneOld(env) {
 }
 
 // ---- 가격 기록: 값이 바뀐 상품만 한 줄씩 쌓는다 ----
-export async function recordPrices(env, products) {
+async function recordPrices(env, products) {
   if (!env.DB) return;
   await init(env);
   const last = new Map(((await env.DB.prepare('SELECT pid, price FROM price_last').all()).results || []).map(r => [r.pid, r.price]));
@@ -296,9 +298,12 @@ export async function recordPrices(env, products) {
   if (st.length) await env.DB.batch(st);
 }
 
-export async function getHist(env, id) {
+async function getHist(env, id) {
   if (!env.DB) return [];
   const q = () => env.DB.prepare('SELECT ts, price FROM price_hist WHERE pid=? ORDER BY ts LIMIT 200').bind(String(id)).all();
   try { return (await q()).results || []; } // 표가 있으면 초기화 없이 바로 조회
   catch (e) { try { await init(env); return (await q()).results || []; } catch (e2) { return []; } }
+}
+
+return { track, admin, clickCounts, countRequest, overBudget, pruneOld, recordPrices, getHist };
 }

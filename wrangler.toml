@@ -1,5 +1,5 @@
 name = "vutykr"
-main = "src/worker.js"
+main = "src/index.js"
 compatibility_date = "2026-11-15"
 
 routes = [
@@ -23,6 +23,29 @@ binding = "DATA"
 # 접속 통계용 D1 (id 생략 시 자동 생성)
 [[d1_databases]]
 binding = "DB"
+
+# 쁘띠.끄 외 두 사이트의 기존 저장소 (데이터 이전 없이 그대로 연결)
+[[kv_namespaces]]
+binding = "DATA_BODCAR"
+id = "4b3dac6e9e96425294eaa77e5c5868af"
+
+[[kv_namespaces]]
+binding = "DATA_SEAREAL"
+id = "2441ede566d64ade8c730331a0d759ad"
+
+[[d1_databases]]
+binding = "DB_BODCAR"
+database_name = "bodcar-db"
+database_id = "8426606d-e4aa-4af0-8b3f-e5a4a3292b24"
+
+[[d1_databases]]
+binding = "DB_SEAREAL"
+database_name = "seareal-db"
+database_id = "692419d4-f1d8-4a1f-98f9-0f9e1326b738"
+
+# 갱신 담당 사이트 (전환 전에는 vuty만 / 전환 후 "vuty,bodcar,seareal")
+[vars]
+CRON_SITES = "vuty"
 
 [version_metadata]
 binding = "CF_VERSION_METADATA"

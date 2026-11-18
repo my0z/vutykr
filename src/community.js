@@ -1,14 +1,12 @@
 // 커뮤니티 API (D1)
 const BOARDS = { notice: '공지', review: '후기', qna: '질문', tip: '꿀팁', free: '자유' };
+
+// 사이트 설정(sites/*.js)을 받아 그 사이트의 커뮤니티 기능을 만든다 (첫 글과 준비 상태가 사이트마다 따로다)
+export function createCommunity(SITE) {
+const SEED = SITE.seed;
 let ready;
 
-const SEED = [
-  ['notice', '쁘띠.끄 이용 안내', '쁘띠.끄는 뷰티 이야기를 나누는 익명 커뮤니티입니다.\n\n- 닉네임과 비밀번호만 입력하면 글을 쓸 수 있어요\n- 비밀번호는 내 글을 지울 때 필요하니 꼭 기억하세요\n- 링크와 광고성 글은 자동으로 막힙니다\n- 욕설과 비방은 삭제될 수 있어요\n\n오른쪽에서 인기 뷰티템도 구경해 보세요.'],
-  ['qna', '내 피부타입 공유해요 건성 지성 복합성', '여러분은 어떤 피부타입인가요?\n\n피부타입과 요즘 쓰는 제품 한 가지를 댓글로 남겨주세요.\n서로 비슷한 피부끼리 꿀조합을 찾아봐요.'],
-  ['free', '오늘의 뷰티 수다방', '오늘 바른 화장품이나 새로 산 템 이야기를 편하게 남겨주세요.\n사소한 이야기도 환영입니다.']
-];
-
-export function init(env) {
+function init(env) {
   return (ready ||= (async () => {
     await env.DB.batch([
       env.DB.prepare('CREATE TABLE IF NOT EXISTS posts (id INTEGER PRIMARY KEY AUTOINCREMENT, board TEXT, title TEXT, body TEXT, nick TEXT, pwh TEXT, ts INTEGER, views INTEGER DEFAULT 0, likes INTEGER DEFAULT 0, ccount INTEGER DEFAULT 0, pinned INTEGER DEFAULT 0, hidden INTEGER DEFAULT 0, vid TEXT)'),
@@ -48,7 +46,7 @@ async function rate(env, table, vid, limit, windowMs) {
 
 const listCols = 'id,board,title,substr(body,1,90) ex,nick,ts,views,likes,ccount,pinned';
 
-export async function handle(req, env, url, ctx) {
+async function handle(req, env, url, ctx) {
   await init(env);
   const path = url.pathname;
   const m = req.method;
@@ -153,7 +151,7 @@ export async function handle(req, env, url, ctx) {
   return bad('not found', 404);
 }
 
-export async function removeRow(env, table, id) {
+async function removeRow(env, table, id) {
   if (table === 'comments') {
     const c = await env.DB.prepare('SELECT pid FROM comments WHERE id=?').bind(id).first();
     await env.DB.prepare('UPDATE comments SET hidden=1 WHERE id=?').bind(id).run();
@@ -163,8 +161,10 @@ export async function removeRow(env, table, id) {
   }
 }
 
-export async function adminNotice(env, title, body) {
+async function adminNotice(env, title, body) {
   await init(env);
   await env.DB.prepare("INSERT INTO posts (board,title,body,nick,pwh,ts,pinned,vid) VALUES ('notice',?,?,'운영자','',?,1,'')").bind(clean(title, 60), clean(body, 2000), Date.now()).run();
+}
+return { init, handle, removeRow, adminNotice, BOARDS };
 }
 export { BOARDS };

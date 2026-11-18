@@ -1,5 +1,9 @@
 // SEO와 AEO 공용 모듈: 메타태그 JSON-LD 서버 렌더링 sitemap robots llms.txt
-import { SITE, DISC, GUIDE } from './site.js';
+import { DISC } from '../sites/index.js';
+
+// 사이트 설정을 받아 그 사이트의 서버 렌더링과 sitemap과 robots와 llms.txt를 만든다
+export function createSeo(SITE) {
+const GUIDE = Object.fromEntries(Object.entries(SITE.cats).map(([c, v]) => [c, v.tips]));
 
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const ld = o => `<script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', ...o }).replace(/</g, '\\u003c')}</script>`;
@@ -237,7 +241,7 @@ async function llms(env) {
 }
 
 const busy = new Set();
-export async function seo(req, env, url, ctx, h = {}) {
+async function seo(req, env, url, ctx, h = {}) {
   if (req.method !== 'GET' && req.method !== 'HEAD') return null;
   try {
     const p = url.pathname;
@@ -247,7 +251,7 @@ export async function seo(req, env, url, ctx, h = {}) {
     const r = route(p);
     if (!r) return null;
     const cache = caches.default;
-    const key = new Request(url.origin + url.pathname + '?v=15');
+    const key = new Request(url.origin + url.pathname + '?v=15&s=' + SITE.id);
     const gen = async () => {
       const t0 = Date.now();
       // 템플릿과 상품과 클릭과 가격 기록을 동시에 읽는다
@@ -292,4 +296,7 @@ export async function seo(req, env, url, ctx, h = {}) {
   } catch (e) {
     return null;
   }
+}
+
+return { seo };
 }

@@ -1,7 +1,9 @@
 (() => {
   const $ = id => document.getElementById(id);
   const view = $('view');
-  const CATS = ['스킨케어', '선케어', '클렌징', '메이크업', '바디헤어', '의류', '신발', '가방', '장신구', '잡화'];
+  // 사이트 이름과 분야와 아이콘과 문구는 서버가 HTML에 넣어 준 사이트 설정(sites/*.js)에서 읽는다
+  const SITE = window.__site || { cats: [], icons: {}, empty: '🛍', tiles: [], heroEmpty: { small: '', text: '인기템을 준비하고 있어요' } };
+  const CATS = SITE.cats;
   let clicks = {};
   const NAME = { notice: '공지', review: '후기', qna: '질문', tip: '꿀팁', free: '자유' };
   let products = { products: [], categories: ['전체'] };
@@ -12,7 +14,7 @@
   // 같은 경로를 image1 하나로 받으면 연결 하나를 재사용한다. 실패하면 원래 주소로 한 번 더 시도한다.
   const SHARD = /^https:\/\/(?:image\d+|img\d+[a-z]?|static)\.coupangcdn\.com(\/image\/)/;
   const img = (p, eager, cls, later) => {
-    if (!p.image) return cls ? '' : '🌸';
+    if (!p.image) return cls ? '' : SITE.empty;
     const o = String(p.image).replace(/^http:/, 'https:');
     const f = o.replace(SHARD, 'https://image1.coupangcdn.com$1');
     const u = esc(f);
@@ -27,7 +29,7 @@
     const n = +el.dataset.t || 0;
     if (n < 2) { el.dataset.t = n + 1; setTimeout(() => { el.removeAttribute('src'); el.src = el.dataset.u; }, 1000 * (n + 1)); }
     else if (el.dataset.b) el.parentNode.classList.add('noimg');
-    else el.replaceWith('🌸');
+    else el.replaceWith(SITE.empty);
   };
   // 썸네일은 화면에 들어오기 직전에만 불러온다
   const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => {
@@ -44,7 +46,7 @@
   const ls = { get: k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} } };
 
 
-  const ICONS = { '스킨케어': '💧', '선케어': '☀️', '클렌징': '🫧', '메이크업': '💄', '바디헤어': '🧴', '의류': '👗', '신발': '👠', '가방': '👜', '장신구': '💍', '잡화': '🧣' };
+  const ICONS = SITE.icons;
   const FAQ = (() => { try { return JSON.parse($('faq-data').textContent); } catch (e) { return []; } })();
   const faqHtml = () => FAQ.length ? `<section class="faq"><h2>자주 묻는 질문</h2>${FAQ.map(f => `<details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join('')}</section>` : '';
   const SN = document.body.dataset.name || '', HT = document.body.dataset.home || document.title;
@@ -96,10 +98,10 @@
     }
     let top3 = take(pool, 4);
     if (!top3.length) top3 = take(r, 1);
-    const slides = top3.map((p, i) => `<a class="slide s${i % 4}" ${ilink(p)}><div class="bg">${img(p, i === 0, 'main', i > 0)}</div><div class="tx"><small>🌸 오늘의 추천</small><h2>${esc(p.name)}</h2><div class="pr">${won(p.price)}</div><span class="go">상품보기 →</span></div></a>`).join('');
+    const slides = top3.map((p, i) => `<a class="slide s${i % 4}" ${ilink(p)}><div class="bg">${img(p, i === 0, 'main', i > 0)}</div><div class="tx"><small>${SITE.empty} 오늘의 추천</small><h2>${esc(p.name)}</h2><div class="pr">${won(p.price)}</div><span class="go">상품보기 →</span></div></a>`).join('');
     const cats = CATS.map(c => ({ c, l: take(r.filter(p => p.category === c), 5) })).filter(x => x.l.length);
     view.innerHTML = `
-      <section class="hero"><div class="car" id="car">${slides || '<div class="slide s0 on"><div class="tx"><small>🌸 쁘띠.끄</small><h2>인기템을 준비하고 있어요</h2></div></div>'}<button class="cb l" aria-label="이전">‹</button><button class="cb r" aria-label="다음">›</button><div class="dots" id="dots"></div></section>`.replace('</section>', '</div><div class="tiles"><a class="tile t1" href="/c/%EC%9D%98%EB%A5%98"><b>👗 여성 패션 모아보기</b><span>의류와 신발과 가방과 장신구</span></a><a class="tile t2" href="#/talk"><b>💬 수다방</b><span>후기와 꿀팁 구경하기</span></a></div></section>') + `
+      <section class="hero"><div class="car" id="car">${slides || `<div class="slide s0 on"><div class="tx"><small>${esc(SITE.heroEmpty.small)}</small><h2>${esc(SITE.heroEmpty.text)}</h2></div></div>`}<button class="cb l" aria-label="이전">‹</button><button class="cb r" aria-label="다음">›</button><div class="dots" id="dots"></div></div><div class="tiles">${SITE.tiles.map(t => `<a class="tile ${t.cls}" href="${esc(encodeURI(t.href))}"><b>${esc(t.title)}</b><span>${esc(t.sub)}</span></a>`).join('')}</div></section>
       <section class="icons">${[['전체', '🛍', '/all'], ...CATS.map(c => [c, ICONS[c], '/c/' + encodeURIComponent(c)]), ['수다방', '💬', '#/talk']].map(([n, e, h]) => `<a href="${h}"><i>${e}</i>${n}</a>`).join('')}</section>
       <section class="sec"><div class="sh"><h2>🔥 실시간 <em>BEST 랭킹</em></h2><a href="/all">전체보기 ›</a></div><div class="railw"><button class="rb l" aria-label="이전">‹</button><div class="rail" id="rail">${railP.map((p, i) => card(p, i, { rank: 1 })).join('') || '<p class="empty">상품을 준비 중이에요</p>'}</div><button class="rb r" aria-label="다음">›</button></div></section>
       ${cats.map(x => `<section class="sec"><div class="sh"><h2>${ICONS[x.c]} ${esc(x.c)} <em>BEST</em></h2><a href="/c/${encodeURIComponent(x.c)}">더보기 ›</a></div><div class="pg">${x.l.map((p, i) => card(p, i)).join('')}</div></section>`).join('')}
