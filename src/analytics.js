@@ -9,6 +9,7 @@ function init(env) {
     try { const r = await env.DB.prepare("SELECT COUNT(*) n FROM sqlite_master WHERE name IN ('hits','budget','price_hist','price_last','idx_hits_ts','idx_hits_iph','idx_hits_type','idx_price_hist')").first(); if (r && r.n >= 8) return; } catch (e) {}
     await env.DB.prepare('CREATE TABLE IF NOT EXISTS hits (ts INTEGER, type TEXT, code TEXT, pid TEXT, name TEXT, country TEXT, city TEXT, device TEXT, browser TEXT, os TEXT, ref TEXT, lang TEXT, vid TEXT, bot INTEGER)').run();
     try { await env.DB.prepare('ALTER TABLE hits ADD COLUMN iph TEXT').run(); } catch (e) {} // 이미 있으면 무시
+    try { await env.DB.prepare('ALTER TABLE hits ADD COLUMN ipm TEXT').run(); } catch (e) {} // 셋째 자리를 가린 IP
     await env.DB.batch([
       env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_hits_ts ON hits (ts)'),
       env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_hits_iph ON hits (iph, ts)'),
@@ -63,6 +64,7 @@ async function track(env, req, ev) {
     const ip = req.headers.get('cf-connecting-ip') || '';
     const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
     const vid = (await sha(`${ip}|${ua}|${day}`)).slice(0, 16); // 원본 IP는 저장하지 않음
+    const ipm = maskIp(ip); // 원본은 버리고 셋째 자리를 별표로 가린 값만 남긴다
     const iph = ip ? (await sha(`petit-ip|${ip}`)).slice(0, 16) : '';
     // 같은 IP의 방문은 2시간에 한 번만 집계
     if (ev.type === 'view' && iph) {
@@ -85,8 +87,8 @@ async function track(env, req, ev) {
         if (dup) return; // 같은 사람이 같은 상품을 10분 안에 다시 누른 것은 한 번만 센다
       }
     }
-    await env.DB.prepare('INSERT INTO hits (ts,type,code,pid,name,country,city,device,browser,os,ref,lang,vid,bot,iph) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
-      .bind(Date.now(), ev.type, ev.code || '', ev.pid || '', ev.name || '', cf.country || '', cf.city || '', device, browser, os, ref, lang, vid, bot, iph).run();
+    await env.DB.prepare('INSERT INTO hits (ts,type,code,pid,name,country,city,device,browser,os,ref,lang,vid,bot,iph,ipm) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
+      .bind(Date.now(), ev.type, ev.code || '', ev.pid || '', ev.name || '', cf.country || '', cf.city || '', device, browser, os, ref, lang, vid, bot, iph, ipm).run();
   } catch (e) { console.error('track', e.message); }
 }
 
@@ -140,7 +142,7 @@ async function admin(req, env, url) {
     q(env, 'SELECT id,board,title,nick,ts,ccount,likes FROM posts WHERE hidden=0 ORDER BY ts DESC LIMIT 25'),
     q(env, 'SELECT id,pid,body,nick,ts FROM comments WHERE hidden=0 ORDER BY ts DESC LIMIT 20')
   ]);
-  const [tot, daily, hourly, top, country, city, device, browser, os, ref, recent, bots] = await Promise.all([
+  const [tot, daily, hourly, top, country, city, device, browser, os, ref, recent, bots, ips] = await Promise.all([
     q(env, `SELECT SUM(type='view') v, COUNT(DISTINCT CASE WHEN type='view' THEN vid END) u, SUM(type='click') c, COUNT(DISTINCT CASE WHEN type='click' THEN vid END) cu FROM hits ${W}`, since),
     q(env, `SELECT date(${KST},'unixepoch') d, SUM(type='view') v, SUM(type='click') c FROM hits ${W} GROUP BY d ORDER BY d`, since),
     q(env, `SELECT CAST(strftime('%H',${KST},'unixepoch') AS INTEGER) h, COUNT(*) c FROM hits ${W} AND type='view' GROUP BY h`, since),
@@ -152,7 +154,8 @@ async function admin(req, env, url) {
     q(env, `SELECT os k, COUNT(*) c FROM hits ${W} AND type='view' GROUP BY k ORDER BY c DESC LIMIT 8`, since),
     q(env, `SELECT CASE WHEN ref='' THEN '직접 접속' ELSE ref END k, COUNT(*) c FROM hits ${W} AND type='view' GROUP BY k ORDER BY c DESC LIMIT 10`, since),
     q(env, 'SELECT * FROM hits WHERE bot=0 ORDER BY ts DESC LIMIT 40'),
-    q(env, 'SELECT COUNT(*) c FROM hits WHERE bot=1 AND ts>=?', since)
+    q(env, 'SELECT COUNT(*) c FROM hits WHERE bot=1 AND ts>=?', since),
+    q(env, `SELECT ipm k, COUNT(*) c FROM hits ${W} AND ipm<>'' GROUP BY k ORDER BY c DESC LIMIT 15`, since)
   ]);
   const bud = await env.DB.prepare('SELECT n FROM budget WHERE day=?').bind(utcDay()).first().catch(() => null);
   let imgq = null;
@@ -210,9 +213,10 @@ button{background:var(--p1);color:#fff;border:0;border-radius:8px;padding:6px 12
 <div class="box"><h2>기기</h2>${bars(device)}</div>
 <div class="box"><h2>브라우저</h2>${bars(browser)}</div>
 <div class="box"><h2>운영체제</h2>${bars(os)}</div>
+<div class="box"><h2>접속 IP TOP (셋째 자리 가림)</h2>${bars(ips)}</div>
 </section>
-<section class="box"><h2>최근 활동</h2><div class="wrap"><table><tr><th>시간</th><th>구분</th><th>내용</th><th>지역</th><th>기기</th><th>브라우저</th><th>OS</th><th>유입</th></tr>
-${recent.map(r => `<tr><td>${kst(r.ts)}</td><td><span class="tag ${r.type}">${r.type === 'click' ? '클릭' : '방문'}</span></td><td>${esc(r.type === 'click' ? `${r.code} ${r.name}`.slice(0, 40) : '메인')}</td><td>${esc(`${r.country} ${r.city}`.trim())}</td><td>${esc(r.device)}</td><td>${esc(r.browser)}</td><td>${esc(r.os)}</td><td>${esc(r.ref || '직접')}</td></tr>`).join('') || '<tr><td colspan="8" class="mute">기록이 없습니다</td></tr>'}
+<section class="box"><h2>최근 활동</h2><div class="wrap"><table><tr><th>시간</th><th>구분</th><th>내용</th><th>지역</th><th>기기</th><th>브라우저</th><th>OS</th><th>IP</th><th>유입</th></tr>
+${recent.map(r => `<tr><td>${kst(r.ts)}</td><td><span class="tag ${r.type}">${r.type === 'click' ? '클릭' : '방문'}</span></td><td>${esc(r.type === 'click' ? `${r.code} ${r.name}`.slice(0, 40) : '메인')}</td><td>${esc(`${r.country} ${r.city}`.trim())}</td><td>${esc(r.device)}</td><td>${esc(r.browser)}</td><td>${esc(r.os)}</td><td>${esc(r.ipm || '')}</td><td>${esc(r.ref || '직접')}</td></tr>`).join('') || '<tr><td colspan="9" class="mute">기록이 없습니다</td></tr>'}
 </table></div></section>
 <section class="box" style="margin-top:12px"><h2>커뮤니티 관리</h2>
 <div class="wrap"><table><tr><th>번호</th><th>게시판</th><th>제목</th><th>작성자</th><th>댓글</th><th>좋아요</th><th>시간</th><th></th></tr>
@@ -230,7 +234,7 @@ async function post(b){const r=await fetch('/0',{method:'POST',body:JSON.stringi
 async function del(t,id){if(confirm('삭제할까요?')&&await post({a:'del',t,id}))location.reload()}
 async function notice(){const t=document.getElementById('nt').value,b=document.getElementById('nb').value;if(await post({a:'notice',title:t,body:b}))location.reload()}
 </script>
-<p class="mute" style="margin-top:16px">원본 IP는 저장하지 않고 일 단위로 섞은 해시만 사용합니다. 봇은 통계에서 제외됩니다.</p>
+<p class="mute" style="margin-top:16px">원본 IP는 저장하지 않고 셋째 자리를 가린 IP(예 203.0.*.45)와 섞은 해시만 보관합니다. 봇은 통계에서 제외됩니다.</p>
 </body></html>`;
   return new Response(html, { headers: head });
 }
@@ -272,6 +276,14 @@ async function overBudget(env) {
 }
 
 // 오래된 접속 기록은 90일 뒤 지워 DB 읽기량과 용량을 일정하게 유지
+// 203.0.113.45 는 203.0.*.45 로 가린다 (IPv6는 셋째 묶음을 가리고 앞 네 묶음만 남긴다)
+function maskIp(ip) {
+  if (!ip) return '';
+  if (ip.includes(':')) { const g = ip.split(':'); if (g.length > 2) g[2] = '*'; return g.slice(0, 4).join(':'); }
+  const g = ip.split('.');
+  return g.length === 4 ? `${g[0]}.${g[1]}.*.${g[3]}` : '';
+}
+
 async function pruneOld(env) {
   try {
     if (!env.DB) return;
