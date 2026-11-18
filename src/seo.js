@@ -39,7 +39,8 @@ const faqLd = (faq = SITE.faq) => ld({
   '@type': 'FAQPage',
   mainEntity: faq.map(f => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } }))
 });
-const li = list => `<ul>${list.map(p => `<li><a href="${esc(p.url)}" rel="sponsored nofollow">${esc(p.name)}</a> ${won(p.price)}</li>`).join('')}</ul>`;
+// 검색엔진용 목록은 상품 본문 페이지로 잇는다 (방문자가 보는 화면의 상품 링크는 쿠팡으로 바로 간다)
+const li = list => `<ul>${list.map(p => `<li><a href="/item/${esc(p.id)}">${esc(p.name)}</a> ${won(p.price)}</li>`).join('')}</ul>`;
 const faqHtml = (faq = SITE.faq) => `<section class="faq"><h2>자주 묻는 질문</h2>${faq.map(f => `<details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join('')}</section>`;
 // 분야마다 질문과 답을 만든다 (검색엔진과 AI 답변이 그대로 가져갈 수 있게 짧고 분명한 문장으로 쓴다)
 const catFaq = c => {
@@ -122,9 +123,14 @@ function buildItem(p, list, hist) {
   const title = `${p.name} 가격 정보 | ${SITE.name}`;
   const desc = `${p.name} ${cat} 상품의 쿠팡 판매가${p.price ? ' ' + p.price + '원' : ''}과 가격 변화와 같은 카테고리 가격 비교와 고르는 법을 정리했습니다`.slice(0, 150);
   const tip = (GUIDE[cat] || []).map(t => `<li>${esc(t)}</li>`).join('');
+  const faq = [
+    p.price ? { q: `${p.name} 가격은 얼마인가요`, a: `쿠팡 판매가는 ${fmt(p.price)}원으로 확인됩니다. 가격과 재고는 수시로 바뀌니 구매 전에 쿠팡에서 다시 확인하세요.` } : null,
+    { q: `${p.name} 어디서 구매하나요`, a: `쿠팡에서 구매합니다. 이 페이지의 버튼을 누르면 쿠팡으로 연결되며 구매와 배송과 교환과 환불은 쿠팡에서 직접 처리합니다. ${SITE.name} 사이트는 상품을 소개만 하는 사이트입니다.` },
+    { q: `${p.name}은 ${cat} 중 어떤 상품인가요`, a: `${cat} 분야에서 쿠팡 인기 기준으로 모은 상품입니다. ${(SITE.cats[cat] && SITE.cats[cat].intro) || ''}` }
+  ].filter(Boolean);
   const body = `<article class="ip ssr" data-cat="${esc(cat)}">
 <nav class="crumb"><a href="/">홈</a> › <a href="${catUrl(cat)}">${esc(cat)}</a> › <span>상품 정보</span></nav>
-<div class="ip-top"><div class="ip-img">${p.image ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" fetchpriority="high" decoding="async" referrerpolicy="no-referrer">` : '<span>🌸</span>'}</div>
+<div class="ip-top"><div class="ip-img">${p.image ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" fetchpriority="high" decoding="async" referrerpolicy="no-referrer">` : `<span>${SITE.emptyIcon}</span>`}</div>
 <div class="ip-info"><span class="bd">${esc(cat)}</span><h1>${esc(p.name)}</h1>
 <div class="ip-price">${p.price ? `${fmt(p.price)}<small>원</small>` : '가격 확인'}</div>
 <p class="ip-note">쿠팡 파트너스 데이터 기준이며 실제 가격과 재고는 쿠팡에서 바뀔 수 있습니다.</p>
@@ -135,13 +141,14 @@ function buildItem(p, list, hist) {
 <section><h2>가격 변화</h2>${spark(hist)}${trend}<p class="ip-note">여섯 시간마다 쿠팡 파트너스 데이터를 불러올 때 가격이 바뀐 경우만 기록한 값입니다.</p></section>
 <section><h2>${esc(cat)} 가격 비교</h2><table class="ip-table cmp"><thead><tr><th>상품</th><th>쿠팡 판매가</th></tr></thead><tbody>${near.map(x => `<tr class="${x.id === p.id ? 'me' : ''}"><td><a href="/item/${esc(x.id)}">${esc(x.name)}</a></td><td>${fmt(x.price)}원</td></tr>`).join('')}</tbody></table></section>
 ${tip ? `<section><h2>${esc(cat)} 고를 때 확인할 점</h2><ul class="ip-tips">${tip}</ul></section>` : ''}
-${similar.length ? `<section><h2>같은 카테고리의 다른 상품</h2><div class="ip-sim">${similar.map(x => `<a href="/item/${esc(x.id)}">${x.image ? `<img src="${esc(x.image)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : '<span>🌸</span>'}<b>${esc(x.name)}</b><em>${x.price ? fmt(x.price) + '원' : ''}</em></a>`).join('')}</div></section>` : ''}
-</article>`;
+${similar.length ? `<section><h2>같은 카테고리의 다른 상품</h2><div class="ip-sim">${similar.map(x => `<a href="/item/${esc(x.id)}">${x.image ? `<img src="${esc(x.image)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : `<span>${SITE.emptyIcon}</span>`}<b>${esc(x.name)}</b><em>${x.price ? fmt(x.price) + '원' : ''}</em></a>`).join('')}</div></section>` : ''}
+</article>${faqHtml(faq)}`;
   return {
     title, desc, canonical: abs('/item/' + p.id), body,
     ld: [
       crumbs([['홈', '/'], [cat, catUrl(cat)], [p.name, '/item/' + p.id]]),
-      ld({ ...product(p), '@id': abs('/item/' + p.id), url: abs('/item/' + p.id), description: desc, offers: p.price ? { '@type': 'Offer', priceCurrency: 'KRW', price: p.price, url: abs(p.url) } : undefined })
+      ld({ ...product(p), '@id': abs('/item/' + p.id), url: abs('/item/' + p.id), description: desc, offers: p.price ? { '@type': 'Offer', priceCurrency: 'KRW', price: p.price, url: abs(p.url) } : undefined }),
+      faqLd(faq)
     ]
   };
 }
@@ -239,7 +246,7 @@ function robots() {
 async function sitemap(env) {
   const d = await load(env);
   const last = d && d.updatedAt ? String(d.updatedAt).slice(0, 10) : new Date().toISOString().slice(0, 10);
-  const urls = [['/', 1.0], ['/all', 0.8], ...Object.keys(SITE.cats).map(c => [catUrl(c), 0.7]), ...((d && d.products) || []).slice(0, 400).map(x => ['/item/' + x.id, 0.6])];
+  const urls = [['/', 1.0], ['/all', 0.8], ...Object.keys(SITE.cats).map(c => [catUrl(c), 0.7]), ...((d && d.products) || []).slice(0, 2000).map(x => ['/item/' + x.id, 0.6])];
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(([u, p]) => `<url><loc>${esc(abs(u))}</loc><lastmod>${last}</lastmod><changefreq>daily</changefreq><priority>${p}</priority></url>`).join('\n')}\n</urlset>\n`;
   return new Response(xml, { headers: headers('application/xml;charset=utf-8') });
 }
@@ -290,7 +297,7 @@ async function seo(req, env, url, ctx, h = {}) {
     const r = route(p);
     if (!r) return null;
     const cache = caches.default;
-    const key = new Request(url.origin + url.pathname + '?v=24&s=' + SITE.id);
+    const key = new Request(url.origin + url.pathname + '?v=25&s=' + SITE.id);
     const gen = async () => {
       const t0 = Date.now();
       // 템플릿과 상품과 클릭과 가격 기록을 동시에 읽는다
