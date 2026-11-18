@@ -21,6 +21,10 @@ export const PROMOS = [
   { id: 's1', site: 'seareal', text: '바다의 모든 것 인기 랭킹', url: 'https://seareal.kr/' },
   { id: 's2', site: 'seareal', text: '바다낚시 용품 모아보기', url: 'https://seareal.kr/c/%EB%82%9A%EC%8B%9C%EB%8C%80%EB%A6%B4' },
   { id: 's3', site: 'seareal', text: '신선 수산물 인기템 모아보기', url: 'https://seareal.kr/c/%ED%8C%A8%EB%A5%98' },
+  { id: 'z1', site: 'zakgong', text: '작업 공구 인기 랭킹 한눈에', url: 'https://zakgong.com/' },
+  { id: 'z2', site: 'zakgong', text: '전동 드릴과 임팩트 드라이버 인기템', url: 'https://zakgong.com/c/%EC%A0%84%EB%8F%99%EA%B3%B5%EA%B5%AC' },
+  { id: 'z3', site: 'zakgong', text: '공구함과 수납용품 모아보기', url: 'https://zakgong.com/c/%EA%B3%B5%EA%B5%AC%ED%95%A8%EC%88%98%EB%82%A9' },
+  { id: 'z4', site: 'zakgong', text: '작업 안전용품 필수템', url: 'https://zakgong.com/c/%EC%95%88%EC%A0%84%EC%9A%A9%ED%92%88' },
   { id: 'u1', site: 'usb', text: 'USB.KR 전자기기 가격 비교', url: 'https://usb.kr/' },
   { id: 'u2', site: 'usb', text: '차량용 전자기기 모아보기', url: 'https://usb.kr/category/car' },
   { id: 'u3', site: 'usb', text: '쿠팡 골드박스 전자기기 핫딜', url: 'https://usb.kr/deals' }
