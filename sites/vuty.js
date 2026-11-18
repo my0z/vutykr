@@ -6,6 +6,7 @@ export default {
   name: '쁘띠.끄',
   mark: '✦', // 로고 앞에 붙는 표시
   icon: '🌸', // 브라우저 탭 아이콘
+  logo: '<g fill="{c1}"><ellipse cx="16" cy="8.6" rx="4.3" ry="6.6"/><ellipse cx="16" cy="8.6" rx="4.3" ry="6.6" transform="rotate(72 16 16)"/><ellipse cx="16" cy="8.6" rx="4.3" ry="6.6" transform="rotate(144 16 16)"/><ellipse cx="16" cy="8.6" rx="4.3" ry="6.6" transform="rotate(216 16 16)"/><ellipse cx="16" cy="8.6" rx="4.3" ry="6.6" transform="rotate(288 16 16)"/></g><circle cx="16" cy="16" r="3.6" fill="{c2}"/><circle cx="16" cy="16" r="1.4" fill="#fff"/>', // 로고 그림 (32칸 안에 그린 SVG 안쪽 내용 / {c1}과 {c2}는 사이트 색으로 바뀜)
   emptyIcon: '🌸', // 상품 이미지가 없을 때 쓰는 표시
   title: '쁘띠.끄 | 여성 뷰티와 패션 인기템 랭킹 쇼핑',
   h1: '여성 뷰티와 패션 인기템 랭킹',

@@ -18,6 +18,7 @@ export default {
   name: '${name}',
   mark: '✦',
   icon: '🛍',
+  logo: '<path d="M6 11h20l-1.6 15.2c-.1.9-.9 1.6-1.8 1.6H9.4c-.9 0-1.7-.7-1.8-1.6z" fill="{c1}"/><path d="M11 14V9.5a5 5 0 0 1 10 0V14" fill="none" stroke="{c2}" stroke-width="2.6" stroke-linecap="round"/>', // 로고 그림 (32칸 SVG 안쪽 내용)
   emptyIcon: '🛍',
   title: '${name} | 인기 랭킹 쇼핑',
   h1: '인기템 랭킹',

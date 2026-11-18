@@ -6,6 +6,7 @@ export default {
   name: 'SEAREAL',
   mark: '🌊', // 로고 앞에 붙는 표시
   icon: '🌊', // 브라우저 탭 아이콘
+  logo: '<ellipse cx="14" cy="12" rx="9.5" ry="5.8" fill="{c1}"/><path d="M22 12l7-5.4v10.8z" fill="{c1}"/><circle cx="9" cy="10.8" r="1.4" fill="#fff"/><path d="M3 22.5c3-3 6 3 9 0s6 3 9 0 6 3 8 0M3 28c3-3 6 3 9 0s6 3 9 0 6 3 8 0" fill="none" stroke="{c2}" stroke-width="2.4" stroke-linecap="round"/>', // 로고 그림 (32칸 안에 그린 SVG 안쪽 내용 / {c1}과 {c2}는 사이트 색으로 바뀜)
   emptyIcon: '🌊', // 상품 이미지가 없을 때 쓰는 표시
   title: 'SEAREAL | 바다의 모든 것 인기 랭킹 쇼핑',
   h1: '바다의 모든 것 인기 랭킹',

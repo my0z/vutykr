@@ -6,6 +6,7 @@ export default {
   name: 'BODCAR',
   mark: '🚗', // 로고 앞에 붙는 표시
   icon: '🚗', // 브라우저 탭 아이콘
+  logo: '<path d="M3 20v-4.5c0-1 .6-1.8 1.5-2.1l3-.9 3.2-4.3c.5-.7 1.3-1.1 2.1-1.1h6.4c.9 0 1.7.4 2.2 1.1L25 12.5l2.8.9c1.3.4 2.2 1.6 2.2 3V20c0 .8-.7 1.5-1.5 1.5h-24C3.7 21.5 3 20.8 3 20z" fill="{c1}"/><path d="M11.6 12.4l1.9-2.6h5l1.9 2.6z" fill="#fff" opacity=".92"/><circle cx="9" cy="22" r="3.6" fill="{c2}"/><circle cx="23" cy="22" r="3.6" fill="{c2}"/><circle cx="9" cy="22" r="1.4" fill="#fff"/><circle cx="23" cy="22" r="1.4" fill="#fff"/>', // 로고 그림 (32칸 안에 그린 SVG 안쪽 내용 / {c1}과 {c2}는 사이트 색으로 바뀜)
   emptyIcon: '🚗', // 상품 이미지가 없을 때 쓰는 표시
   title: 'BODCAR | 자동차용품 인기 랭킹 쇼핑',
   h1: '자동차용품 인기 랭킹',

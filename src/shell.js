@@ -4,6 +4,12 @@ import { DISC, PROMOS } from '../sites/index.js';
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const js = o => JSON.stringify(o).replace(/</g, '\\u003c');
 
+// 사이트 로고 그림 (색은 사이트 색을 따른다)
+export function logoSvg(site, c1, c2) {
+  const g = (site.logo || '').replace(/\{c1\}/g, c1).replace(/\{c2\}/g, c2);
+  return `<svg class="mk" viewBox="0 0 32 32" aria-hidden="true">${g}</svg>`;
+}
+
 function themeCss(t) {
   const L = t.light, D = t.dark, T = t.tiles;
   const vars = o => Object.entries(o).filter(([, v]) => v).map(([k, v]) => `--${k}:${v}`).join(';');
@@ -26,7 +32,7 @@ export function renderShell(site, html) {
   const promos = PROMOS.filter(p => p.site !== site.id).map(p => [p.id, p.text, p.url]);
   const map = {
     TITLE: esc(site.title), DESC: esc(site.desc), THEME_COLOR: esc(site.theme.color),
-    NAME: esc(site.name), MARK: esc(site.mark), TOPBAR: esc(site.topbar), SEARCH: esc(site.searchPlaceholder),
+    NAME: esc(site.name), MARK: logoSvg(site, 'var(--p1)', 'var(--p2)'), TOPBAR: esc(site.topbar), SEARCH: esc(site.searchPlaceholder),
     DISC: esc(DISC), HOSTNAME: esc(hostName),
     THEME_CSS: themeCss(site.theme), SITE_JSON: js(clientSite(site)), PROMOS: js(promos)
   };

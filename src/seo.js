@@ -200,7 +200,7 @@ function inject(html, pg, img, boot) {
     `<meta name="twitter:card" content="${img ? 'summary_large_image' : 'summary'}">`,
     `<meta name="twitter:title" content="${esc(pg.title)}"><meta name="twitter:description" content="${esc(pg.desc)}">`,
     img ? `<meta name="twitter:image" content="${esc(img)}">` : '',
-    `<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E${encodeURIComponent(SITE.icon)}%3C/text%3E%3C/svg%3E">`,
+    `<link rel="icon" type="image/svg+xml" href="/favicon.svg">`,
     `<link rel="alternate" type="text/plain" href="/llms.txt" title="LLM site summary">`,
     ...pg.ld
   ].filter(Boolean).join('\n');
@@ -241,10 +241,18 @@ async function llms(env) {
 }
 
 const busy = new Set();
+// 탭 아이콘은 사이트 로고를 그대로 쓴다
+  function favicon() {
+    const c = SITE.theme.light;
+    const g = (SITE.logo || '').replace(/\{c1\}/g, c.p1).replace(/\{c2\}/g, c.p2);
+    return new Response(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">${g}</svg>`, { headers: { 'content-type': 'image/svg+xml', 'cache-control': 'public,max-age=86400' } });
+  }
+
 async function seo(req, env, url, ctx, h = {}) {
   if (req.method !== 'GET' && req.method !== 'HEAD') return null;
   try {
     const p = url.pathname;
+    if (p === '/favicon.svg') return favicon();
     if (p === '/robots.txt') return robots();
     if (p === '/sitemap.xml') return await sitemap(env);
     if (p === '/llms.txt') return await llms(env);
