@@ -155,3 +155,5 @@ footer .disc{color:var(--ink);max-width:720px;margin:12px auto}
 .sec,.band,.faq{content-visibility:auto;contain-intrinsic-size:auto 460px}
 .pc,.item{animation:none!important}
 .rail{contain:layout}
+
+.feebar{background:var(--soft);border-bottom:1px solid var(--line);color:var(--mute);font-size:min(.74rem,2.3vw);line-height:1.4;text-align:center;padding:6px 0;white-space:nowrap;overflow:hidden}
