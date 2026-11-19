@@ -2,10 +2,12 @@
 import vuty from './vuty.js';
 import bodcar from './bodcar.js';
 import seareal from './seareal.js';
+import pemily from './pemily.js';
 import guideVuty from './guides/vuty.js';
 import guideBodcar from './guides/bodcar.js';
 import guideSeareal from './guides/seareal.js';
 import guideZakgong from './guides/zakgong.js';
+import guidePemily from './guides/pemily.js';
 import moreVuty from './guides/vuty-more.js';
 import moreBodcar from './guides/bodcar-more.js';
 import moreSeareal from './guides/seareal-more.js';
@@ -14,9 +16,9 @@ import zakgong from './zakgong.js';
 
 // 분야별 구매 가이드 글을 각 사이트 설정에 붙인다 (새 사이트는 sites/guides/<이름>.js 를 만들고 여기에 한 줄을 더한다)
 const withMore = (g, more) => { for (const [c, v] of Object.entries(g)) v.sections = [...v.sections, ...(more[c] || [])]; return g; };
-vuty.guides = withMore(guideVuty, moreVuty); bodcar.guides = withMore(guideBodcar, moreBodcar); seareal.guides = withMore(guideSeareal, moreSeareal); zakgong.guides = withMore(guideZakgong, moreZakgong);
+vuty.guides = withMore(guideVuty, moreVuty); bodcar.guides = withMore(guideBodcar, moreBodcar); seareal.guides = withMore(guideSeareal, moreSeareal); zakgong.guides = withMore(guideZakgong, moreZakgong); pemily.guides = guidePemily;
 
-export const SITES = { vuty, bodcar, seareal, zakgong };
+export const SITES = { vuty, bodcar, seareal, zakgong, pemily };
 export const DEFAULT_SITE = 'vuty'; // 등록되지 않은 주소(workers.dev 등)로 들어오면 보여 줄 사이트
 
 // 쿠팡 파트너스 경제적 이해관계 표시 문구 (공식 예시 문장과 같은 뜻으로 쉼표만 뺐다)
@@ -41,6 +43,12 @@ export const PROMOS = [
   { id: 'z2', site: 'zakgong', text: '전동 드릴과 임팩트 드라이버 인기템', url: 'https://zakgong.com/c/%EC%A0%84%EB%8F%99%EA%B3%B5%EA%B5%AC' },
   { id: 'z3', site: 'zakgong', text: '공구함과 수납용품 모아보기', url: 'https://zakgong.com/c/%EA%B3%B5%EA%B5%AC%ED%95%A8%EC%88%98%EB%82%A9' },
   { id: 'z4', site: 'zakgong', text: '작업 안전용품 필수템', url: 'https://zakgong.com/c/%EC%95%88%EC%A0%84%EC%9A%A9%ED%92%88' },
+  { id: 'p1', site: 'pemily', text: '강아지 사료와 간식 인기 랭킹', url: 'https://pemily.kr/c/%EC%82%AC%EB%A3%8C' },
+  { id: 'p2', site: 'pemily', text: '고양이 스크래처와 캣타워 인기템', url: 'https://pemily.kr/c/%EC%8A%A4%ED%81%AC%EB%9E%98%EC%B2%98%EC%BA%A3%ED%83%80%EC%9B%8C' },
+  { id: 'p3', site: 'pemily', text: '햄스터와 소동물 용품 모아보기', url: 'https://pemily.kr/c/%EC%86%8C%EB%8F%99%EB%AC%BC%EC%A1%B0%EB%A5%98' },
+  { id: 'p4', site: 'pemily', text: '앵무새 사료와 새장 인기 랭킹', url: 'https://pemily.kr/c/%EC%86%8C%EB%8F%99%EB%AC%BC%EC%A1%B0%EB%A5%98' },
+  { id: 'p5', site: 'pemily', text: '관상어 어항과 여과기 인기템', url: 'https://pemily.kr/c/%EA%B4%80%EC%83%81%EC%96%B4' },
+  { id: 'p6', site: 'pemily', text: '하네스와 리드줄 산책용품 인기템', url: 'https://pemily.kr/c/%EC%82%B0%EC%B1%85%EC%99%B8%EC%B6%9C' },
   { id: 'u1', site: 'usb', text: 'USB.KR 전자기기 가격 비교', url: 'https://usb.kr/' },
   { id: 'u2', site: 'usb', text: '차량용 전자기기 모아보기', url: 'https://usb.kr/category/car' },
   { id: 'u3', site: 'usb', text: '쿠팡 골드박스 전자기기 핫딜', url: 'https://usb.kr/deals' }
