@@ -144,6 +144,8 @@ export function createSite(SITE, mods) {
   const MUST = {};
   if (SITE.strict) for (const [c, re] of RULES) (MUST[c] ||= []).push(re);
   const okCat = (c, nm) => !MUST[c] || MUST[c].some(re => re.test(String(nm || '')));
+  // 이름이 그 분야 단어와 맞지 않으면 이름에 맞는 다른 분야로 옮기고 어디에도 안 맞으면 뺀다
+  const fitCat = (c, nm) => (okCat(c, nm) ? c : (SITE.strict ? classify(String(nm || '')) : c));
   const classify = nm => { for (const [c, re] of RULES) if (re.test(nm)) return c; return ''; }; // 분류할 수 없으면 베스트에서 뺀다
 
 let linksCache = { t: 0, v: {} };
@@ -159,7 +161,7 @@ let prodCache = { t: 0, v: null };
 async function getProducts(env) {
   if (Date.now() - prodCache.t < 60000 && prodCache.v) return prodCache.v;
   const v = JSON.parse((await env.DATA.get('products', { cacheTtl: 60 })) || 'null');
-  if (v && v.products) v.products = v.products.filter(p => okCat(p.category, p.name)); // 이미 저장된 엉뚱한 상품도 바로 숨긴다
+  if (v && v.products) v.products = v.products.map(p => ({ ...p, category: fitCat(p.category, p.name) })).filter(p => p.category); // 이미 저장된 엉뚱한 상품은 알맞은 분야로 옮기거나 숨긴다
   prodCache = { t: Date.now(), v };
   return v;
 }
@@ -225,10 +227,12 @@ async function refresh(env) {
   const add = (list, cat, badge) => {
     for (const p of list) {
       const nm = String(p.productName || '').toLowerCase().replace(/\s+/g, '');
-      if (!p.productId || seen.has(p.productId) || names.has(nm) || skipName(String(p.productName || '')) || !okCat(cat, p.productName)) continue;
+      if (!p.productId || seen.has(p.productId) || names.has(nm) || skipName(String(p.productName || ''))) continue;
+      const fc = fitCat(cat, p.productName);
+      if (!fc) continue;
       seen.add(p.productId);
       names.add(nm);
-      products.push(norm(p, cat, badge));
+      products.push(norm(p, fc, badge));
     }
   };
   const slim = p => ({ productId: p.productId, productName: p.productName, productPrice: p.productPrice, productImage: p.productImage, productUrl: p.productUrl });
@@ -288,8 +292,8 @@ async function refresh(env) {
   let imgStat = null;
   if (prev && prev.products) {
     for (const p of prev.products) {
-      if (!okCat(p.category, p.name) || fresh.has(p.category) || seen.has(p.id) || names.has(String(p.name || '').toLowerCase().replace(/\s+/g, ''))) continue;
-      kept.push({ ...p, keep: true });
+      if (!fitCat(p.category, p.name) || fresh.has(p.category) || seen.has(p.id) || names.has(String(p.name || '').toLowerCase().replace(/\s+/g, ''))) continue;
+      kept.push({ ...p, category: fitCat(p.category, p.name), keep: true });
     }
   }
 
@@ -362,8 +366,9 @@ const handler = {
       if (link) {
         const code = path.slice(1);
         const direct = () => new Response(null, { status: 302, headers: { Location: link.u, 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' } });
-        if (url.searchParams.get('go')) return direct(); // 안내 페이지에서 넘어온 요청은 이미 센 클릭이라 다시 세지 않고 바로 보낸다
-        ctx.waitUntil(track(env, req, { type: 'click', code, pid: link.i, name: link.n }));
+        const g = url.searchParams.get('go');
+        if (g === 'a') return direct(); // 관리자가 통계에서 누른 링크는 세지 않고 바로 보낸다
+        if (g) { ctx.waitUntil(track(env, req, { type: 'click', code, pid: link.i, name: link.n })); return direct(); } // 안내 페이지에서 실제로 쿠팡으로 넘어갈 때 한 번 센다
         if (/bot|spider|crawl|slurp|preview|facebookexternalhit|curl|python|go-http|monitor/i.test(req.headers.get('user-agent') || '')) return direct(); // 검색 로봇과 링크 검사기는 바로 보낸다
         const d = await getProducts(env).catch(() => null);
         return goPage(SITE, code, ((d && d.products) || []).find(x => x.id === link.i));

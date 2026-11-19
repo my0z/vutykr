@@ -226,7 +226,7 @@
   function route() {
     clearInterval(timer);
     let h = location.hash.replace(/^#/, '');
-    if (!h && /^\/(item\/\d+|guide\/[^/]+)$/.test(location.pathname)) {
+    if (!h && /^\/(item\/\d+|guide\/[^/]+|about|privacy|terms)$/.test(location.pathname)) {
       narrow(false);
       const el = document.querySelector('[data-cat]');
       nav(el ? el.dataset.cat : '');

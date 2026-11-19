@@ -43,19 +43,35 @@ function pick(url, req) {
   return { site: SITES[id], set: SITES[q] ? q : null };
 }
 
+// 모든 응답에 붙이는 보안 헤더
+const SEC = {
+  'strict-transport-security': 'max-age=31536000',
+  'x-content-type-options': 'nosniff',
+  'referrer-policy': 'strict-origin-when-cross-origin',
+  'x-frame-options': 'SAMEORIGIN',
+  'permissions-policy': 'camera=(), microphone=(), geolocation=(), payment=()'
+};
+const secure = res => {
+  if (res.status === 101) return res;
+  const r = new Response(res.body, res);
+  for (const [k, v] of Object.entries(SEC)) if (!r.headers.has(k)) r.headers.set(k, v);
+  return r;
+};
+
 export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
     const to = redirectForHost(url.hostname); // 다른 주소로 들어오면 경로와 검색어를 그대로 두고 대표 주소로 영구 이동
-    if (to) return Response.redirect(to + url.pathname + url.search, 301);
+    if (to) return secure(Response.redirect(to + url.pathname + url.search, 301));
+    const real = siteForHost(url.hostname);
+    if (real && url.hostname !== new URL(real.host).hostname) return secure(Response.redirect(real.host + url.pathname + url.search, 301)); // www 주소는 대표 주소로 영구 이동
     const { site, set } = pick(url, req);
     const senv = bind(env, site);
     if (!senv) return new Response('이 사이트의 저장소가 연결되지 않았습니다', { status: 503 });
-    const res = await engineFor(site).fetch(req, senv, ctx);
+    const res = secure(await engineFor(site).fetch(req, senv, ctx));
     if (!set) return res;
-    const r = new Response(res.body, res);
-    r.headers.append('set-cookie', `site=${set}; Path=/; Max-Age=3600`);
-    return r;
+    res.headers.append('set-cookie', `site=${set}; Path=/; Max-Age=3600`);
+    return res;
   },
 
   // 매시간 한 사이트씩 돌아가며 상품을 갱신한다 (세 사이트가 같은 쿠팡 키를 쓰므로 한 시간에 한 사이트만 불러 호출 한도를 지킨다)

@@ -1,6 +1,7 @@
 // SEO와 AEO 공용 모듈: 메타태그 JSON-LD 서버 렌더링 sitemap robots llms.txt
 import { DISC } from '../sites/index.js';
 import { indexNowKey } from './indexnow.js';
+import { legalPage } from './legal.js';
 
 // 사이트 설정을 받아 그 사이트의 서버 렌더링과 sitemap과 robots와 llms.txt를 만든다
 export function createSeo(SITE) {
@@ -59,6 +60,7 @@ const hasGuide = c => !!(SITE.guides && SITE.guides[c]);
 
 function route(p) {
   if (p === '/' || p === '/index.html') return { t: 'home' };
+  if (p === '/about' || p === '/privacy' || p === '/terms') return { t: 'legal', k: p.slice(1) };
   if (p === '/all') return { t: 'all' };
   const im = p.match(/^\/item\/(\d{1,20})$/);
   if (im) return { t: 'item', id: im[1] };
@@ -122,7 +124,7 @@ function buildItem(p, list, hist) {
   let trend = '';
   if (hist.length >= 2) trend = `<p>${mdate(hist[0].ts)}부터 기록한 가격 중 가장 낮은 값은 ${fmt(Math.min(...prices))}원 가장 높은 값은 ${fmt(Math.max(...prices))}원이고 마지막으로 바뀐 날은 ${mdate(hist[hist.length - 1].ts)}입니다.</p>`;
   else if (hist.length === 1) trend = `<p>${mdate(hist[0].ts)}부터 이 상품의 가격을 기록하고 있으며 지금까지 가격이 바뀐 적은 없습니다.</p>`;
-  else trend = '<p>이 상품의 가격 기록을 쌓는 중입니다. 여섯 시간마다 확인해 가격이 바뀌면 이곳에 표시합니다.</p>';
+  else trend = '<p>이 상품의 가격 기록을 쌓는 중입니다. 쿠팡 파트너스 데이터를 불러올 때 가격이 바뀐 것이 확인되면 이곳에 표시합니다.</p>';
   const facts = [
     ['카테고리', cat],
     ['쿠팡 판매가', p.price ? `${fmt(p.price)}원` : '쿠팡에서 확인'],
@@ -147,7 +149,7 @@ function buildItem(p, list, hist) {
 <a class="ip-share" href="${esc(shareUrl(p))}" target="_blank" rel="noopener nofollow">스레드에 올리기</a>
 </div></div>
 <section><h2>상품 한눈에 보기</h2><table class="ip-table"><tbody>${facts.map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join('')}</tbody></table></section>
-<section><h2>가격 변화</h2>${spark(hist)}${trend}<p class="ip-note">여섯 시간마다 쿠팡 파트너스 데이터를 불러올 때 가격이 바뀐 경우만 기록한 값입니다.</p></section>
+<section><h2>가격 변화</h2>${spark(hist)}${trend}<p class="ip-note">쿠팡 파트너스 데이터를 불러온 시점의 가격이 바뀐 경우만 기록한 값이며 상품마다 불러오는 시점이 다릅니다.</p></section>
 <section><h2>${esc(cat)} 가격 비교</h2><table class="ip-table cmp"><thead><tr><th>상품</th><th>쿠팡 판매가</th></tr></thead><tbody>${near.map(x => `<tr class="${x.id === p.id ? 'me' : ''}"><td><a href="/item/${esc(x.id)}">${esc(x.name)}</a></td><td>${fmt(x.price)}원</td></tr>`).join('')}</tbody></table></section>
 ${tip ? `<section><h2>${esc(cat)} 고를 때 확인할 점</h2><ul class="ip-tips">${tip}</ul></section>` : ''}
 ${similar.length ? `<section><h2>같은 카테고리의 다른 상품</h2><div class="ip-sim">${similar.map(x => `<a href="/item/${esc(x.id)}">${x.image ? `<img src="${esc(x.image)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : `<span>${SITE.emptyIcon}</span>`}<b>${esc(x.name)}</b><em>${x.price ? fmt(x.price) + '원' : ''}</em></a>`).join('')}</div></section>` : ''}
@@ -189,6 +191,7 @@ ${items.length ? `<section><h2>${esc(c)} 인기 상품</h2><ul class="ip-tips">$
 function build(r, list) {
   if (r.t === 'item') return buildItem(r.p, list, r.hist || []);
   if (r.t === 'guide') return buildGuide(r.c, list);
+  if (r.t === 'legal') { const g = legalPage(SITE, r.k); return { title: g.title, desc: g.desc, canonical: abs('/' + r.k), body: g.body, ld: [crumbs([['홈', '/'], [g.title.split(' | ')[0], '/' + r.k]])] }; }
   const top = list.slice(0, 20);
   if (r.t === 'home') {
     let body = `<section class="ssr"><h1>${esc(SITE.h1)}</h1><p>${esc(SITE.intro)}</p>${nav()}`;
@@ -281,7 +284,7 @@ function robots() {
 async function sitemap(env) {
   const d = await load(env);
   const last = d && d.updatedAt ? String(d.updatedAt).slice(0, 10) : new Date().toISOString().slice(0, 10);
-  const urls = [['/', 1.0], ['/all', 0.8], ...Object.keys(SITE.cats).map(c => [catUrl(c), 0.7]), ...Object.keys(SITE.guides || {}).map(c => [guideUrl(c), 0.8]), ...((d && d.products) || []).slice(0, 2000).map(x => ['/item/' + x.id, 0.6])];
+  const urls = [['/', 1.0], ['/all', 0.8], ...Object.keys(SITE.cats).map(c => [catUrl(c), 0.7]), ...Object.keys(SITE.guides || {}).map(c => [guideUrl(c), 0.8]), ['/about', 0.3], ['/privacy', 0.2], ['/terms', 0.2], ...((d && d.products) || []).slice(0, 2000).map(x => ['/item/' + x.id, 0.6])];
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(([u, p]) => `<url><loc>${esc(abs(u))}</loc><lastmod>${last}</lastmod><changefreq>daily</changefreq><priority>${p}</priority></url>`).join('\n')}\n</urlset>\n`;
   return new Response(xml, { headers: headers('application/xml;charset=utf-8') });
 }
@@ -333,7 +336,9 @@ async function seo(req, env, url, ctx, h = {}) {
     const r = route(p);
     if (!r) return null;
     const cache = caches.default;
-    const key = new Request(url.origin + url.pathname + '?v=31&s=' + SITE.id);
+    const key = new Request(url.origin + url.pathname + '?v=32&s=' + SITE.id);
+    let miss = false; // 상품 목록은 읽었는데 이 상품만 없을 때
+    const gone = () => new Response('<!doctype html><meta charset="utf-8"><meta name="robots" content="noindex"><title>상품이 목록에서 빠졌어요</title><body style="font-family:sans-serif;padding:40px;line-height:1.7"><h1>이 상품은 더 이상 목록에 없어요</h1><p>판매가 끝났거나 인기 목록에서 빠진 상품입니다.</p><p><a href="/all">전체 상품 보기</a></p>', { status: 410, headers: { 'content-type': 'text/html;charset=utf-8', 'cache-control': 'public,max-age=3600', 'x-robots-tag': 'noindex' } });
     const gen = async () => {
       const t0 = Date.now();
       // 템플릿과 상품과 클릭과 가격 기록을 동시에 읽는다
@@ -348,7 +353,7 @@ async function seo(req, env, url, ctx, h = {}) {
       const rr = { ...r };
       if (r.t === 'item') {
         rr.p = list.find(x => x.id === r.id);
-        if (!rr.p) return null;
+        if (!rr.p) { miss = list.length > 0; return null; }
         rr.hist = hist;
       }
       const pg = build(rr, list);
@@ -366,13 +371,13 @@ async function seo(req, env, url, ctx, h = {}) {
         const age = Date.now() - Number(hit.headers.get('x-gen') || 0);
         if (age > 300000 && ctx && !busy.has(key.url)) {
           busy.add(key.url);
-          ctx.waitUntil((async () => { try { const n = await gen(); if (n) await cache.put(key, n); } catch (e) {} finally { busy.delete(key.url); } })());
+          ctx.waitUntil((async () => { try { const n = await gen(); if (n) await cache.put(key, n); else if (miss) await cache.delete(key); } catch (e) {} finally { busy.delete(key.url); } })());
         }
         return hit;
       }
     }
     const res = await gen();
-    if (!res) return null;
+    if (!res) return miss ? gone() : null;
     if (req.method === 'GET' && ctx) ctx.waitUntil(cache.put(key, res.clone()));
     return req.method === 'HEAD' ? new Response(null, res) : res;
   } catch (e) {

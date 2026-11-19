@@ -124,10 +124,20 @@ function bars(rows, label = r => r.k, link = null) {
   return rows.map(r => `<div class="row"><span class="lb">${link && link(r) ? `<a href="${esc(link(r))}" target="_blank" rel="noopener nofollow">${esc(label(r))}</a>` : esc(label(r))}</span><span class="bar"><i style="width:${Math.round(r.c / max * 100)}%"></i></span><b>${num(r.c)}</b></div>`).join('');
 }
 
+// 관리자 화면에 틀린 비밀번호로 계속 들어오면 15분 동안 막는다 (같은 접속 위치에서 열 번까지)
+const rlKey = req => new Request('https://rl.internal/' + (req.headers.get('cf-connecting-ip') || 'x'));
+async function rlCount(req) {
+  try { const hit = await caches.default.match(rlKey(req)); return hit ? Number(await hit.text()) || 0 : 0; } catch (e) { return 0; }
+}
+async function rlFail(req) {
+  try { const n = (await rlCount(req)) + 1; await caches.default.put(rlKey(req), new Response(String(n), { headers: { 'cache-control': 'max-age=900' } })); } catch (e) {}
+}
+
 async function admin(req, env, url) {
   const head = { 'content-type': 'text/html;charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex' };
   if (!env.ADMIN_PASSWORD) return new Response('<meta charset="utf-8"><body style="font-family:sans-serif;padding:40px">통계 페이지를 쓰려면 GitHub 시크릿 ADMIN_PASSWORD를 등록하고 다시 배포하세요.', { status: 503, headers: head });
-  if (!authed(req, env)) return new Response('로그인이 필요합니다', { status: 401, headers: { ...head, 'www-authenticate': 'Basic realm="stats", charset="UTF-8"' } });
+  if ((await rlCount(req)) >= 10) return new Response('시도가 너무 많습니다. 15분 뒤에 다시 해 주세요', { status: 429, headers: { ...head, 'retry-after': '900' } });
+  if (!authed(req, env)) { if (req.headers.get('authorization')) await rlFail(req); return new Response('로그인이 필요합니다', { status: 401, headers: { ...head, 'www-authenticate': 'Basic realm="stats", charset="UTF-8"' } }); }
   if (!env.DB) return new Response('D1 데이터베이스가 연결되지 않았습니다', { status: 500, headers: head });
   await init(env);
   await initCommunity(env);
@@ -211,7 +221,7 @@ button{background:var(--p1);color:#fff;border:0;border-radius:8px;padding:6px 12
 </section>
 <section class="box"><h2>일별 추이 (한국시간)</h2><div class="legend"><i style="background:var(--p3)"></i>방문<i style="background:var(--p1)"></i>클릭</div>${chart}</section>
 <section class="grid" style="margin-top:12px">
-<div class="box"><h2>인기 상품 클릭 TOP</h2>${bars(top, r => `${r.code} ${r.name}`, r => r.code ? `${SITE.host}/${r.code}?go=1` : '')}</div>
+<div class="box"><h2>인기 상품 클릭 TOP</h2>${bars(top, r => `${r.code} ${r.name}`, r => r.code ? `${SITE.host}/${r.code}?go=a` : '')}</div>
 <div class="box"><h2>시간대별 방문</h2>${hours}</div>
 <div class="box"><h2>유입 경로</h2>${bars(ref)}</div>
 <div class="box"><h2>국가</h2>${bars(country)}</div>
@@ -222,7 +232,7 @@ button{background:var(--p1);color:#fff;border:0;border-radius:8px;padding:6px 12
 <div class="box"><h2>접속 IP TOP (셋째 자리 가림)</h2>${bars(ips)}</div>
 </section>
 <section class="box"><h2>최근 활동</h2><div class="wrap"><table><tr><th>시간</th><th>구분</th><th>내용</th><th>지역</th><th>기기</th><th>브라우저</th><th>OS</th><th>IP</th><th>유입</th></tr>
-${recent.map(r => `<tr><td>${kst(r.ts)}</td><td><span class="tag ${r.type}">${r.type === 'click' ? '클릭' : '방문'}</span></td><td>${r.type === 'click' && r.code ? `<a href="${esc(SITE.host)}/${esc(r.code)}?go=1" target="_blank" rel="noopener nofollow">${esc(`${r.code} ${r.name}`.slice(0, 40))}</a>` : esc(r.type === 'click' ? `${r.code} ${r.name}`.slice(0, 40) : '메인')}</td><td>${esc(`${r.country} ${r.city}`.trim())}</td><td>${esc(r.device)}</td><td>${esc(r.browser)}</td><td>${esc(r.os)}</td><td>${esc(r.ipm || '')}</td><td>${esc(r.ref || '직접')}</td></tr>`).join('') || '<tr><td colspan="9" class="mute">기록이 없습니다</td></tr>'}
+${recent.map(r => `<tr><td>${kst(r.ts)}</td><td><span class="tag ${r.type}">${r.type === 'click' ? '클릭' : '방문'}</span></td><td>${r.type === 'click' && r.code ? `<a href="${esc(SITE.host)}/${esc(r.code)}?go=a" target="_blank" rel="noopener nofollow">${esc(`${r.code} ${r.name}`.slice(0, 40))}</a>` : esc(r.type === 'click' ? `${r.code} ${r.name}`.slice(0, 40) : '메인')}</td><td>${esc(`${r.country} ${r.city}`.trim())}</td><td>${esc(r.device)}</td><td>${esc(r.browser)}</td><td>${esc(r.os)}</td><td>${esc(r.ipm || '')}</td><td>${esc(r.ref || '직접')}</td></tr>`).join('') || '<tr><td colspan="9" class="mute">기록이 없습니다</td></tr>'}
 </table></div></section>
 <section class="box" style="margin-top:12px"><h2>커뮤니티 관리</h2>
 <div class="wrap"><table><tr><th>번호</th><th>게시판</th><th>제목</th><th>작성자</th><th>댓글</th><th>좋아요</th><th>시간</th><th></th></tr>
