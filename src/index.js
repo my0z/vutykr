@@ -63,14 +63,19 @@ export default {
     const ids = (env.CRON_SITES || Object.keys(SITES).join(',')).split(',').map(s => s.trim()).filter(id => SITES[id]);
     const hour = new Date().getUTCHours();
     if (ids.length) {
-      // 상품이 아직 적은 새 사이트가 있으면 순서와 상관없이 먼저 채운다
+      // 상품이 아직 적거나 비어 있는 분야가 있는 사이트가 있으면 순서와 상관없이 먼저 채운다
       let site = SITES[ids[hour % ids.length]];
       for (const id of ids) {
         const e = bind(env, SITES[id]);
         if (!e) continue;
-        let n = 0;
-        try { n = (JSON.parse((await e.DATA.get('products')) || 'null') || {}).products.length; } catch (x) {}
-        if (n < 40) { site = SITES[id]; break; }
+        let n = 0, empty = 0;
+        try {
+          const list = (JSON.parse((await e.DATA.get('products')) || 'null') || {}).products || [];
+          n = list.length;
+          const have = new Set(list.map(p => p.category));
+          empty = Object.keys(SITES[id].cats).filter(c => !have.has(c)).length; // 상품이 하나도 없는 분야 수
+        } catch (x) {}
+        if (n < 40 || empty > 0) { site = SITES[id]; break; }
       }
       const senv = bind(env, site);
       if (senv) ctx.waitUntil(engineFor(site).refresh(senv));

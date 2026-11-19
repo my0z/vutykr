@@ -323,5 +323,5 @@ async function getHist(env, id) {
   catch (e) { try { await init(env); return (await q()).results || []; } catch (e2) { return []; } }
 }
 
-return { track, admin, clickCounts, countRequest, overBudget, pruneOld, recordPrices, getHist };
+return { track, admin, authed, clickCounts, countRequest, overBudget, pruneOld, recordPrices, getHist };
 }

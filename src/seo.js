@@ -333,7 +333,7 @@ async function seo(req, env, url, ctx, h = {}) {
     const r = route(p);
     if (!r) return null;
     const cache = caches.default;
-    const key = new Request(url.origin + url.pathname + '?v=30&s=' + SITE.id);
+    const key = new Request(url.origin + url.pathname + '?v=31&s=' + SITE.id);
     const gen = async () => {
       const t0 = Date.now();
       // 템플릿과 상품과 클릭과 가격 기록을 동시에 읽는다

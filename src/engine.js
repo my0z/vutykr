@@ -10,6 +10,7 @@ const BASE_BLOCK = '이미테이션|짝퉁|레플리카|replica|모조품|카피
 const PER_RUN = 7; // 한 번에 가장 오래된 검색어 7개만 갱신 (세 사이트가 같은 쿠팡 키를 나눠 쓰고 시간당 10회 제한이 있다)
 const BEST_TTL = 6 * 3600e3; // 베스트 목록은 6시간마다 다시 부른다
 const PER_KEYWORD = 6;
+const SCAN = /(^|\/)(\.env|\.git|\.aws|\.ssh|\.svn|\.ds_store|\.htaccess|wp-|wordpress|xmlrpc|phpmyadmin|phpinfo|cgi-bin|vendor\/|node_modules|backup|dump|config\.(json|js|yml|yaml|php|bak))|\.(php\d?|asp|aspx|jsp|cgi|sql|bak|zip|tar|gz|rar|7z|old|swp|pem|key)$/i;
 
 const ALPHA = '0123456789abcdefghijklmnopqrstuvwxyz';
 function codeFor(id, salt) {
@@ -129,7 +130,7 @@ async function edgeJson(url, ctx, ttl, make) {
 export function createSite(SITE, mods) {
   // 이 사이트 설정(sites/*.js)에서 분야와 검색어와 분류 규칙을 읽는다
   const { analytics, seo, community } = mods;
-  const { track, admin, clickCounts, countRequest, overBudget, pruneOld, recordPrices, getHist } = analytics;
+  const { track, admin, authed, clickCounts, countRequest, overBudget, pruneOld, recordPrices, getHist } = analytics;
   const communityHandle = community.handle;
   const CATEGORIES = Object.fromEntries(Object.entries(SITE.cats).map(([c, v]) => [c, v.kw]));
   const YEAR = new Date().getFullYear();
@@ -335,6 +336,8 @@ const handler = {
   async fetch(req, env, ctx) {
     const url = new URL(req.url); url.sid = SITE.id;
     const path = url.pathname;
+    // 취약점 스캐너가 찾는 경로는 저장소를 건드리지 않고 바로 404로 돌려보낸다 (요청 수 집계와 CPU를 아낀다)
+    if (SCAN.test(path)) return new Response('Not found', { status: 404, headers: { 'cache-control': 'public,max-age=3600', 'x-robots-tag': 'noindex' } });
     countRequest(env, ctx);
     if (path === '/0') return admin(req, env, url);
     if (/^\/i\/\d+$/.test(path)) return image(req, url, ctx, env);
@@ -369,6 +372,7 @@ const handler = {
     if (path === '/' || path === '/index.html') ctx.waitUntil(track(env, req, { type: 'view' }));
     { const sr = await seo(req, env, url, ctx, { products: getProducts, clicks: () => getClicks(env, ctx), hist: id => getHist(env, id) }); if (sr) return sr; }
     if (url.pathname === '/api/debug') {
+      if (!authed(req, env)) return new Response('Not found', { status: 404 }); // 환경 정보는 관리자만 본다
       const info = { version: env.CF_VERSION_METADATA && env.CF_VERSION_METADATA.id, versionAt: env.CF_VERSION_METADATA && env.CF_VERSION_METADATA.timestamp, envKeys: Object.keys(env), hasKeys: !!(env.COUPANG_ACCESS_KEY && env.COUPANG_SECRET_KEY), keyLen: [(env.COUPANG_ACCESS_KEY || '').length, (env.COUPANG_SECRET_KEY || '').length] };
       if (url.searchParams.get('run') === '1' && info.hasKeys && !(await env.DATA.get('lock'))) {
         await env.DATA.put('lock', '1', { expirationTtl: 300 });
