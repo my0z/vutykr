@@ -173,6 +173,12 @@ async function admin(req, env, url) {
     q(env, 'SELECT COUNT(*) c FROM hits WHERE bot=1 AND ts>=?', since),
     q(env, `SELECT ipm k, COUNT(*) c FROM hits ${W} AND ipm<>'' GROUP BY k ORDER BY c DESC LIMIT 15`, since)
   ]);
+  // 하루는 한국시간 밤 0시부터 24시까지로 센다 (오늘과 어제를 같은 기준으로 비교)
+  const DAY = 86400e3, now = Date.now();
+  const t0 = Math.floor((now + 9 * 3600e3) / DAY) * DAY - 9 * 3600e3; // 오늘 0시
+  const uq = (a, b) => env.DB.prepare("SELECT COUNT(DISTINCT CASE WHEN type='view' THEN vid END) u FROM hits WHERE bot=0 AND ts>=? AND ts<?").bind(a, b).first().then(r => (r && r.u) || 0).catch(() => 0);
+  const [uToday, uYest, uYestSame] = await Promise.all([uq(t0, now + 1), uq(t0 - DAY, t0), uq(t0 - DAY, now - DAY + 1)]);
+  const sg = n => (n > 0 ? '+' : '') + num(n);
   const bud = await env.DB.prepare('SELECT n FROM budget WHERE day=?').bind(utcDay()).first().catch(() => null);
   let imgq = null;
   try { imgq = JSON.parse((await env.DATA.get('imgq')) || 'null'); } catch (e) {}
@@ -210,6 +216,10 @@ button{background:var(--p1);color:#fff;border:0;border-radius:8px;padding:6px 12
 </style></head><body>
 <header><h1>${esc0(SITE.name)} <span>통계</span></h1><nav class="tabs">${tabs}</nav></header>
 <section class="kpis">
+<div class="kpi"><b>${num(uToday)}</b><span>오늘 방문자 (0시부터 지금까지)</span></div>
+<div class="kpi"><b>${num(uYest)}</b><span>어제 방문자 (0시부터 24시)</span></div>
+<div class="kpi"><b>${sg(uToday - uYest)}</b><span>어제 하루 전체 대비 증감</span></div>
+<div class="kpi"><b>${sg(uToday - uYestSame)}</b><span>어제 같은 시각 대비 증감</span></div>
 <div class="kpi"><b>${num(t.v)}</b><span>방문 (페이지뷰)</span></div>
 <div class="kpi"><b>${num(t.u)}</b><span>방문자 (일 기준)</span></div>
 <div class="kpi"><b>${num(t.c)}</b><span>상품 클릭</span></div>
