@@ -34,7 +34,7 @@ export function renderShell(site, html) {
   const map = {
     TITLE: esc(site.title), DESC: esc(site.desc), THEME_COLOR: esc(site.theme.color),
     NAME: esc(site.name), MARK: logoSvg(site, 'var(--p1)', 'var(--p2)'), TOPBAR: esc(site.topbar), SEARCH: esc(site.searchPlaceholder),
-    DISC: esc(DISC), DISC_TOP: esc(DISC.replace(/^이 포스팅은 /, "")), HOSTNAME: esc(hostName),
+    DISC: esc(DISC), DISC_TOP: esc(DISC.replace(/^이 포스팅은 /, "").replace(/제공받습니다\.$/, "제공 받을 수도 있습니다.")), HOSTNAME: esc(hostName),
     THEME_CSS: themeCss(site.theme), SITE_JSON: js(clientSite(site)), PROMOS: js(promos)
   };
   return html.replace(/\{\{([A-Z_]+)\}\}/g, (m, k) => (k in map ? map[k] : m));
