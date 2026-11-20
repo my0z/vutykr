@@ -3,6 +3,7 @@ import vuty from './vuty.js';
 import bodcar from './bodcar.js';
 import seareal from './seareal.js';
 import pemily from './pemily.js';
+import bright from './bright.js';
 import guideVuty from './guides/vuty.js';
 import guideBodcar from './guides/bodcar.js';
 import guideSeareal from './guides/seareal.js';
@@ -17,6 +18,12 @@ import zakgong from './zakgong.js';
 // 분야별 구매 가이드 글을 각 사이트 설정에 붙인다 (새 사이트는 sites/guides/<이름>.js 를 만들고 여기에 한 줄을 더한다)
 const withMore = (g, more) => { for (const [c, v] of Object.entries(g)) v.sections = [...v.sections, ...(more[c] || [])]; return g; };
 vuty.guides = withMore(guideVuty, moreVuty); bodcar.guides = withMore(guideBodcar, moreBodcar); seareal.guides = withMore(guideSeareal, moreSeareal); zakgong.guides = withMore(guideZakgong, moreZakgong); pemily.guides = guidePemily;
+
+// 사이트마다 화사한 꾸밈 (쁘띠.끄는 자기 설정 파일에 있다)
+bodcar.theme.extra = bright({ a: '#cfe3ff', b: '#d0f1ff', c: '#e1dcff', base: '#f3f8ff', line: '#d3e3ff', soft: '#e8f1ff', g1: '#0b5fff', g2: '#2f9bff', g3: '#7c5cff', glow: '11,95,255' });
+seareal.theme.extra = bright({ a: '#c9edff', b: '#d2f7ec', c: '#dcebff', base: '#f1faff', line: '#cde8f5', soft: '#e3f6fd', g1: '#0284c7', g2: '#06b6d4', g3: '#14b8a6', glow: '2,132,199' });
+zakgong.theme.extra = bright({ a: '#ffe0bf', b: '#fff0c2', c: '#ffe0d6', base: '#fff8f0', line: '#ffe0c4', soft: '#fff1e0', g1: '#ea580c', g2: '#f59e0b', g3: '#f97316', glow: '234,88,12' });
+pemily.theme.extra = bright({ a: '#d4f5d9', b: '#fff3c2', c: '#d6efff', base: '#f4fbf4', line: '#d5ecd8', soft: '#e9f8ec', g1: '#16a34a', g2: '#65c466', g3: '#0ea5e9', glow: '22,163,74' });
 
 export const SITES = { vuty, bodcar, seareal, zakgong, pemily };
 export const DEFAULT_SITE = 'vuty'; // 등록되지 않은 주소(workers.dev 등)로 들어오면 보여 줄 사이트
