@@ -160,7 +160,7 @@ async function admin(req, env, url) {
   ]);
   const [tot, daily, hourly, top, country, city, device, browser, os, ref, recent, bots, ips] = await Promise.all([
     q(env, `SELECT SUM(type='view') v, COUNT(DISTINCT CASE WHEN type='view' THEN vid END) u, SUM(type='click') c, COUNT(DISTINCT CASE WHEN type='click' THEN vid END) cu FROM hits ${W}`, since),
-    q(env, `SELECT date(${KST},'unixepoch') d, SUM(type='view') v, SUM(type='click') c FROM hits ${W} GROUP BY d ORDER BY d`, since),
+    q(env, `SELECT date(${KST},'unixepoch') d, SUM(type='view') v, COUNT(DISTINCT CASE WHEN type='view' THEN vid END) u, SUM(type='click') c FROM hits ${W} GROUP BY d ORDER BY d`, since),
     q(env, `SELECT CAST(strftime('%H',${KST},'unixepoch') AS INTEGER) h, COUNT(*) c FROM hits ${W} AND type='view' GROUP BY h`, since),
     q(env, `SELECT pid, name, code, COUNT(*) c FROM hits ${W} AND type='click' GROUP BY pid ORDER BY c DESC LIMIT 15`, since),
     q(env, `SELECT CASE WHEN country='' THEN '알 수 없음' ELSE country END k, COUNT(*) c FROM hits ${W} AND type='view' GROUP BY k ORDER BY c DESC LIMIT 10`, since),
@@ -178,6 +178,20 @@ async function admin(req, env, url) {
   const t0 = Math.floor((now + 9 * 3600e3) / DAY) * DAY - 9 * 3600e3; // 오늘 0시
   const uq = (a, b) => env.DB.prepare("SELECT COUNT(DISTINCT CASE WHEN type='view' THEN vid END) u FROM hits WHERE bot=0 AND ts>=? AND ts<?").bind(a, b).first().then(r => (r && r.u) || 0).catch(() => 0);
   const [uToday, uYest, uYestSame] = await Promise.all([uq(t0, now + 1), uq(t0 - DAY, t0), uq(t0 - DAY, now - DAY + 1)]);
+  // 신규와 재방문 (접속 주소 해시 기준 추정) / 요일별 / 분야별 클릭
+  const [nr, wk, cl, pj] = await Promise.all([
+    q(env, `SELECT COUNT(DISTINCT iph) n, COUNT(DISTINCT CASE WHEN EXISTS (SELECT 1 FROM hits o WHERE o.iph=hits.iph AND o.ts<?) THEN iph END) r FROM hits ${W} AND type='view' AND iph<>''`, since, since),
+    q(env, `SELECT CAST(strftime('%w',${KST},'unixepoch') AS INTEGER) k, COUNT(*) c FROM hits ${W} AND type='view' GROUP BY k`, since),
+    q(env, `SELECT pid, COUNT(*) c FROM hits ${W} AND type='click' GROUP BY pid`, since),
+    env.DATA.get('products').then(x => JSON.parse(x || 'null')).catch(() => null)
+  ]);
+  const catOf = Object.fromEntries(((pj && pj.products) || []).map(p => [String(p.id), p.category]));
+  const byCat = {}; cl.forEach(r => { const c = catOf[String(r.pid)] || '목록에서 빠진 상품'; byCat[c] = (byCat[c] || 0) + r.c; });
+  const catRows = Object.entries(byCat).map(([k, c]) => ({ k, c })).sort((a, b) => b.c - a.c).slice(0, 12);
+  const wnames = ['일', '월', '화', '수', '목', '금', '토'];
+  const wmap = Object.fromEntries(wk.map(r => [r.k, r.c]));
+  const wrows = wnames.map((k, i) => ({ k: k + '요일', c: wmap[i] || 0 }));
+  const nrow = nr[0] || {}; const retN = nrow.r || 0, newN = Math.max(0, (nrow.n || 0) - retN);
   const sg = n => (n > 0 ? '+' : '') + num(n);
   const bud = await env.DB.prepare('SELECT n FROM budget WHERE day=?').bind(utcDay()).first().catch(() => null);
   let imgq = null;
@@ -222,6 +236,10 @@ button{background:var(--p1);color:#fff;border:0;border-radius:8px;padding:6px 12
 <div class="kpi"><b>${sg(uToday - uYestSame)}</b><span>어제 같은 시각 대비 증감</span></div>
 <div class="kpi"><b>${num(t.v)}</b><span>방문 (페이지뷰)</span></div>
 <div class="kpi"><b>${num(t.u)}</b><span>방문자 (일 기준)</span></div>
+<div class="kpi"><b>${num(newN)}</b><span>신규 방문자 (기간 안 첫 방문 추정)</span></div>
+<div class="kpi"><b>${num(retN)}</b><span>재방문자 (이전에도 온 접속 추정)</span></div>
+<div class="kpi"><b>${t.u ? ((t.cu || 0) / t.u * 100).toFixed(1) : '0.0'}%</b><span>클릭한 방문자 비율</span></div>
+<div class="kpi"><b>${t.u ? (t.v / t.u).toFixed(2) : '0.00'}</b><span>방문자당 방문 횟수</span></div>
 <div class="kpi"><b>${num(t.c)}</b><span>상품 클릭</span></div>
 <div class="kpi"><b>${ctr}%</b><span>클릭률</span></div>
 <div class="kpi"><b>${num(bots[0] && bots[0].c)}</b><span>제외된 봇</span></div>
@@ -230,9 +248,12 @@ button{background:var(--p1);color:#fff;border:0;border-radius:8px;padding:6px 12
 <div class="kpi"><b>${num(usage.img)}</b><span>이번 달 이미지 변환 (한도 ${num(usage.imgLim)})</span></div>
 </section>
 <section class="box"><h2>일별 추이 (한국시간)</h2><div class="legend"><i style="background:var(--p3)"></i>방문<i style="background:var(--p1)"></i>클릭</div>${chart}</section>
+<section class="box" style="margin-top:12px"><h2>일별 요약 (한국시간)</h2><div class="wrap"><table><tr><th>날짜</th><th>방문자</th><th>방문</th><th>클릭</th><th>클릭률</th></tr>${daily.slice().reverse().map(r => `<tr><td>${esc(r.d)}</td><td>${num(r.u)}</td><td>${num(r.v)}</td><td>${num(r.c)}</td><td>${r.v ? (r.c / r.v * 100).toFixed(1) : '0.0'}%</td></tr>`).join('') || '<tr><td colspan="5" class="mute">기록이 없습니다</td></tr>'}</table></div></section>
 <section class="grid" style="margin-top:12px">
 <div class="box"><h2>인기 상품 클릭 TOP</h2>${bars(top, r => `${r.code} ${r.name}`, r => r.code ? `${SITE.host}/${r.code}?go=a` : '')}</div>
 <div class="box"><h2>시간대별 방문</h2>${hours}</div>
+<div class="box"><h2>요일별 방문</h2>${bars(wrows)}</div>
+<div class="box"><h2>분야별 클릭</h2>${bars(catRows)}</div>
 <div class="box"><h2>유입 경로</h2>${bars(ref)}</div>
 <div class="box"><h2>국가</h2>${bars(country)}</div>
 <div class="box"><h2>도시</h2>${bars(city)}</div>
