@@ -228,7 +228,7 @@ h1{margin:0;font-size:1.5rem}h1 span{color:var(--p1)}header{display:flex;justify
 button{background:var(--p1);color:#fff;border:0;border-radius:8px;padding:6px 12px;cursor:pointer;font:inherit}table{width:100%;border-collapse:collapse;font-size:.8rem}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);white-space:nowrap}th{color:var(--mute);font-weight:600}.wrap{overflow-x:auto}
 .tag{padding:2px 8px;border-radius:6px;font-size:.7rem;font-weight:800}.tag.click{background:var(--p1)}.tag.view{background:var(--p3)}
 </style></head><body>
-<header><h1>${esc0(SITE.name)} <span>통계</span></h1><nav class="tabs">${tabs}</nav></header>
+<header><h1><a href="${esc0(SITE.host)}/" style="color:inherit;text-decoration:none" title="사이트 메인으로">${esc0(SITE.name)}</a> <span>통계</span></h1><nav class="tabs">${tabs}</nav></header>
 <section class="kpis">
 <div class="kpi"><b>${num(uToday)}</b><span>오늘 방문자 (0시부터 지금까지)</span></div>
 <div class="kpi"><b>${num(uYest)}</b><span>어제 방문자 (0시부터 24시)</span></div>
