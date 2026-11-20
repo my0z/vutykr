@@ -11,12 +11,13 @@ export function logoSvg(site, c1, c2) {
 }
 
 export function themeCss(t) {
+  const X = t.extra ? `@media(prefers-color-scheme:light){${t.extra}}` : ''; // 사이트별 추가 꾸밈 (밝은 화면에서만)
   const L = t.light, D = t.dark, T = t.tiles;
   const vars = o => Object.entries(o).filter(([, v]) => v).map(([k, v]) => `--${k}:${v}`).join(';');
   return `:root{${vars(L)};--grad:linear-gradient(135deg,var(--p1),var(--p2))}`
     + `@media(prefers-color-scheme:dark){:root{${vars(D)}}}`
     + `.t1{background:${T.t1.bg};color:${T.t1.ink}}.t2{background:${T.t2.bg};color:${T.t2.ink}}`
-    + `@media(prefers-color-scheme:dark){.t1{background:${T.t1.dbg || T.t1.bg};color:${T.t1.dink || T.t1.ink}}.t2{background:${T.t2.dbg || T.t2.bg};color:${T.t2.dink || T.t2.ink}}}`;
+    + `@media(prefers-color-scheme:dark){.t1{background:${T.t1.dbg || T.t1.bg};color:${T.t1.dink || T.t1.ink}}.t2{background:${T.t2.dbg || T.t2.bg};color:${T.t2.dink || T.t2.ink}}}` + X;
 }
 
 // 브라우저 쪽 코드(app.js)가 쓰는 사이트 정보

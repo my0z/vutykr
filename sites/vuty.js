@@ -24,9 +24,10 @@ export default {
   ],
   theme: {
     color: '#ff4d8d', // 모바일 주소창 색
-    light: { bg: '#f6f4f6', card: '#fff', ink: '#1d1519', mute: '#7d6e76', line: '#ece4e8', p1: '#ff4d8d', p2: '#ff8a5c', p3: '#8b5cf6', soft: '#fff0f5', shadow: '0 12px 30px -14px rgba(255,77,141,.45)' },
+    light: { bg: '#fff6fa', card: '#fff', ink: '#2a1420', mute: '#8a6b7b', line: '#ffdcea', p1: '#ff3d8b', p2: '#ff9a5c', p3: '#b45cff', soft: '#ffeaf3', shadow: '0 14px 34px -14px rgba(255,61,139,.5)' },
     dark: { bg: '#120d10', card: '#1c1519', ink: '#fbeef3', mute: '#a58f9a', line: '#2f2229', soft: '#2a1a23', shadow: '0 12px 30px -14px rgba(0,0,0,.7)' },
-    tiles: { t1: { bg: '#fff3c4', ink: '#7a5200', dbg: '#3a2f10', dink: '#ffe08a' }, t2: { bg: '#dff1ff', ink: '#0b4a7a', dbg: '#10283a', dink: '#a9d8ff' } }
+    tiles: { t1: { bg: '#ffe9a8', ink: '#7a4b00', dbg: '#3a2f10', dink: '#ffe08a' }, t2: { bg: '#e8dcff', ink: '#4a1d8f', dbg: '#10283a', dink: '#a9d8ff' } },
+    extra: `body{background:radial-gradient(900px 520px at 8% -6%,#ffd0e6 0,transparent 62%),radial-gradient(800px 520px at 96% 2%,#ffe3c2 0,transparent 58%),radial-gradient(900px 620px at 50% 108%,#ecd9ff 0,transparent 62%),#fff6fa;background-attachment:fixed}.topbar{background:linear-gradient(90deg,#ff5fa2,#ff9a5c,#c26bff);color:#fff}.head{background:rgba(255,255,255,.82);backdrop-filter:blur(10px);border-bottom:1px solid #ffd3e5}.cat{background:rgba(255,255,255,.7)}.pc,.sec .railw .pc{border-color:#ffd9e8;box-shadow:0 6px 18px -12px rgba(255,61,139,.45)}.pc:hover{box-shadow:0 14px 30px -12px rgba(255,61,139,.55);transform:translateY(-3px)}.icons{background:linear-gradient(135deg,#fff,#fff0f7);border-color:#ffd3e5;box-shadow:0 10px 26px -16px rgba(255,61,139,.5)}.icons i{background:linear-gradient(135deg,#ffe1ef,#ffeede 60%,#f1e2ff)}.sh h2 em{background:linear-gradient(90deg,#ff3d8b,#ff9a5c,#b45cff);-webkit-background-clip:text;background-clip:text;color:transparent}.slide::after{content:'';position:absolute;inset:0;background:linear-gradient(120deg,rgba(255,255,255,.28),transparent 38%,rgba(255,255,255,.12));pointer-events:none}.band{background:linear-gradient(135deg,#fff,#fff0f7);border-color:#ffd3e5}footer{background:linear-gradient(180deg,#fff,#ffeef6)}.feebar{background:#ffeaf3}#allcat{background:linear-gradient(90deg,#ff3d8b,#b45cff);color:#fff}`
   },
   best: [{ id: 1010, limit: 12, cat: '스킨케어' }, { id: 1001, limit: 12, classify: true }], // 쿠팡 베스트 분류 번호 (classify가 true면 상품명으로 분야를 나눈다)
   classify: [ // 상품명에 이 단어가 있으면 해당 분야로 (위에서부터 먼저 맞는 것)
