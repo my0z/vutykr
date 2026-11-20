@@ -20,7 +20,9 @@ routes = [
   { pattern = "pemily.co.kr", custom_domain = true },
   { pattern = "www.pemily.co.kr", custom_domain = true },
   { pattern = "bebepong.com", custom_domain = true },
-  { pattern = "www.bebepong.com", custom_domain = true }
+  { pattern = "www.bebepong.com", custom_domain = true },
+  { pattern = "bebepong.kr", custom_domain = true },
+  { pattern = "www.bebepong.kr", custom_domain = true }
 ]
 
 # 작공은 아직 운영 전환 전이라 도메인 연결 없음 (전환할 때 routes에 추가)
