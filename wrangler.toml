@@ -18,12 +18,20 @@ routes = [
   { pattern = "pemily.kr", custom_domain = true },
   { pattern = "www.pemily.kr", custom_domain = true },
   { pattern = "pemily.co.kr", custom_domain = true },
-  { pattern = "www.pemily.co.kr", custom_domain = true }
+  { pattern = "www.pemily.co.kr", custom_domain = true },
+  { pattern = "bebepong.com", custom_domain = true },
+  { pattern = "www.bebepong.com", custom_domain = true },
+  { pattern = "bebepong.kr", custom_domain = true },
+  { pattern = "www.bebepong.kr", custom_domain = true },
+  { pattern = "bebepong.co.kr", custom_domain = true },
+  { pattern = "www.bebepong.co.kr", custom_domain = true }
 ]
 
 # 작공은 아직 운영 전환 전이라 도메인 연결 없음 (전환할 때 routes에 추가)
 
 # PEMILY은 아직 운영 전환 전이라 도메인 연결 없음 (전환할 때 routes에 추가)
+
+# BEBEPONG은 아직 운영 전환 전이라 도메인 연결 없음 (전환할 때 routes에 추가)
 
 [assets]
 directory = "./public"
@@ -59,6 +67,13 @@ binding = "DATA_PEMILY"
 [[d1_databases]]
 binding = "DB_PEMILY"
 
+# BEBEPONG 저장소 (id를 비우면 배포할 때 wrangler가 자동으로 만든다)
+[[kv_namespaces]]
+binding = "DATA_BEBEPONG"
+
+[[d1_databases]]
+binding = "DB_BEBEPONG"
+
 # 쁘띠.끄 외 두 사이트의 기존 저장소 (데이터 이전 없이 그대로 연결)
 [[kv_namespaces]]
 binding = "DATA_BODCAR"
@@ -80,7 +95,7 @@ database_id = "692419d4-f1d8-4a1f-98f9-0f9e1326b738"
 
 # 갱신 담당 사이트 (전환 전에는 vuty만 / 전환 후 "vuty,bodcar,seareal")
 [vars]
-CRON_SITES = "vuty,bodcar,seareal,zakgong,pemily"
+CRON_SITES = "vuty,bodcar,seareal,zakgong,pemily,bebepong"
 
 [version_metadata]
 binding = "CF_VERSION_METADATA"
