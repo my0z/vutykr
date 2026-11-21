@@ -1,4 +1,5 @@
 // 접속 기록(D1)과 관리자 통계 페이지(/0) — 사이트 설정과 커뮤니티를 받아 그 사이트용으로 만든다
+import { PROMOS } from '../sites/index.js';
 const esc0 = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 export function createAnalytics(SITE, community) {
 const { init: initCommunity, removeRow, adminNotice } = community;
@@ -265,6 +266,7 @@ button{background:var(--p1);color:#fff;border:0;border-radius:8px;padding:6px 12
 <section class="box"><h2>최근 활동</h2><div class="wrap"><table><tr><th>시간</th><th>구분</th><th>내용</th><th>지역</th><th>기기</th><th>브라우저</th><th>OS</th><th>IP</th><th>유입</th></tr>
 ${recent.map(r => `<tr><td>${kst(r.ts)}</td><td><span class="tag ${r.type}">${r.type === 'click' ? '클릭' : '방문'}</span></td><td>${r.type === 'click' && r.code ? `<a href="${esc(SITE.host)}/${esc(r.code)}?go=a" target="_blank" rel="noopener nofollow">${esc(`${r.code} ${r.name}`.slice(0, 40))}</a>` : esc(r.type === 'click' ? `${r.code} ${r.name}`.slice(0, 40) : '메인')}</td><td>${esc(`${r.country} ${r.city}`.trim())}</td><td>${esc(r.device)}</td><td>${esc(r.browser)}</td><td>${esc(r.os)}</td><td>${esc(r.ipm || '')}</td><td>${esc(r.ref || '직접')}</td></tr>`).join('') || '<tr><td colspan="9" class="mute">기록이 없습니다</td></tr>'}
 </table></div></section>
+<section class="box" style="margin-top:12px"><h2>배너 모아보기 (${PROMOS.length}개)</h2><p class="mute">이 사이트에서는 자기 사이트 배너를 뺀 나머지가 무작위로 하나씩 보입니다. 이미지를 누르면 연결 주소로 갑니다.</p><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px">${PROMOS.map(b => `<div><a href="${esc0(b.url)}" target="_blank" rel="noopener nofollow"><picture><source media="(min-width:761px)" srcset="${esc0(SITE.host)}/promo/${esc0(b.id)}-w.webp?v=6"><img src="${esc0(SITE.host)}/promo/${esc0(b.id)}-n.webp?v=6" alt="${esc0(b.text)}" loading="lazy" style="width:100%;border-radius:10px;display:block"></picture></a><small class="mute">${esc0(b.id)} · ${esc0(b.site)}${b.site === SITE.id ? ' (이 사이트 배너)' : ''} · ${esc0(b.text)}</small></div>`).join('')}</div></section>
 <section class="box" style="margin-top:12px"><h2>커뮤니티 관리</h2>
 <div class="wrap"><table><tr><th>번호</th><th>게시판</th><th>제목</th><th>작성자</th><th>댓글</th><th>좋아요</th><th>시간</th><th></th></tr>
 ${mPosts.map(r => `<tr><td>${r.id}</td><td>${esc(r.board)}</td><td>${esc(r.title.slice(0, 30))}</td><td>${esc(r.nick)}</td><td>${r.ccount}</td><td>${r.likes}</td><td>${kst(r.ts)}</td><td><button onclick="del('posts',${r.id})">삭제</button></td></tr>`).join('') || '<tr><td colspan="8" class="mute">글이 없습니다</td></tr>'}
