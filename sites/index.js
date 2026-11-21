@@ -60,9 +60,9 @@ export const PROMOS = [
   { id: 'p4', site: 'pemily', text: '앵무새 사료와 새장 인기 랭킹', url: 'https://pemily.kr/c/%EC%86%8C%EB%8F%99%EB%AC%BC%EC%A1%B0%EB%A5%98' },
   { id: 'p5', site: 'pemily', text: '관상어 어항과 여과기 인기템', url: 'https://pemily.kr/c/%EA%B4%80%EC%83%81%EC%96%B4' },
   { id: 'p6', site: 'pemily', text: '하네스와 리드줄 산책용품 인기템', url: 'https://pemily.kr/c/%EC%82%B0%EC%B1%85%EC%99%B8%EC%B6%9C' },
-  { id: 'g1', site: 'bebepong', text: '아기 장난감과 놀이매트 인기 랭킹', url: 'https://bebepong.com/c/%EC%9E%A5%EB%82%9C%EA%B0%90%EC%99%84%EA%B5%AC' },
-  { id: 'g2', site: 'bebepong', text: '이유식 식기와 하이체어 인기템', url: 'https://bebepong.com/c/%EC%9D%B4%EC%9C%A0%EC%8B%9D%EC%9A%A9%ED%92%88' },
-  { id: 'g3', site: 'bebepong', text: '유모차와 카시트 인기 랭킹', url: 'https://bebepong.com/c/%EC%9C%A0%EB%AA%A8%EC%B0%A8%EC%B9%B4%EC%8B%9C%ED%8A%B8' },
+  { id: 'g1', site: 'bebepong', text: '아기 장난감과 놀이매트 인기 랭킹', url: 'https://bbping.kr/c/%EC%9E%A5%EB%82%9C%EA%B0%90%EC%99%84%EA%B5%AC' },
+  { id: 'g2', site: 'bebepong', text: '이유식 식기와 하이체어 인기템', url: 'https://bbping.kr/c/%EC%9D%B4%EC%9C%A0%EC%8B%9D%EC%9A%A9%ED%92%88' },
+  { id: 'g3', site: 'bebepong', text: '유모차와 카시트 인기 랭킹', url: 'https://bbping.kr/c/%EC%9C%A0%EB%AA%A8%EC%B0%A8%EC%B9%B4%EC%8B%9C%ED%8A%B8' },
   { id: 'u1', site: 'usb', text: 'USB.KR 전자기기 가격 비교', url: 'https://usb.kr/' },
   { id: 'u2', site: 'usb', text: '차량용 전자기기 모아보기', url: 'https://usb.kr/category/car' },
   { id: 'u3', site: 'usb', text: '쿠팡 골드박스 전자기기 핫딜', url: 'https://usb.kr/deals' }

@@ -1,16 +1,16 @@
-// BEBEPONG 사이트 설정 — 이 파일 하나만 고치면 이 사이트의 이름과 분야와 검색어와 색상이 바뀝니다
+// BBPING 사이트 설정 — 이 파일 하나만 고치면 이 사이트의 이름과 분야와 검색어와 색상이 바뀝니다
 export default {
   id: 'bebepong',
   strict: true, // 분류 규칙이 있는 분야는 상품 이름에 그 단어가 있을 때만 담는다
-  domains: ['bebepong.com', 'www.bebepong.com'],
-  host: 'https://bebepong.com',
-  redirects: ['bebepong.kr', 'www.bebepong.kr', 'bebepong.co.kr', 'www.bebepong.co.kr'], // 이 주소로 들어오면 대표 주소로 옮겨 준다
-  name: 'BEBEPONG',
+  domains: ['bbping.kr', 'www.bbping.kr'],
+  host: 'https://bbping.kr',
+  redirects: ['bbping.co.kr', 'www.bbping.co.kr'], // 이 주소로 들어오면 대표 주소로 옮겨 준다
+  name: 'BBPING',
   mark: '🍼',
   icon: '🍼',
   logo: '<rect x="11" y="13" width="10" height="15" rx="3.5" fill="{c1}"/><rect x="12.5" y="9" width="7" height="4.5" rx="1.6" fill="{c2}"/><path d="M14 9V6.5a2 2 0 0 1 4 0V9z" fill="{c1}"/><rect x="13.5" y="17" width="5" height="1.6" rx=".8" fill="#fff"/><rect x="13.5" y="21" width="5" height="1.6" rx=".8" fill="#fff"/><circle cx="25" cy="8" r="2" fill="{c2}"/><circle cx="6" cy="22" r="1.6" fill="{c2}"/>',
   emptyIcon: '🍼',
-  title: 'BEBEPONG | 아기 용품 인기 랭킹 쇼핑',
+  title: 'BBPING | 아기 용품 인기 랭킹 쇼핑',
   h1: '아기 용품 인기 랭킹',
   tagline: '아기 용품의 모든 것',
   desc: '기저귀와 분유와 젖병과 유모차와 장난감과 아기옷까지 아기 용품 인기템 랭킹을 쿠팡 기준으로 자동으로 업데이트합니다',
@@ -18,7 +18,7 @@ export default {
   refresh: '분야를 돌아가며 자동으로 갱신되며 분야마다 갱신 시점이 다를 수 있습니다.',
   topbar: '🍼 아기 용품 인기템을 자동으로 업데이트해요',
   searchPlaceholder: '찾고 싶은 아기 용품을 검색해보세요',
-  heroEmpty: { small: '🍼 BEBEPONG', text: '아기 인기템을 준비하고 있어요' },
+  heroEmpty: { small: '🍼 BBPING', text: '아기 인기템을 준비하고 있어요' },
   tiles: [
     { cls: 't1', href: '/c/기저귀물티슈', title: '👶 기저귀와 물티슈 모아보기', sub: '매일 쓰는 필수 용품' },
     { cls: 't2', href: '#/talk', title: '💬 수다방', sub: '육아 꿀팁과 후기 나누기' }
@@ -193,7 +193,7 @@ export default {
     }
   },
   seed: [ // 커뮤니티 첫 글 (운영자 명의)
-    ['notice', 'BEBEPONG 이용 안내', 'BEBEPONG은 육아 이야기를 나누는 익명 커뮤니티입니다.\n\n- 닉네임과 비밀번호만 입력하면 글을 쓸 수 있어요\n- 비밀번호로 내 글을 수정하거나 지울 수 있어요\n- 광고와 욕설은 삭제될 수 있어요'],
+    ['notice', 'BBPING 이용 안내', 'BBPING은 육아 이야기를 나누는 익명 커뮤니티입니다.\n\n- 닉네임과 비밀번호만 입력하면 글을 쓸 수 있어요\n- 비밀번호로 내 글을 수정하거나 지울 수 있어요\n- 광고와 욕설은 삭제될 수 있어요'],
     ['qna', '출산 준비물 뭐부터 사셨어요', '출산 전에 꼭 필요했던 것과 안 사도 됐던 것을 알려 주세요.\n\n댓글로 남겨 주시면 많은 도움이 됩니다.'],
     ['free', '오늘의 우리 아기', '오늘 있었던 귀여운 순간이나 새로 산 용품 이야기를 편하게 남겨 주세요.\n사소한 이야기도 환영입니다.']
   ],
