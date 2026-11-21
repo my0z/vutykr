@@ -10,5 +10,53 @@
   "site": "seareal",
   "text": "서핑카약 인기 랭킹",
   "url": "https://seareal.kr/c/%EC%84%9C%ED%95%91%EC%B9%B4%EC%95%BD"
+ },
+ {
+  "id": "s2611213",
+  "site": "seareal",
+  "text": "수산물 인기 랭킹",
+  "url": "https://seareal.kr/c/%EC%88%98%EC%82%B0%EB%AC%BC"
+ },
+ {
+  "id": "s2611214",
+  "site": "seareal",
+  "text": "수산물 인기 랭킹",
+  "url": "https://seareal.kr/c/%EC%88%98%EC%82%B0%EB%AC%BC"
+ },
+ {
+  "id": "v2611211",
+  "site": "vuty",
+  "text": "선케어 인기 랭킹",
+  "url": "https://vuty.kr/c/%EC%84%A0%EC%BC%80%EC%96%B4"
+ },
+ {
+  "id": "b2611211",
+  "site": "bodcar",
+  "text": "공구정비 인기 랭킹",
+  "url": "https://bodcar.com/c/%EA%B3%B5%EA%B5%AC%EC%A0%95%EB%B9%84"
+ },
+ {
+  "id": "b2611212",
+  "site": "bodcar",
+  "text": "카매트 인기 랭킹",
+  "url": "https://bodcar.com/c/%EC%B9%B4%EB%A7%A4%ED%8A%B8"
+ },
+ {
+  "id": "b2611213",
+  "site": "bebepong",
+  "text": "신생아용품 인기 랭킹",
+  "url": "https://bbping.kr/c/%EC%8B%A0%EC%83%9D%EC%95%84%EC%9A%A9%ED%92%88"
+ },
+ {
+  "id": "b2611214",
+  "site": "bebepong",
+  "text": "기저귀물티슈 인기 랭킹",
+  "url": "https://bbping.kr/c/%EA%B8%B0%EC%A0%80%EA%B7%80%EB%AC%BC%ED%8B%B0%EC%8A%88"
+ },
+ {
+  "id": "p2611211",
+  "site": "pemily",
+  "text": "의류 인기 랭킹",
+  "url": "https://pemily.kr/c/%EC%9D%98%EB%A5%98"
  }
 ]
