@@ -1,0 +1,39 @@
+name: banners
+# 매일 새벽 사이트마다 새 배너를 한두 개씩 만들어 추가하고 배포한다
+on:
+  schedule:
+    - cron: '10 20 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+jobs:
+  banners:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 글꼴과 브라우저 준비
+        run: |
+          sudo apt-get update -y && sudo apt-get install -y fonts-noto-cjk
+          npm i --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: 배너 만들기
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/auto-banner.mjs
+      - name: 올리고 배포하기
+        run: |
+          git config user.name "banner-bot"
+          git config user.email "banner-bot@users.noreply.github.com"
+          git add public/promo sites/auto-promos.json
+          git diff --cached --quiet && echo "바뀐 것 없음" && exit 0
+          git commit -m "Add today's generated banners"
+          git pull --rebase origin main
+          git push origin HEAD:main
+          gh workflow run deploy.yml
+        env:
+          GH_TOKEN: ${{ github.token }}

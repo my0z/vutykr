@@ -5,6 +5,7 @@ import seareal from './seareal.js';
 import bebepong from './bebepong.js';
 import pemily from './pemily.js';
 import bright from './bright.js';
+import AUTO from './auto-promos.json' with { type: 'json' };
 import guideVuty from './guides/vuty.js';
 import guideBodcar from './guides/bodcar.js';
 import guideSeareal from './guides/seareal.js';
@@ -67,6 +68,8 @@ export const PROMOS = [
   { id: 'u2', site: 'usb', text: '차량용 전자기기 모아보기', url: 'https://usb.kr/category/car' },
   { id: 'u3', site: 'usb', text: '쿠팡 골드박스 전자기기 핫딜', url: 'https://usb.kr/deals' }
 ];
+export const AUTO_PROMOS = AUTO;
+PROMOS.push(...AUTO); // 매일 새로 만드는 배너 (scripts/auto-banner.mjs)
 
 // 방문한 주소로 어느 사이트인지 찾는다
 const BY_HOST = new Map(Object.values(SITES).flatMap(s => s.domains.map(d => [d, s])));

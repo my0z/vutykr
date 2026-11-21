@@ -1,5 +1,5 @@
 // 진입점: 방문한 주소로 어느 사이트인지 찾아 그 사이트의 설정과 저장소로 요청을 처리한다
-import { SITES, DEFAULT_SITE, siteForHost, redirectForHost } from '../sites/index.js';
+import { SITES, DEFAULT_SITE, siteForHost, redirectForHost, AUTO_PROMOS } from '../sites/index.js';
 import { createCommunity } from './community.js';
 import { createAnalytics } from './analytics.js';
 import { createSeo } from './seo.js';
@@ -65,6 +65,10 @@ export default {
     if (to) return secure(Response.redirect(to + url.pathname + url.search, 301));
     const real = siteForHost(url.hostname);
     if (real && url.hostname !== new URL(real.host).hostname) return secure(Response.redirect(real.host + url.pathname + url.search, 301)); // www 주소는 대표 주소로 영구 이동
+    if (url.pathname === '/api/promos') { // 매일 새로 만드는 배너 목록 (usb.kr이 가져다 쓴다)
+      const items = AUTO_PROMOS.map(b => ({ id: b.id, text: b.text, url: b.url, host: SITES[b.site] ? SITES[b.site].host : '' }));
+      return secure(new Response(JSON.stringify(items), { headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*', 'cache-control': 'public,max-age=3600' } }));
+    }
     const { site, set } = pick(url, req);
     const senv = bind(env, site);
     if (!senv) return new Response('이 사이트의 저장소가 연결되지 않았습니다', { status: 503 });
