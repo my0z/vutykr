@@ -32,7 +32,7 @@ async function scene(site, cat) {
 // 한국어 상품 낱말을 영어 상품 이름으로 옮긴다
 async function productEn(kw) {
   const r = await ai('@cf/meta/llama-3.1-8b-instruct', { json: { max_tokens: 20, messages: [
-    { role: 'system', content: 'Translate the Korean baby product name into a short English product noun phrase of 2 to 4 words. Output only the phrase.' },
+    { role: 'system', content: 'Translate the Korean shopping keyword into a short English product noun phrase of 2 to 4 words. Output only the phrase.' },
     { role: 'user', content: kw },
   ] } });
   const t = ((await r.json()).result || {}).response;
