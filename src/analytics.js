@@ -1,5 +1,6 @@
 // 접속 기록(D1)과 관리자 통계 페이지(/0) — 사이트 설정과 커뮤니티를 받아 그 사이트용으로 만든다
 import { PROMOS } from '../sites/index.js';
+import { liveDelete } from './live.js';
 const esc0 = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 export function createAnalytics(SITE, community) {
 const { init: initCommunity, removeRow, adminNotice } = community;
@@ -146,6 +147,7 @@ async function admin(req, env, url) {
   if (req.method === 'POST') {
     const b = await req.json().catch(() => ({}));
     if (b.a === 'del' && (b.t === 'posts' || b.t === 'comments') && Number(b.id)) { await removeRow(env, b.t, Number(b.id)); return new Response('{"ok":true}', { headers: head }); }
+    if (b.a === 'livedel' && b.id) { const ok = await liveDelete(env.G, String(b.id)); return new Response(JSON.stringify({ ok }), { headers: head }); }
     if (b.a === 'notice' && b.title && b.body) { await adminNotice(env, b.title, b.body); return new Response('{"ok":true}', { headers: head }); }
     return new Response('{"error":"bad"}', { status: 400, headers: head });
   }
@@ -267,6 +269,7 @@ button{background:var(--p1);color:#fff;border:0;border-radius:8px;padding:6px 12
 ${recent.map(r => `<tr><td>${kst(r.ts)}</td><td><span class="tag ${r.type}">${r.type === 'click' ? '클릭' : '방문'}</span></td><td>${r.type === 'click' && r.code ? `<a href="${esc(SITE.host)}/${esc(r.code)}?go=a" target="_blank" rel="noopener nofollow">${esc(`${r.code} ${r.name}`.slice(0, 40))}</a>` : esc(r.type === 'click' ? `${r.code} ${r.name}`.slice(0, 40) : '메인')}</td><td>${esc(`${r.country} ${r.city}`.trim())}</td><td>${esc(r.device)}</td><td>${esc(r.browser)}</td><td>${esc(r.os)}</td><td>${esc(r.ipm || '')}</td><td>${esc(r.ref || '직접')}</td></tr>`).join('') || '<tr><td colspan="9" class="mute">기록이 없습니다</td></tr>'}
 </table></div></section>
 <section class="box" style="margin-top:12px"><h2>배너 모아보기 (${PROMOS.length}개)</h2><p class="mute">이 사이트에서는 자기 사이트 배너를 뺀 나머지가 무작위로 하나씩 보입니다. 이미지를 누르면 크게 보입니다.</p><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px">${PROMOS.map(b => `<div><a href="${esc0(SITE.host)}/promo/${esc0(b.id)}-w.webp?v=7" class="zoom"><picture><source media="(min-width:761px)" srcset="${esc0(SITE.host)}/promo/${esc0(b.id)}-w.webp?v=7"><img src="${esc0(SITE.host)}/promo/${esc0(b.id)}-n.webp?v=7" alt="${esc0(b.text)}" loading="lazy" style="width:100%;border-radius:10px;display:block"></picture></a><small class="mute">${esc0(b.id)} · ${esc0(b.site)} · <a href="${esc0(b.url)}" target="_blank" rel="noopener nofollow">링크</a>${b.site === SITE.id ? ' (이 사이트 배너)' : ''} · ${esc0(b.text)}</small></div>`).join('')}</div></section>
+<section class="box" style="margin-top:12px"><h2>실시간 배너 (<span id="lc">0</span>개)</h2><p class="mute">매시간 새 사진으로 만들어 보여 줍니다. 사진과 문구가 어긋나면 삭제를 누르세요. 그 사진은 다시 나오지 않습니다.</p><div id="live" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px"></div></section>
 <section class="box" style="margin-top:12px"><h2>커뮤니티 관리</h2>
 <div class="wrap"><table><tr><th>번호</th><th>게시판</th><th>제목</th><th>작성자</th><th>댓글</th><th>좋아요</th><th>시간</th><th></th></tr>
 ${mPosts.map(r => `<tr><td>${r.id}</td><td>${esc(r.board)}</td><td>${esc(r.title.slice(0, 30))}</td><td>${esc(r.nick)}</td><td>${r.ccount}</td><td>${r.likes}</td><td>${kst(r.ts)}</td><td><button onclick="del('posts',${r.id})">삭제</button></td></tr>`).join('') || '<tr><td colspan="8" class="mute">글이 없습니다</td></tr>'}
@@ -281,6 +284,8 @@ ${mComments.map(r => `<tr><td>${r.pid}</td><td>${esc(r.body.slice(0, 40))}</td><
 <script>
 document.addEventListener('click',e=>{const a=e.target.closest('a.zoom');if(!a)return;e.preventDefault();const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:99;cursor:zoom-out;padding:16px';o.innerHTML='<img src="'+a.href+'" style="max-width:100%;max-height:100%;border-radius:10px">';o.onclick=()=>o.remove();document.body.appendChild(o)});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('body>div[style*="z-index:99"]').forEach(x=>x.remove())});
+fetch('/api/live').then(r=>r.json()).then(L=>{document.getElementById('lc').textContent=L.length;document.getElementById('live').innerHTML=L.slice().reverse().map(b=>'<div id="lv-'+b.id+'"><img src="/live/'+b.id+'-w.webp" alt="" loading="lazy" style="width:100%;border-radius:10px;display:block"><small class="mute">'+b.id+' · '+b.site+' · '+b.text.replace(/[<>&"]/g,'')+'</small> <button data-id="'+b.id+'" onclick="livedel(this.dataset.id)">삭제</button></div>').join('')}).catch(function(){});
+async function livedel(id){if(!confirm('이 배너를 지울까요?'))return;if(await post({a:'livedel',id:id})){var e=document.getElementById('lv-'+id);if(e)e.remove()}}
 async function post(b){const r=await fetch('/0',{method:'POST',body:JSON.stringify(b)});if(!r.ok){alert('실패했습니다');return false}return true}
 async function del(t,id){if(confirm('삭제할까요?')&&await post({a:'del',t,id}))location.reload()}
 async function notice(){const t=document.getElementById('nt').value,b=document.getElementById('nb').value;if(await post({a:'notice',title:t,body:b}))location.reload()}

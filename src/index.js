@@ -5,6 +5,7 @@ import { createAnalytics } from './analytics.js';
 import { createSeo } from './seo.js';
 import { createSite } from './engine.js';
 import { shellResponse } from './shell.js';
+import { liveRoute } from './live.js';
 
 // 사이트마다 엔진을 한 번만 만들어 둔다 (인스턴스가 살아 있는 동안 재사용)
 const engines = new Map();
@@ -69,6 +70,8 @@ export default {
       const items = AUTO_PROMOS.map(b => ({ id: b.id, text: b.text, url: b.url, host: SITES[b.site] ? SITES[b.site].host : '' }));
       return secure(new Response(JSON.stringify(items), { headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*', 'cache-control': 'public,max-age=3600' } }));
     }
+    const lr = await liveRoute(url, env); // 실시간 배너 그림과 목록
+    if (lr) return secure(lr);
     const { site, set } = pick(url, req);
     const senv = bind(env, site);
     if (!senv) return new Response('이 사이트의 저장소가 연결되지 않았습니다', { status: 503 });
