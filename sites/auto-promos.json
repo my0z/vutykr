@@ -24,10 +24,28 @@
   "url": "https://seareal.kr/c/%EC%88%98%EC%82%B0%EB%AC%BC"
  },
  {
+  "id": "s2611221",
+  "site": "seareal",
+  "text": "수산물 인기 랭킹",
+  "url": "https://seareal.kr/c/%EC%88%98%EC%82%B0%EB%AC%BC"
+ },
+ {
   "id": "v2611211",
   "site": "vuty",
   "text": "선케어 인기 랭킹",
   "url": "https://vuty.kr/c/%EC%84%A0%EC%BC%80%EC%96%B4"
+ },
+ {
+  "id": "v2611221",
+  "site": "vuty",
+  "text": "장신구 인기 랭킹",
+  "url": "https://vuty.kr/c/%EC%9E%A5%EC%8B%A0%EA%B5%AC"
+ },
+ {
+  "id": "v2611222",
+  "site": "vuty",
+  "text": "의류 인기 랭킹",
+  "url": "https://vuty.kr/c/%EC%9D%98%EB%A5%98"
  },
  {
   "id": "b2611211",
@@ -42,6 +60,12 @@
   "url": "https://bodcar.com/c/%EC%B9%B4%EB%A7%A4%ED%8A%B8"
  },
  {
+  "id": "b2611221",
+  "site": "bodcar",
+  "text": "실내용품 인기 랭킹",
+  "url": "https://bodcar.com/c/%EC%8B%A4%EB%82%B4%EC%9A%A9%ED%92%88"
+ },
+ {
   "id": "b2611213",
   "site": "bebepong",
   "text": "신생아용품 인기 랭킹",
@@ -54,9 +78,33 @@
   "url": "https://bbping.kr/c/%EA%B8%B0%EC%A0%80%EA%B7%80%EB%AC%BC%ED%8B%B0%EC%8A%88"
  },
  {
+  "id": "b2611222",
+  "site": "bebepong",
+  "text": "아기옷 인기 랭킹",
+  "url": "https://bbping.kr/c/%EC%95%84%EA%B8%B0%EC%98%B7"
+ },
+ {
   "id": "p2611211",
   "site": "pemily",
   "text": "의류 인기 랭킹",
   "url": "https://pemily.kr/c/%EC%9D%98%EB%A5%98"
+ },
+ {
+  "id": "p2611221",
+  "site": "pemily",
+  "text": "하우스방석 인기 랭킹",
+  "url": "https://pemily.kr/c/%ED%95%98%EC%9A%B0%EC%8A%A4%EB%B0%A9%EC%84%9D"
+ },
+ {
+  "id": "z2611221",
+  "site": "zakgong",
+  "text": "안전용품 인기 랭킹",
+  "url": "https://zakgong.com/c/%EC%95%88%EC%A0%84%EC%9A%A9%ED%92%88"
+ },
+ {
+  "id": "z2611222",
+  "site": "zakgong",
+  "text": "체결부품 인기 랭킹",
+  "url": "https://zakgong.com/c/%EC%B2%B4%EA%B2%B0%EB%B6%80%ED%92%88"
  }
 ]
