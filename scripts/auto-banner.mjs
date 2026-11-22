@@ -30,7 +30,7 @@ async function scene(site, cat) {
 
 async function image(text) {
   const f = new FormData(); f.append('prompt', `Photorealistic candid photo. ${text} Natural soft light shallow depth of field wide composition with the subject on the right side and empty space on the left.`); f.append('width', '1344'); f.append('height', '768');
-  const r = await ai('@cf/black-forest-labs/flux-2-dev', { form: f });
+  const r = await ai('@cf/black-forest-labs/flux-2-klein-9b', { form: f });
   if ((r.headers.get('content-type') || '').startsWith('image/')) return Buffer.from(await r.arrayBuffer());
   const j = await r.json();
   if (!(j.result && j.result.image)) throw new Error('이미지 실패 ' + JSON.stringify(j.errors || j).slice(0, 160));

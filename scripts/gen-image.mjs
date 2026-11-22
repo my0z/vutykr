@@ -6,7 +6,7 @@
 import { writeFileSync } from 'node:fs';
 
 const MODELS = { dev: '@cf/black-forest-labs/flux-2-dev', klein: '@cf/black-forest-labs/flux-2-klein-9b', lucid: '@cf/leonardo/lucid-origin', phoenix: '@cf/leonardo/phoenix-1.0' };
-const [prompt, out = 'image.jpg', key = 'dev', w = '1024', h = '1024'] = process.argv.slice(2);
+const [prompt, out = 'image.jpg', key = 'klein', w = '1024', h = '1024'] = process.argv.slice(2);
 const token = process.env.CLOUDFLARE_API_TOKEN;
 const acct = process.env.CLOUDFLARE_ACCOUNT_ID || '709dcc6af36c8ee7b6d3d99e7a9fe422';
 const model = MODELS[key];
