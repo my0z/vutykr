@@ -360,12 +360,6 @@
   "q": "유모차"
  },
  {
-  "id": "b26112212",
-  "site": "bebepong",
-  "text": "장난감완구 모아보기",
-  "url": "https://bbping.kr/c/%EC%9E%A5%EB%82%9C%EA%B0%90%EC%99%84%EA%B5%AC"
- },
- {
   "id": "b26112212P",
   "site": "bebepong",
   "text": "장난감완구 베스트 한눈에",
@@ -414,12 +408,6 @@
   "q": "물티슈"
  },
  {
-  "id": "b26112217",
-  "site": "bebepong",
-  "text": "외출용품 베스트 한눈에",
-  "url": "https://bbping.kr/c/%EC%99%B8%EC%B6%9C%EC%9A%A9%ED%92%88"
- },
- {
   "id": "b26112218",
   "site": "bebepong",
   "text": "기저귀물티슈 고르기 전에 확인",
@@ -436,12 +424,6 @@
   "site": "bebepong",
   "text": "아기옷 인기 랭킹",
   "url": "https://bbping.kr/c/%EC%95%84%EA%B8%B0%EC%98%B7"
- },
- {
-  "id": "b26112220",
-  "site": "bebepong",
-  "text": "신생아용품 모아보기",
-  "url": "https://bbping.kr/c/%EC%8B%A0%EC%83%9D%EC%95%84%EC%9A%A9%ED%92%88"
  },
  {
   "id": "b26112220P",
@@ -514,18 +496,6 @@
   "url": "https://bbping.kr/c/%EC%99%B8%EC%B6%9C%EC%9A%A9%ED%92%88"
  },
  {
-  "id": "b2611225",
-  "site": "bebepong",
-  "text": "기저귀물티슈 모아보기",
-  "url": "https://bbping.kr/c/%EA%B8%B0%EC%A0%80%EA%B7%80%EB%AC%BC%ED%8B%B0%EC%8A%88"
- },
- {
-  "id": "b2611226",
-  "site": "bebepong",
-  "text": "분유이유식 인기 랭킹",
-  "url": "https://bbping.kr/c/%EB%B6%84%EC%9C%A0%EC%9D%B4%EC%9C%A0%EC%8B%9D"
- },
- {
   "id": "b2611227",
   "site": "bebepong",
   "text": "신생아용품 고르기 전에 확인",
@@ -536,12 +506,6 @@
   "site": "bebepong",
   "text": "수유용품 모아보기",
   "url": "https://bbping.kr/c/%EC%88%98%EC%9C%A0%EC%9A%A9%ED%92%88"
- },
- {
-  "id": "b2611229",
-  "site": "bebepong",
-  "text": "지금 많이 찾는 유모차카시트",
-  "url": "https://bbping.kr/c/%EC%9C%A0%EB%AA%A8%EC%B0%A8%EC%B9%B4%EC%8B%9C%ED%8A%B8"
  },
  {
   "id": "p2611211",
