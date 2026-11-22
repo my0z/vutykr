@@ -1,8 +1,8 @@
 name: live-banners
-# 매시간 무료 사진(Pixabay)을 새로 가져와 합성한 배너를 KV 에 올린다 (비용 0 · 커밋과 배포 없음)
+# 30분마다 무료 사진(Pixabay)을 새로 가져와 합성한 배너를 KV 에 올린다 (비용 0 · 커밋과 배포 없음)
 on:
   schedule:
-    - cron: '7 * * * *'
+    - cron: '7,37 * * * *'
   workflow_dispatch:
     inputs:
       count:

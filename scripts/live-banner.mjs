@@ -1,4 +1,4 @@
-// 매시간 무료 사진(Pixabay)을 새로 가져와 합성하고 KV 에 올린다 (이미지 생성 AI 를 쓰지 않아 비용 0 · git 커밋도 배포도 없다)
+// 30분마다 무료 사진(Pixabay)을 새로 가져와 합성하고 KV 에 올린다 (이미지 생성 AI 를 쓰지 않아 비용 0 · git 커밋도 배포도 없다)
 // 필요: PIXABAY_API_KEY CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID 그리고 playwright
 // 관련성: 검색어 낱말이 태그 앞쪽에 모두 있어야 쓰고 사람이 나오는 사진과 차단 목록의 사진은 뺀다
 import { readFileSync, existsSync } from 'node:fs';
@@ -59,7 +59,7 @@ const usedRepo = new Set((existsSync('sites/stock-used.json') ? JSON.parse(readF
 const skip = src => block.has(src) || usedLive.has(src) || usedRepo.has(src);
 
 const siteIds = Object.keys(SITES);
-const first = Number(process.env.START ?? new Date().getUTCHours()) % siteIds.length; // 시간마다 사이트를 돌아가며 만든다
+const first = Number(process.env.START ?? Math.floor(Date.now() / 1800e3)) % siteIds.length; // 30분마다 사이트를 돌아가며 만든다
 const browser = await chromium.launch();
 let made = 0; const fresh = [];
 for (let k = 0; k < COUNT; k++) {
