@@ -142,6 +142,12 @@
   "url": "https://vuty.kr/c/%EC%9E%A5%EC%8B%A0%EA%B5%AC"
  },
  {
+  "id": "v26112210",
+  "site": "vuty",
+  "text": "지금 많이 찾는 장신구",
+  "url": "https://vuty.kr/c/%EC%9E%A5%EC%8B%A0%EA%B5%AC"
+ },
+ {
   "id": "v26112210P",
   "site": "vuty",
   "text": "선케어 인기 랭킹",
@@ -150,12 +156,30 @@
   "q": "선크림"
  },
  {
+  "id": "v26112211",
+  "site": "vuty",
+  "text": "의류 고르기 전에 확인",
+  "url": "https://vuty.kr/c/%EC%9D%98%EB%A5%98"
+ },
+ {
   "id": "v26112211P",
   "site": "vuty",
   "text": "메이크업 모아보기",
   "url": "https://vuty.kr/c/%EB%A9%94%EC%9D%B4%ED%81%AC%EC%97%85",
   "src": "pixabay:5893474",
   "q": "립스틱"
+ },
+ {
+  "id": "v26112212",
+  "site": "vuty",
+  "text": "잡화 인기 랭킹",
+  "url": "https://vuty.kr/c/%EC%9E%A1%ED%99%94"
+ },
+ {
+  "id": "v26112213",
+  "site": "vuty",
+  "text": "지금 많이 찾는 선케어",
+  "url": "https://vuty.kr/c/%EC%84%A0%EC%BC%80%EC%96%B4"
  },
  {
   "id": "v2611221P",
@@ -186,12 +210,36 @@
   "url": "https://vuty.kr/c/%EC%8A%A4%ED%82%A8%EC%BC%80%EC%96%B4"
  },
  {
+  "id": "v2611224",
+  "site": "vuty",
+  "text": "신발 모아보기",
+  "url": "https://vuty.kr/c/%EC%8B%A0%EB%B0%9C"
+ },
+ {
+  "id": "v2611225",
+  "site": "vuty",
+  "text": "지금 많이 찾는 바디헤어",
+  "url": "https://vuty.kr/c/%EB%B0%94%EB%94%94%ED%97%A4%EC%96%B4"
+ },
+ {
+  "id": "v2611226",
+  "site": "vuty",
+  "text": "클렌징 고르기 전에 확인",
+  "url": "https://vuty.kr/c/%ED%81%B4%EB%A0%8C%EC%A7%95"
+ },
+ {
   "id": "v2611226P",
   "site": "vuty",
   "text": "선케어 베스트 한눈에",
   "url": "https://vuty.kr/c/%EC%84%A0%EC%BC%80%EC%96%B4",
   "src": "pixabay:7276285",
   "q": "선크림"
+ },
+ {
+  "id": "v2611227",
+  "site": "vuty",
+  "text": "지금 많이 찾는 스킨케어",
+  "url": "https://vuty.kr/c/%EC%8A%A4%ED%82%A8%EC%BC%80%EC%96%B4"
  },
  {
   "id": "v2611227P",
@@ -202,12 +250,24 @@
   "q": "스카프"
  },
  {
+  "id": "v2611228",
+  "site": "vuty",
+  "text": "가방 모아보기",
+  "url": "https://vuty.kr/c/%EA%B0%80%EB%B0%A9"
+ },
+ {
   "id": "v2611228P",
   "site": "vuty",
   "text": "선케어 모아보기",
   "url": "https://vuty.kr/c/%EC%84%A0%EC%BC%80%EC%96%B4",
   "src": "pixabay:1491363",
   "q": "선크림"
+ },
+ {
+  "id": "v2611229",
+  "site": "vuty",
+  "text": "메이크업 인기 랭킹",
+  "url": "https://vuty.kr/c/%EB%A9%94%EC%9D%B4%ED%81%AC%EC%97%85"
  },
  {
   "id": "v2611229P",
