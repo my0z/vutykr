@@ -6,6 +6,9 @@ on:
       count:
         description: '만들 배너 수'
         default: '60'
+      quota:
+        description: '사이트별 장수 (예 bebepong:30,vuty:5)'
+        default: ''
       preview:
         description: '배포하지 않고 banner-preview 브랜치에만 올리기'
         default: 'true'
@@ -29,6 +32,7 @@ jobs:
         env:
           PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
           COUNT: ${{ inputs.count }}
+          QUOTA: ${{ inputs.quota }}
         run: node scripts/stock-banner.mjs
       - name: 올리기
         env:
