@@ -31,7 +31,7 @@ window.__d = window.__p ? Promise.resolve(window.__p) : Promise.all([
   var b = B[Math.floor(Math.random() * B.length)], el = document.getElementById('promo');
   if (!b || !el) return;
   var u = b[2] + (b[2].indexOf('?') < 0 ? '?' : '&') + 'utm_source={{HOSTNAME}}&utm_medium=banner&utm_campaign=' + b[0];
-  el.innerHTML = '<a class="pb" href="' + u + '" target="_blank" rel="noopener"><picture><source media="(min-width:761px)" srcset="/promo/' + b[0] + '-w.webp?v=7"><img src="/promo/' + b[0] + '-n.webp?v=7" width="960" height="300" alt="' + b[1] + '" fetchpriority="low" decoding="async"></picture></a><span class="tags' + (/L$/.test(b[0]) ? ' r' : '') + '"><small>AI 생성 이미지</small><small>광고</small></span>';
+  el.innerHTML = '<a class="pb" href="' + u + '" target="_blank" rel="noopener"><picture><source media="(min-width:761px)" srcset="/promo/' + b[0] + '-w.webp?v=7"><img src="/promo/' + b[0] + '-n.webp?v=7" width="960" height="300" alt="' + b[1] + '" fetchpriority="low" decoding="async"></picture></a><span class="tags' + (/L$/.test(b[0]) ? ' r' : '') + '">'+(/P$/.test(b[0])?'':'<small>AI 생성 이미지</small>')+'<small>광고</small></span>';
 })();
 </script>
 <div class="feebar"><div class="in">{{DISC_TOP}}</div></div>

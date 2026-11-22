@@ -35,7 +35,7 @@ export function buildHtml(site, cat, photoB64, narrow, d) {
   const cta = (left, style) => narrow ? '' : `<div style="position:absolute;left:${left}px;top:98px;${btnBase}${style}">${site.name} 가기 →</div>`;
   const wrap = (bg, inner) => `<html><body style="margin:0;width:${w}px;height:${h}px;overflow:hidden;font-family:'Noto Sans CJK KR','Noto Sans KR',sans-serif"><div style="position:relative;width:${w}px;height:${h}px;background:${bg};overflow:hidden">${inner}</div></body></html>`;
   const blob = c => `<div style="position:absolute;left:${narrow ? 300 : 650}px;top:${narrow ? -80 : -140}px;width:${narrow ? 440 : 540}px;height:${narrow ? 440 : 540}px;border-radius:50%;background:${c}"></div>`;
-  const subj = subjOf(d.layout), px = { left: '30%', center: '50%', right: '70%' }[subj];
+  const subj = subjOf(d.layout), px = d.px || { left: '30%', center: '50%', right: '70%' }[subj];
   const cover = (extra) => `background:${photo} ${px} 30%/cover no-repeat;${extra}`;
   const ph = (side, mask) => `<div style="position:absolute;${side}:${narrow ? 0 : 20}px;top:0;width:${ww}px;height:${h}px;${cover(`-webkit-mask-image:${mask};mask-image:${mask};`)}"></div>`;
   switch (d.layout) {
