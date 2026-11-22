@@ -3,6 +3,7 @@
 import { readFileSync, writeFileSync, rmSync, existsSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { SITES } from '../sites/index.js';
+import { EN } from './product-en.mjs';
 import { buildHtml, randomDesign, copyOf, subjOf } from './banner-design.mjs';
 
 const TOKEN = process.env.CLOUDFLARE_API_TOKEN, ACCT = process.env.CLOUDFLARE_ACCOUNT_ID || '709dcc6af36c8ee7b6d3d99e7a9fe422';
@@ -71,7 +72,8 @@ async function shoot(browser, site, cat, photo, narrow, design) {
 const list = JSON.parse(readFileSync(LIST, 'utf8'));
 const ids = Object.keys(SITES).sort(() => Math.random() - 0.5);
 const extra = new Set(ids.filter(() => Math.random() < 0.33)); // 일부 사이트는 두 개
-let plan = ONLY ? Array(MAX_PER_DAY).fill(ONLY) : ids.flatMap(id => extra.has(id) ? [id, id] : [id]).slice(0, MAX_PER_DAY);
+let plan = ONLY ? Array(MAX_PER_DAY).fill(ONLY) : SCHNELL ? ids.slice(0, MAX_PER_DAY) : // schnell 은 사이트마다 한 장씩
+   ids.flatMap(id => extra.has(id) ? [id, id] : [id]).slice(0, MAX_PER_DAY);
 const catOrder = {};
 const browser = await chromium.launch();
 let made = 0; const day = yymmdd(); const used = new Set(list.map(x => x.id));
@@ -82,8 +84,7 @@ for (const id of plan) {
     if (SCHNELL) { // 상품 단독 사진: 카테고리를 돌아가며 대표 낱말 하나씩 (밝은 카드 배치만 쓴다)
       const cats = (catOrder[id] ||= Object.keys(site.cats).sort(() => Math.random() - 0.5));
       cat = cats[made % cats.length];
-      const kw = pick(site.cats[cat].kw);
-      text = await productEn(kw);
+      text = (EN[id] && EN[id][cat] && pick(EN[id][cat])) || await productEn(pick(site.cats[cat].kw)); // 미리 적어 둔 영어 이름을 먼저 쓴다
       photo = await schnellImage(text);
       design = { ...randomDesign(pick(['light', 'circle'])), contain: true }; subj = 'center';
     } else {
