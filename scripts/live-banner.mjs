@@ -4,6 +4,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { SITES } from '../sites/index.js';
+import { EN } from './product-en.mjs';
 import { buildHtml, randomDesign, copyOf } from './banner-design.mjs';
 
 const KEY = process.env.PIXABAY_API_KEY, TOKEN = process.env.CLOUDFLARE_API_TOKEN;
@@ -19,23 +20,26 @@ const shuffle = a => [...a].sort(() => Math.random() - 0.5);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const kst = new Date(Date.now() + 9 * 3600e3), stamp = kst.toISOString().slice(2, 13).replace(/[-T]/g, ''); // yymmddhh
 const LAYOUTS = ['split', 'full', 'light', 'slant', 'glass', 'circle']; // 사진 위치를 알 수 없으므로 사진이 왼쪽인 배치는 뺀다
-const AMBIG = new Set(['쿠션', '어항', '팩', '배', '차', '밤', '눈', '물']);
-const QMAP = { 관상어: ['열대어', '수족관', '금붕어'], 메이크업: ['화장품', '립스틱', '아이섀도'], 바디헤어: ['바디워시', '바디로션', '헤어 에센스'], 장신구: ['목걸이', '귀걸이', '팔찌'] };
-const PEOPLE = /사람|여성|여자|남성|남자|소녀|소년|아기|아이|어린이|유아|모델|얼굴|커플|가족|엄마|아빠|초상|신부|신랑|사진가|인물|girl|boy|woman|women|man|men|baby|child|kid|people|person|portrait|face|model|couple|family/i;
+// 영어 상품 이름으로 영어 태그를 검색한다 (한국어 태그는 딸랑이=꽃 토너=토너먼트 같은 엉뚱한 뜻이 많다)
+const GENERIC = new Set(['pack', 'folded', 'small', 'womens', 'women', 'bottle', 'tube', 'jar', 'set', 'box', 'bag', 'white', 'leather', 'gold', 'wool', 'cordless', 'power', 'portable', 'compact', 'with', 'baby']);
+const PEOPLE = /\b(girl|boy|woman|women|man|men|child|children|kid|kids|people|person|portrait|face|model|couple|family|mother|father|baby girl|toddler|newborn baby)\b/i;
+const words = q => q.toLowerCase().replace(/'s\b/g, 's').replace(/[^a-z ]/g, ' ').split(/\s+/).filter(Boolean);
+const keyTokens = q => words(q).filter(t => t.length >= 4 && !GENERIC.has(t));
 
 async function search(q) {
-  const r = await fetch(`https://pixabay.com/api/?key=${KEY}&q=${encodeURIComponent(q)}&lang=ko&image_type=photo&orientation=horizontal&min_width=1600&safesearch=true&order=popular&per_page=40`);
+  const r = await fetch(`https://pixabay.com/api/?key=${KEY}&q=${encodeURIComponent(words(q).filter(t => !['a', 'an', 'the'].includes(t)).join(' '))}&lang=en&image_type=photo&orientation=horizontal&min_width=1600&safesearch=true&order=popular&per_page=40`);
   if (r.status === 429) throw new Error('Pixabay 요청 한도 (429)');
   if (!r.ok) throw new Error('Pixabay ' + r.status);
   return (await r.json()).hits || [];
 }
-// 검색어 낱말이 모두 태그의 앞쪽 네 개 안에 있고 사람 태그가 없는 사진만 쓴다 (태그는 관련 깊은 순서다)
+// 상품을 가리키는 낱말이 모두 태그의 앞쪽 여섯 개 안에 낱말 그대로 있고 사람 태그가 없는 사진만 쓴다 (태그는 관련 깊은 순서다)
 function relevant(hit, q) {
-  const tags = String(hit.tags || '').split(',').map(t => t.trim());
-  if (PEOPLE.test(tags.join(' '))) return false;
-  const head = tags.slice(0, 4).join('').replace(/\s/g, '');
-  const toks = q.split(/\s+/).map(t => t.replace(/\s/g, '')).filter(t => t.length >= 2);
-  return toks.length > 0 && toks.every(t => head.includes(t));
+  const tags = String(hit.tags || '').toLowerCase().split(',').map(t => t.trim()).filter(Boolean);
+  const all = tags.join(' ');
+  if (PEOPLE.test(all.replace(new RegExp('\\b(' + words(q).join('|') + ')\\b', 'g'), ''))) return false;
+  const head = ', ' + tags.slice(0, 6).join(', ') + ', ';
+  const kt = keyTokens(q);
+  return kt.length > 0 && kt.every(t => new RegExp('\\b' + t + 's?\\b').test(head));
 }
 async function shoot(browser, site, cat, photo, narrow, design) {
   const w = narrow ? 960 : 1920, h = narrow ? 300 : 240;
@@ -64,7 +68,8 @@ for (let k = 0; k < COUNT; k++) {
   let ok = false;
   for (let t = 0; t < cats.length * 3 && !ok; t++) {
     const cat = cats[t % cats.length];
-    const kws = (QMAP[cat] || site.cats[cat].kw).filter(x => !AMBIG.has(x));
+    const kws = (EN[id] && EN[id][cat]) || [];
+    if (!kws.length) continue;
     const q = kws[Math.floor(t / cats.length) % kws.length];
     try {
       const hits = (await search(q)).filter(h => !skip('pixabay:' + h.id) && relevant(h, q));
