@@ -19,7 +19,7 @@ const pick = a => a[Math.floor(Math.random() * a.length)];
 const shuffle = a => [...a].sort(() => Math.random() - 0.5);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const kst = new Date(Date.now() + 9 * 3600e3), stamp = kst.toISOString().slice(2, 13).replace(/[-T]/g, ''); // yymmddhh
-const LAYOUTS = ['split', 'full', 'light', 'slant', 'glass', 'circle']; // 사진 위치를 알 수 없으므로 사진이 왼쪽인 배치는 뺀다
+const LAYOUTS = ['split', 'full', 'light', 'slant', 'glass', 'circle', 'mirror', 'fullr']; // mirror 와 fullr 은 사진이 왼쪽이다 (id 끝에 LP 를 붙여 광고 표시를 오른쪽 아래로 옮긴다)
 // 영어 상품 이름으로 영어 태그를 검색한다 (한국어 태그는 딸랑이=꽃 토너=토너먼트 같은 엉뚱한 뜻이 많다)
 const GENERIC = new Set(['pack', 'folded', 'small', 'womens', 'women', 'bottle', 'tube', 'jar', 'set', 'box', 'bag', 'white', 'leather', 'gold', 'wool', 'cordless', 'power', 'portable', 'compact', 'with', 'baby']);
 const PEOPLE = /\b(girl|boy|woman|women|man|men|child|children|kid|kids|people|person|portrait|face|model|couple|family|mother|father|baby girl|toddler|newborn baby)\b/i;
@@ -80,7 +80,7 @@ for (let k = 0; k < COUNT; k++) {
       if (!pr.ok) throw new Error('사진 내려받기 ' + pr.status);
       const photo = Buffer.from(await pr.arrayBuffer());
       const design = { ...randomDesign(pick(LAYOUTS)), px: '50%' };
-      let n = 0, bid; do { bid = `${id[0]}${stamp}${n ? n : ''}P`; n++; } while (index.some(x => x.id === bid));
+      let n = 0, bid; do { bid = `${id[0]}${stamp}${n ? n : ''}${['mirror', 'fullr'].includes(design.layout) ? 'L' : ''}P`; n++; } while (index.some(x => x.id === bid));
       const imgW = await shoot(browser, site, cat, photo, false, design), imgN = await shoot(browser, site, cat, photo, true, design);
       await kvPut(`live:img:${bid}-w`, imgW);
       await kvPut(`live:img:${bid}-n`, imgN);

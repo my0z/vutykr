@@ -12,7 +12,7 @@ const LIST = new URL('../sites/auto-promos.json', import.meta.url);
 const OUT = new URL('../public/promo/', import.meta.url);
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(2, 10).replace(/-/g, '');
-const LAYOUTS = ['split', 'full', 'light', 'slant', 'glass', 'circle']; // 사진 위치를 알 수 없으므로 사진이 왼쪽인 배치는 뺀다
+const LAYOUTS = ['split', 'full', 'light', 'slant', 'glass', 'circle', 'mirror', 'fullr']; // mirror 와 fullr 은 사진이 왼쪽이다 (id 끝에 LP 를 붙여 광고 표시를 오른쪽 아래로 옮긴다)
 
 async function photoOf(pid) {
   const r = await fetch(`https://pixabay.com/api/?key=${KEY}&id=${pid}`);
@@ -51,8 +51,8 @@ for (const id of plan) {
     const cat = decodeURIComponent(base.url.split('/c/')[1] || '');
     if (!site.cats[cat]) { console.log('카테고리 없음', id, cat); continue; }
     const photo = await photoOf(base.src.split(':')[1]);
-    let n = 1, bid; do { bid = `${id[0]}${day}${n++}P`; } while (used.has(bid));
     const design = { ...randomDesign(pick(LAYOUTS)), px: '50%' };
+    let n = 1, bid; do { bid = `${id[0]}${day}${n++}${['mirror', 'fullr'].includes(design.layout) ? 'L' : ''}P`; } while (used.has(bid));
     writeFileSync(new URL(`${bid}-w.webp`, OUT), await shoot(browser, site, cat, photo, false, design));
     writeFileSync(new URL(`${bid}-n.webp`, OUT), await shoot(browser, site, cat, photo, true, design));
     used.add(bid); uses[base.src]++;
