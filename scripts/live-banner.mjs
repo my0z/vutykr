@@ -81,10 +81,11 @@ for (let k = 0; k < COUNT; k++) {
       const photo = Buffer.from(await pr.arrayBuffer());
       const design = { ...randomDesign(pick(LAYOUTS)), px: '50%' };
       let n = 0, bid; do { bid = `${id[0]}${stamp}${n ? n : ''}P`; n++; } while (index.some(x => x.id === bid));
-      await kvPut(`live:img:${bid}-w`, await shoot(browser, site, cat, photo, false, design));
-      await kvPut(`live:img:${bid}-n`, await shoot(browser, site, cat, photo, true, design));
+      const imgW = await shoot(browser, site, cat, photo, false, design), imgN = await shoot(browser, site, cat, photo, true, design);
+      await kvPut(`live:img:${bid}-w`, imgW);
+      await kvPut(`live:img:${bid}-n`, imgN);
       const src = 'pixabay:' + hit.id;
-      const item = { id: bid, site: id, text: copyOf(site, cat, design).title, url: `${site.host}/c/${encodeURIComponent(cat)}`, src, q, ts: Date.now() };
+      const item = { id: bid, site: id, text: copyOf(site, cat, design).title, url: `${site.host}/c/${encodeURIComponent(cat)}`, src, q, ts: Date.now(), bytes: imgW.length + imgN.length };
       index.push(item); fresh.push(item);
       usedLive.add(src); made++; ok = true;
       console.log('만듦', bid, cat, design.layout, '|', q, '|', String(hit.tags).slice(0, 60));
@@ -95,8 +96,14 @@ for (let k = 0; k < COUNT; k++) {
 await browser.close();
 if (made) {
   // 그사이 관리자가 지운 배너가 되살아나지 않게 최신 목록을 다시 읽어 새로 만든 것만 더한다
-  const merged = [...(await json('live:index', [])), ...fresh]; // 오래된 배너도 지우지 않고 계속 쓴다
-  await kvPut('live:index', JSON.stringify(merged.sort((a, b) => a.ts - b.ts)));
+  let merged = [...(await json('live:index', [])), ...fresh].sort((a, b) => a.ts - b.ts); // 평소엔 지우지 않고 계속 보관한다
+  // KV 저장 한도(기본 1GB)에 가까워지면 가장 오래된 배너부터 차례로 지워 한도 아래로 되돌린다
+  const LIMIT = Number(process.env.KV_LIMIT_MB || 800) * 1e6, TARGET = LIMIT * 0.875, size = x => x.bytes || 80000;
+  let total = merged.reduce((a, x) => a + size(x), 0);
+  if (total > LIMIT) {
+    while (total > TARGET && merged.length > 1) { const old = merged.shift(); total -= size(old); await kvDel(`live:img:${old.id}-w`); await kvDel(`live:img:${old.id}-n`); console.log('오래된 배너 정리', old.id); }
+  }
+  await kvPut('live:index', JSON.stringify(merged));
   await kvPut('live:used', JSON.stringify([...usedLive].slice(-4000)));
 }
 console.log('만든 실시간 배너', made);
