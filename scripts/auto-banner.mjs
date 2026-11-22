@@ -6,7 +6,7 @@ import { SITES } from '../sites/index.js';
 import { buildHtml, randomDesign, copyOf, subjOf } from './banner-design.mjs';
 
 const TOKEN = process.env.CLOUDFLARE_API_TOKEN, ACCT = process.env.CLOUDFLARE_ACCOUNT_ID || '709dcc6af36c8ee7b6d3d99e7a9fe422';
-const MAX_PER_DAY = Number(process.env.BANNERS_MAX || 8); // 하루에 만드는 배너 수의 상한 (무료 한도 보호)
+const MAX_PER_DAY = Number(process.env.BANNERS_MAX || 3); // 하루에 만드는 배너 수의 상한 (무료 한도 보호)
 const KEEP_PER_SITE = 300; // 이전 배너는 지우지 않고 계속 쓴다 (사이트마다 300개가 넘을 때만 가장 오래된 것부터 정리)
 const LIST = new URL('../sites/auto-promos.json', import.meta.url);
 const OUT = new URL('../public/promo/', import.meta.url);
