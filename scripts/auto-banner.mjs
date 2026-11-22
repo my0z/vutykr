@@ -11,6 +11,7 @@ const KEEP_PER_SITE = 300; // 이전 배너는 지우지 않고 계속 쓴다 (�
 const LIST = new URL('../sites/auto-promos.json', import.meta.url);
 const OUT = new URL('../public/promo/', import.meta.url);
 const ai = (model, init) => fetch(`https://api.cloudflare.com/client/v4/accounts/${ACCT}/ai/run/${model}`, { method: 'POST', headers: { authorization: `Bearer ${TOKEN}`, ...(init.json ? { 'content-type': 'application/json' } : {}) }, body: init.json ? JSON.stringify(init.json) : init.form });
+const ONLY = process.env.ONLY, SCHNELL = process.env.IMAGE_MODEL === 'schnell'; // ONLY=사이트 하나만 · IMAGE_MODEL=schnell 이면 상품 단독 사진을 아주 싸게 만든다 (장당 약 170 뉴런)
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const yymmdd = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(2, 10).replace(/-/g, '');
 
@@ -26,6 +27,25 @@ async function scene(site, cat) {
   const t = j.result && j.result.response;
   if (!t) throw new Error('장면 문장 실패 ' + JSON.stringify(j.errors || j).slice(0, 120));
   return t.replace(/\s+/g, ' ').trim();
+}
+
+// 한국어 상품 낱말을 영어 상품 이름으로 옮긴다
+async function productEn(kw) {
+  const r = await ai('@cf/meta/llama-3.1-8b-instruct', { json: { max_tokens: 20, messages: [
+    { role: 'system', content: 'Translate the Korean baby product name into a short English product noun phrase of 2 to 4 words. Output only the phrase.' },
+    { role: 'user', content: kw },
+  ] } });
+  const t = ((await r.json()).result || {}).response;
+  if (!t) throw new Error('상품 이름 번역 실패');
+  return t.replace(/[^A-Za-z -]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40);
+}
+
+// FLUX.1 schnell 은 가로세로를 못 정해서 1024 정사각형이 나온다. 상품이 화면을 가득 채우게 요청한다
+async function schnellImage(en) {
+  const r = await ai('@cf/black-forest-labs/flux-1-schnell', { json: { steps: 8, prompt: `Photorealistic studio product photo of ${en} on a clean bright white background, soft natural light, close-up with the product filling most of the frame and centered, no people, no text, no logo.` } });
+  const j = await r.json();
+  if (!(j.result && j.result.image)) throw new Error('이미지 실패 ' + JSON.stringify(j.errors || j).slice(0, 160));
+  return Buffer.from(j.result.image, 'base64');
 }
 
 async function image(text, subj = 'right') {
@@ -51,16 +71,27 @@ async function shoot(browser, site, cat, photo, narrow, design) {
 const list = JSON.parse(readFileSync(LIST, 'utf8'));
 const ids = Object.keys(SITES).sort(() => Math.random() - 0.5);
 const extra = new Set(ids.filter(() => Math.random() < 0.33)); // 일부 사이트는 두 개
-let plan = ids.flatMap(id => extra.has(id) ? [id, id] : [id]).slice(0, MAX_PER_DAY);
+let plan = ONLY ? Array(MAX_PER_DAY).fill(ONLY) : ids.flatMap(id => extra.has(id) ? [id, id] : [id]).slice(0, MAX_PER_DAY);
+const catOrder = {};
 const browser = await chromium.launch();
 let made = 0; const day = yymmdd(); const used = new Set(list.map(x => x.id));
 for (const id of plan) {
   const site = SITES[id];
   try {
-    const cat = pick(Object.keys(site.cats));
-    const text = await scene(site, cat);
-    const design = randomDesign(), subj = subjOf(design.layout);
-    const photo = await image(text, subj);
+    let cat, text, design, subj, photo;
+    if (SCHNELL) { // 상품 단독 사진: 카테고리를 돌아가며 대표 낱말 하나씩 (밝은 카드 배치만 쓴다)
+      const cats = (catOrder[id] ||= Object.keys(site.cats).sort(() => Math.random() - 0.5));
+      cat = cats[made % cats.length];
+      const kw = pick(site.cats[cat].kw);
+      text = await productEn(kw);
+      photo = await schnellImage(text);
+      design = { ...randomDesign(pick(['light', 'circle'])), contain: true }; subj = 'center';
+    } else {
+      cat = pick(Object.keys(site.cats));
+      text = await scene(site, cat);
+      design = randomDesign(); subj = subjOf(design.layout);
+      photo = await image(text, subj);
+    }
     let n = 1, bid; do { bid = `${id[0]}${day}${n++}${subj === 'left' ? 'L' : ''}`; } while (used.has(bid)); // 끝 L = 상품이 왼쪽 (광고 표시를 오른쪽 아래로)
     writeFileSync(new URL(`${bid}-w.webp`, OUT), await shoot(browser, site, cat, photo, false, design));
     writeFileSync(new URL(`${bid}-n.webp`, OUT), await shoot(browser, site, cat, photo, true, design));

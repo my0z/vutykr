@@ -4,6 +4,19 @@ on:
   schedule:
     - cron: '10 20 * * *'
   workflow_dispatch:
+    inputs:
+      only:
+        description: '이 사이트만 (예 bebepong)'
+        default: ''
+      max:
+        description: '장수 (비우면 3)'
+        default: ''
+      model:
+        description: 'klein 또는 schnell'
+        default: 'klein'
+      preview:
+        description: '배포 없이 banner-preview 브랜치에만 올리기'
+        default: 'false'
 permissions:
   contents: write
   actions: write
@@ -24,6 +37,9 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ONLY: ${{ inputs.only }}
+          BANNERS_MAX: ${{ inputs.max }}
+          IMAGE_MODEL: ${{ inputs.model }}
         run: node scripts/auto-banner.mjs
       - name: 올리고 배포하기
         run: |
@@ -32,8 +48,13 @@ jobs:
           git add public/promo sites/auto-promos.json
           git diff --cached --quiet && echo "바뀐 것 없음" && exit 0
           git commit -m "Add today's generated banners"
-          git pull --rebase origin main
-          git push origin HEAD:main
-          gh workflow run deploy.yml
+          if [ "$PREVIEW" = "true" ]; then
+            git push -f origin HEAD:banner-preview
+          else
+            git pull --rebase origin main
+            git push origin HEAD:main
+            gh workflow run deploy.yml
+          fi
         env:
           GH_TOKEN: ${{ github.token }}
+          PREVIEW: ${{ inputs.preview }}
