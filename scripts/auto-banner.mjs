@@ -3,7 +3,7 @@
 import { readFileSync, writeFileSync, rmSync, existsSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { SITES } from '../sites/index.js';
-import { buildHtml, randomDesign, copyOf } from './banner-design.mjs';
+import { buildHtml, randomDesign, copyOf, subjOf } from './banner-design.mjs';
 
 const TOKEN = process.env.CLOUDFLARE_API_TOKEN, ACCT = process.env.CLOUDFLARE_ACCOUNT_ID || '709dcc6af36c8ee7b6d3d99e7a9fe422';
 const MAX_PER_DAY = Number(process.env.BANNERS_MAX || 8); // 하루에 만드는 배너 수의 상한 (무료 한도 보호)
@@ -28,8 +28,9 @@ async function scene(site, cat) {
   return t.replace(/\s+/g, ' ').trim();
 }
 
-async function image(text) {
-  const f = new FormData(); f.append('prompt', `Photorealistic candid photo. ${text} Natural soft light shallow depth of field wide composition with the subject on the right side and empty space on the left.`); f.append('width', '1344'); f.append('height', '768');
+async function image(text, subj = 'right') {
+  const place = { right: 'with the subject on the right side and empty space on the left', left: 'with the subject on the far left side and empty space on the right', center: 'with the subject centered and empty space on both the left and right sides' }[subj];
+  const f = new FormData(); f.append('prompt', `Photorealistic candid photo. ${text} Natural soft light shallow depth of field wide composition ${place}.`); f.append('width', '1344'); f.append('height', '768');
   const r = await ai('@cf/black-forest-labs/flux-2-klein-9b', { form: f });
   if ((r.headers.get('content-type') || '').startsWith('image/')) return Buffer.from(await r.arrayBuffer());
   const j = await r.json();
@@ -58,9 +59,9 @@ for (const id of plan) {
   try {
     const cat = pick(Object.keys(site.cats));
     const text = await scene(site, cat);
-    const photo = await image(text);
-    let n = 1, bid; do { bid = `${id[0]}${day}${n++}`; } while (used.has(bid));
-    const design = randomDesign();
+    const design = randomDesign(), subj = subjOf(design.layout);
+    const photo = await image(text, subj);
+    let n = 1, bid; do { bid = `${id[0]}${day}${n++}${subj === 'left' ? 'L' : ''}`; } while (used.has(bid)); // 끝 L = 상품이 왼쪽 (광고 표시를 오른쪽 아래로)
     writeFileSync(new URL(`${bid}-w.webp`, OUT), await shoot(browser, site, cat, photo, false, design));
     writeFileSync(new URL(`${bid}-n.webp`, OUT), await shoot(browser, site, cat, photo, true, design));
     used.add(bid);
