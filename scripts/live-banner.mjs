@@ -32,12 +32,12 @@ async function search(q) {
   if (!r.ok) throw new Error('Pixabay ' + r.status);
   return (await r.json()).hits || [];
 }
-// 상품을 가리키는 낱말이 모두 태그의 앞쪽 여섯 개 안에 낱말 그대로 있고 사람 태그가 없는 사진만 쓴다 (태그는 관련 깊은 순서다)
+// 상품을 가리키는 낱말이 모두 태그의 앞쪽 네 개 안에 낱말 그대로 있고 사람 태그가 없는 사진만 쓴다 (태그는 관련 깊은 순서다)
 function relevant(hit, q) {
   const tags = String(hit.tags || '').toLowerCase().split(',').map(t => t.trim()).filter(Boolean);
   const all = tags.join(' ');
   if (PEOPLE.test(all.replace(new RegExp('\\b(' + words(q).join('|') + ')\\b', 'g'), ''))) return false;
-  const head = ', ' + tags.slice(0, 6).join(', ') + ', ';
+  const head = ', ' + tags.slice(0, 4).join(', ') + ', ';
   const kt = keyTokens(q);
   return kt.length > 0 && kt.every(t => new RegExp('\\b' + t + 's?\\b').test(head));
 }
