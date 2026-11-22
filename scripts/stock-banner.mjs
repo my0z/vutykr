@@ -18,6 +18,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(2, 10).replace(/-/g, '');
 // 왼쪽이 색 바탕이고 글자가 들어가는 배치만 쓴다 (사진 위치를 알 수 없으므로 사진이 왼쪽인 배치는 뺀다)
 const LAYOUTS = ['split', 'full', 'light', 'slant', 'glass', 'circle'];
+// 뜻이 여러 가지라 엉뚱한 사진이 나오는 낱말은 쓰지 않고 이 검색어로 바꾼다 (카테고리 이름 기준)
+const QMAP = { 관상어: ['열대어', '수족관', '금붕어'], 메이크업: ['화장품', '립스틱', '아이섀도'] };
+const AMBIG = new Set(['쿠션', '어항', '팩', '배', '차', '밤', '눈', '물']);
 const PEOPLE = /사람|여성|여자|남성|남자|소녀|소년|아기|아이|어린이|유아|모델|얼굴|커플|가족|엄마|아빠|초상|신부|신랑|사진가|인물|girl|boy|woman|women|man|men|baby|child|kid|people|person|portrait|face|model|couple|family/i;
 
 async function search(q) {
@@ -33,7 +36,7 @@ function relevant(hit, q) {
   const tags = String(hit.tags || '').replace(/\s/g, '');
   if (PEOPLE.test(String(hit.tags || ''))) return false;
   const toks = q.split(/\s+/).map(t => t.replace(/\s/g, '')).filter(t => t.length >= 2);
-  return toks.length > 0 && toks.some(t => tags.includes(t));
+  return toks.length > 0 && toks.every(t => tags.includes(t)); // 낱말이 모두 태그에 있어야 한다
 }
 
 async function download(hit) {
@@ -65,9 +68,9 @@ for (const id of siteIds) {
   const site = SITES[id];
   const cats = shuffle(Object.keys(site.cats));
   let got = 0, tries = 0;
-  while (got < per && made < COUNT && tries < cats.length * 3 && !quota) {
+  while (got < per && made < COUNT && tries < cats.length * 4 && !quota) {
     const cat = cats[tries % cats.length];
-    const kws = site.cats[cat].kw;
+    const kws = (QMAP[cat] || site.cats[cat].kw).filter(k => !AMBIG.has(k));
     const q = kws[Math.floor(tries / cats.length) % kws.length]; // 같은 카테고리를 다시 만나면 다른 대표 낱말로 찾는다
     tries++;
     try {
