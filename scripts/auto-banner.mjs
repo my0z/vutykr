@@ -3,6 +3,7 @@
 import { readFileSync, writeFileSync, rmSync, existsSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { SITES } from '../sites/index.js';
+import { buildHtml, randomDesign, copyOf } from './banner-design.mjs';
 
 const TOKEN = process.env.CLOUDFLARE_API_TOKEN, ACCT = process.env.CLOUDFLARE_ACCOUNT_ID || '709dcc6af36c8ee7b6d3d99e7a9fe422';
 const MAX_PER_DAY = Number(process.env.BANNERS_MAX || 8); // 하루에 만드는 배너 수의 상한 (무료 한도 보호)
@@ -12,7 +13,6 @@ const OUT = new URL('../public/promo/', import.meta.url);
 const ai = (model, init) => fetch(`https://api.cloudflare.com/client/v4/accounts/${ACCT}/ai/run/${model}`, { method: 'POST', headers: { authorization: `Bearer ${TOKEN}`, ...(init.json ? { 'content-type': 'application/json' } : {}) }, body: init.json ? JSON.stringify(init.json) : init.form });
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const yymmdd = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(2, 10).replace(/-/g, '');
-const dark = (hex, k = 0.72) => '#' + hex.replace('#', '').match(/../g).map(h => Math.round(parseInt(h, 16) * k).toString(16).padStart(2, '0')).join('');
 
 // 한 장면을 영어 문장으로 만든다 (사람은 육아 사이트에서만 쓰고 속옷은 상품만 보여 준다)
 async function scene(site, cat) {
@@ -37,24 +37,10 @@ async function image(text) {
   return Buffer.from(j.result.image, 'base64');
 }
 
-function html(site, cat, photo, narrow) {
-  const L = site.theme.light, w = narrow ? 960 : 1920, h = narrow ? 300 : 240, ww = narrow ? 420 : 460, sc = Math.max(ww / 1344, h / 768);
-  const G = `linear-gradient(100deg,${dark(L.p1)} 0%,${L.p1} 55%,${L.p2} 100%)`, BTN = dark(L.p1, 0.8);
-  const title = `${cat} 인기 랭킹`, sub = `${site.cats[cat].kw.slice(0, 3).join(' · ')} 베스트를 한눈에`;
-  return `<html><body style="margin:0;width:${w}px;height:${h}px;overflow:hidden;font-family:'Noto Sans CJK KR','Noto Sans KR',sans-serif"><div style="position:relative;width:${w}px;height:${h}px;background:${G};color:#fff;overflow:hidden">
-<div style="position:absolute;left:${narrow ? 300 : 650}px;top:${narrow ? -80 : -140}px;width:${narrow ? 440 : 540}px;height:${narrow ? 440 : 540}px;border-radius:50%;background:rgba(255,255,255,.1)"></div>
-<div style="position:absolute;right:${narrow ? 0 : 20}px;top:0;width:${ww}px;height:${h}px;background:url(data:image/jpeg;base64,${photo.toString('base64')}) no-repeat;background-size:${Math.round(1344 * sc)}px ${Math.round(768 * sc)}px;background-position:${-Math.round((1344 * sc - ww) * 0.6)}px ${-Math.round((768 * sc - h) / 2)}px;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 30%);mask-image:linear-gradient(90deg,transparent 0,#000 30%)"></div>
-<div style="position:absolute;left:${narrow ? 48 : 90}px;top:${narrow ? 40 : 32}px"><div style="display:inline-block;background:rgba(255,255,255,.22);padding:6px 20px;border-radius:99px;font-weight:800;font-size:${narrow ? 20 : 22}px">${site.name}</div>
-<div style="font-weight:900;font-size:${narrow ? 38 : 52}px;line-height:1.15;margin-top:${narrow ? 12 : 8}px;letter-spacing:-.03em;text-shadow:0 2px 12px rgba(0,0,0,.25);white-space:nowrap">${title}</div>
-<div style="font-weight:500;font-size:${narrow ? 21 : 28}px;margin-top:${narrow ? 8 : 6}px;opacity:.96;white-space:nowrap">${sub}</div>
-${narrow ? `<div style="display:inline-block;margin-top:16px;background:#fff;color:${BTN};font-weight:900;font-size:24px;padding:12px 34px;border-radius:99px">${site.name} 가기 →</div>` : ''}</div>
-${narrow ? '' : `<div style="position:absolute;left:1000px;top:98px;background:#fff;color:${BTN};font-weight:900;font-size:32px;padding:20px 52px;border-radius:99px;white-space:nowrap">${site.name} 가기 →</div>`}</div></body></html>`;
-}
-
-async function shoot(browser, site, cat, photo, narrow) {
+async function shoot(browser, site, cat, photo, narrow, design) {
   const w = narrow ? 960 : 1920, h = narrow ? 300 : 240;
   const p = await browser.newPage({ viewport: { width: w, height: h } });
-  await p.setContent(html(site, cat, photo, narrow));
+  await p.setContent(buildHtml(site, cat, photo.toString('base64'), narrow, design));
   const png = await p.screenshot({ type: 'png' });
   const webp = await p.evaluate(async b64 => { const im = new Image(); im.src = 'data:image/png;base64,' + b64; await im.decode(); const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; c.getContext('2d').drawImage(im, 0, 0); return (await new Promise(r => c.toBlob(r, 'image/webp', 0.84)).then(b => b.arrayBuffer().then(x => btoa(String.fromCharCode(...new Uint8Array(x)))))); }, png.toString('base64'));
   await p.close();
@@ -74,11 +60,12 @@ for (const id of plan) {
     const text = await scene(site, cat);
     const photo = await image(text);
     let n = 1, bid; do { bid = `${id[0]}${day}${n++}`; } while (used.has(bid));
-    writeFileSync(new URL(`${bid}-w.webp`, OUT), await shoot(browser, site, cat, photo, false));
-    writeFileSync(new URL(`${bid}-n.webp`, OUT), await shoot(browser, site, cat, photo, true));
+    const design = randomDesign();
+    writeFileSync(new URL(`${bid}-w.webp`, OUT), await shoot(browser, site, cat, photo, false, design));
+    writeFileSync(new URL(`${bid}-n.webp`, OUT), await shoot(browser, site, cat, photo, true, design));
     used.add(bid);
-    list.push({ id: bid, site: id, text: `${cat} 인기 랭킹`, url: `${site.host}/c/${encodeURIComponent(cat)}` });
-    made++; console.log('만듦', bid, cat, '|', text.slice(0, 80));
+    list.push({ id: bid, site: id, text: copyOf(site, cat, design).title, url: `${site.host}/c/${encodeURIComponent(cat)}` });
+    made++; console.log('만듦', bid, cat, design.layout, design.btn, '|', text.slice(0, 60));
   } catch (e) { console.log('실패', id, e.message); if (/quota|limit|429|10000|capacity/i.test(e.message)) break; }
 }
 await browser.close();
