@@ -30,6 +30,12 @@
   "url": "https://seareal.kr/c/%EC%88%98%EC%82%B0%EB%AC%BC"
  },
  {
+  "id": "s26112210",
+  "site": "seareal",
+  "text": "낚시용품 베스트 한눈에",
+  "url": "https://seareal.kr/c/%EB%82%9A%EC%8B%9C%EC%9A%A9%ED%92%88"
+ },
+ {
   "id": "s26112210P",
   "site": "seareal",
   "text": "건어물 고르기 전에 확인",
@@ -38,12 +44,30 @@
   "q": "황태"
  },
  {
+  "id": "s26112211",
+  "site": "seareal",
+  "text": "갯벌해루질 베스트 한눈에",
+  "url": "https://seareal.kr/c/%EA%B0%AF%EB%B2%8C%ED%95%B4%EB%A3%A8%EC%A7%88"
+ },
+ {
   "id": "s26112211P",
   "site": "seareal",
   "text": "건어물 인기 랭킹",
   "url": "https://seareal.kr/c/%EA%B1%B4%EC%96%B4%EB%AC%BC",
   "src": "pixabay:5945114",
   "q": "멸치"
+ },
+ {
+  "id": "s26112212",
+  "site": "seareal",
+  "text": "지금 많이 찾는 해조류",
+  "url": "https://seareal.kr/c/%ED%95%B4%EC%A1%B0%EB%A5%98"
+ },
+ {
+  "id": "s26112213",
+  "site": "seareal",
+  "text": "수산물 베스트 한눈에",
+  "url": "https://seareal.kr/c/%EC%88%98%EC%82%B0%EB%AC%BC"
  },
  {
   "id": "s2611221P",
@@ -82,12 +106,24 @@
   "q": "새우"
  },
  {
+  "id": "s2611224",
+  "site": "seareal",
+  "text": "갑각류 인기 랭킹",
+  "url": "https://seareal.kr/c/%EA%B0%91%EA%B0%81%EB%A5%98"
+ },
+ {
   "id": "s2611224P",
   "site": "seareal",
   "text": "패류 모아보기",
   "url": "https://seareal.kr/c/%ED%8C%A8%EB%A5%98",
   "src": "pixabay:2495964",
   "q": "전복"
+ },
+ {
+  "id": "s2611225",
+  "site": "seareal",
+  "text": "방수용품 모아보기",
+  "url": "https://seareal.kr/c/%EB%B0%A9%EC%88%98%EC%9A%A9%ED%92%88"
  },
  {
   "id": "s2611225P",
@@ -98,12 +134,24 @@
   "q": "낚시 바늘"
  },
  {
+  "id": "s2611226",
+  "site": "seareal",
+  "text": "낚시대릴 인기 랭킹",
+  "url": "https://seareal.kr/c/%EB%82%9A%EC%8B%9C%EB%8C%80%EB%A6%B4"
+ },
+ {
   "id": "s2611226P",
   "site": "seareal",
   "text": "낚시용품 베스트 한눈에",
   "url": "https://seareal.kr/c/%EB%82%9A%EC%8B%9C%EC%9A%A9%ED%92%88",
   "src": "pixabay:7618320",
   "q": "낚시 의자"
+ },
+ {
+  "id": "s2611227",
+  "site": "seareal",
+  "text": "젓갈 모아보기",
+  "url": "https://seareal.kr/c/%EC%A0%93%EA%B0%88"
  },
  {
   "id": "s2611227P",
@@ -114,12 +162,24 @@
   "q": "명란젓"
  },
  {
+  "id": "s2611228",
+  "site": "seareal",
+  "text": "해수욕 인기 랭킹",
+  "url": "https://seareal.kr/c/%ED%95%B4%EC%88%98%EC%9A%95"
+ },
+ {
   "id": "s2611228P",
   "site": "seareal",
   "text": "지금 많이 찾는 수산물",
   "url": "https://seareal.kr/c/%EC%88%98%EC%82%B0%EB%AC%BC",
   "src": "pixabay:3092589",
   "q": "고등어"
+ },
+ {
+  "id": "s2611229",
+  "site": "seareal",
+  "text": "낚시채비 고르기 전에 확인",
+  "url": "https://seareal.kr/c/%EB%82%9A%EC%8B%9C%EC%B1%84%EB%B9%84"
  },
  {
   "id": "s2611229P",
