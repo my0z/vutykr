@@ -12,8 +12,8 @@ on:
         description: '장수 (비우면 6)'
         default: ''
       model:
-        description: 'klein 또는 schnell'
-        default: 'schnell'
+        description: 'remix(무료 사진 다시 합성) 또는 schnell 또는 klein'
+        default: 'remix'
       preview:
         description: '배포 없이 banner-preview 브랜치에만 올리기'
         default: 'false'
@@ -39,8 +39,10 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           ONLY: ${{ inputs.only }}
           BANNERS_MAX: ${{ inputs.max || '6' }}
-          IMAGE_MODEL: ${{ inputs.model || 'schnell' }}
-        run: node scripts/auto-banner.mjs
+          IMAGE_MODEL: ${{ inputs.model || 'remix' }}
+          PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+        run: |
+          if [ "$IMAGE_MODEL" = "remix" ]; then node scripts/remix-banner.mjs; else node scripts/auto-banner.mjs; fi
       - name: 올리고 배포하기
         run: |
           git config user.name "banner-bot"
