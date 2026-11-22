@@ -10,7 +10,7 @@ import { buildHtml, randomDesign, copyOf } from './banner-design.mjs';
 const KEY = process.env.PIXABAY_API_KEY, TOKEN = process.env.CLOUDFLARE_API_TOKEN;
 const ACCT = process.env.CLOUDFLARE_ACCOUNT_ID || '709dcc6af36c8ee7b6d3d99e7a9fe422', NS = process.env.KV_NAMESPACE_ID || '8bdd6ff58a6248e0b310bf0d2e5235c6';
 if (!KEY || !TOKEN) { console.log('PIXABAY_API_KEY 또는 CLOUDFLARE_API_TOKEN 없음'); process.exit(1); }
-const COUNT = Number(process.env.COUNT || 1), KEEP = 40; // 사이트마다 최근 40장만 둔다
+const COUNT = Number(process.env.COUNT || 1);
 const kvUrl = k => `https://api.cloudflare.com/client/v4/accounts/${ACCT}/storage/kv/namespaces/${NS}/values/${encodeURIComponent(k)}`;
 const kvGet = async k => { const r = await fetch(kvUrl(k), { headers: { authorization: `Bearer ${TOKEN}` } }); return r.ok ? r.text() : null; };
 const kvPut = async (k, body) => { const r = await fetch(kvUrl(k), { method: 'PUT', headers: { authorization: `Bearer ${TOKEN}` }, body }); if (!r.ok) throw new Error('KV 쓰기 ' + r.status); };
@@ -95,10 +95,8 @@ for (let k = 0; k < COUNT; k++) {
 await browser.close();
 if (made) {
   // 그사이 관리자가 지운 배너가 되살아나지 않게 최신 목록을 다시 읽어 새로 만든 것만 더한다
-  const merged = [...(await json('live:index', [])), ...fresh], keep = [], drop = [];
-  for (const sid of siteIds) { const arr = merged.filter(x => x.site === sid).sort((a, b) => a.ts - b.ts); drop.push(...arr.slice(0, Math.max(0, arr.length - KEEP))); keep.push(...arr.slice(-KEEP)); } // 사이트마다 최근 KEEP 장만 둔다
-  for (const x of drop) { await kvDel(`live:img:${x.id}-w`); await kvDel(`live:img:${x.id}-n`); }
-  await kvPut('live:index', JSON.stringify(keep.sort((a, b) => a.ts - b.ts)));
+  const merged = [...(await json('live:index', [])), ...fresh]; // 오래된 배너도 지우지 않고 계속 쓴다
+  await kvPut('live:index', JSON.stringify(merged.sort((a, b) => a.ts - b.ts)));
   await kvPut('live:used', JSON.stringify([...usedLive].slice(-4000)));
 }
 console.log('만든 실시간 배너', made);
