@@ -70,7 +70,7 @@ export default {
       const items = AUTO_PROMOS.map(b => ({ id: b.id, text: b.text, url: b.url, host: SITES[b.site] ? SITES[b.site].host : '' }));
       return secure(new Response(JSON.stringify(items), { headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*', 'cache-control': 'public,max-age=3600' } }));
     }
-    const lr = await liveRoute(url, env); // 실시간 배너 그림과 목록
+    const lr = await liveRoute(url, env, req); // 실시간 배너 그림과 목록
     if (lr) return secure(lr);
     const { site, set } = pick(url, req);
     const senv = bind(env, site);

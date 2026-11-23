@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"></noscript>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<link rel="stylesheet" href="/style.css?v=14">
+<link rel="stylesheet" href="/style.css?v=15">
 <style id="theme">{{THEME_CSS}}</style>
 <script>window.__site={{SITE_JSON}}</script>
 <script>
@@ -43,7 +43,10 @@ window.__d = window.__p ? Promise.resolve(window.__p) : Promise.all([
       var o = L[Math.floor(Math.random() * L.length)];
       used[k] = o.id;
       var u2 = o.url + (o.url.indexOf('?') < 0 ? '?' : '&') + 'utm_source={{HOSTNAME}}&utm_medium=banner&utm_campaign=' + o.id;
-      el.innerHTML = '<a class="pb" href="' + u2 + '" target="_blank" rel="noopener"><picture><source media="(min-width:761px)" srcset="/live/' + o.id + '-w.webp"><img src="/live/' + o.id + '-n.webp" width="960" height="300" alt="' + o.text + '" decoding="async"></picture></a><span class="tags' + (/LP?$/.test(o.id) ? ' r' : '') + '"><small>광고</small></span>';
+      var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches, vs = window.matchMedia && matchMedia('(min-width:761px)').matches ? 'w' : 'n', tg = '<span class="tags' + (/LP?$/.test(o.id) ? ' r' : '') + '"><small>광고</small></span>';
+      el.innerHTML = (o.video && !reduce)
+        ? '<a class="pb" href="' + u2 + '" target="_blank" rel="noopener"><video autoplay muted loop playsinline preload="auto" poster="/live/' + o.id + '-' + vs + '.webp" aria-label="' + o.text + '"><source src="/live/' + o.id + '-' + vs + '.mp4" type="video/mp4"></video></a>' + tg
+        : '<a class="pb" href="' + u2 + '" target="_blank" rel="noopener"><picture><source media="(min-width:761px)" srcset="/live/' + o.id + '-w.webp"><img src="/live/' + o.id + '-n.webp" width="960" height="300" alt="' + o.text + '" decoding="async"></picture></a><span class="tags' + (/LP?$/.test(o.id) ? ' r' : '') + '"><small>광고</small></span>';
     });
   };
   window.promoShow(document.getElementById('promo'));
@@ -77,6 +80,6 @@ window.__d = window.__p ? Promise.resolve(window.__p) : Promise.all([
   </div>
 </footer>
 <button id="top" aria-label="맨 위로">↑</button>
-<script src="/app.js?v=19" defer></script>
+<script src="/app.js?v=20" defer></script>
 </body>
 </html>
