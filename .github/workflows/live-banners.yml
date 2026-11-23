@@ -11,6 +11,9 @@ on:
       only:
         description: '이 사이트만 (예 bebepong)'
         default: ''
+      probe:
+        description: 'ov 를 적으면 Openverse 만 써서 목록에 올리지 않고 시험한다'
+        default: ''
 permissions:
   contents: read
 concurrency:
@@ -37,4 +40,6 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           COUNT: ${{ inputs.count || '1' }}
           ONLY: ${{ inputs.only }}
+          FORCE_OV: ${{ inputs.probe == 'ov' && '1' || '' }}
+          DRY: ${{ inputs.probe == 'ov' && '1' || '' }}
         run: node scripts/live-banner.mjs
