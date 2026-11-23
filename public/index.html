@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"></noscript>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<link rel="stylesheet" href="/style.css?v=13">
+<link rel="stylesheet" href="/style.css?v=14">
 <style id="theme">{{THEME_CSS}}</style>
 <script>window.__site={{SITE_JSON}}</script>
 <script>
@@ -26,20 +26,27 @@ window.__d = window.__p ? Promise.resolve(window.__p) : Promise.all([
 <div id="promo" role="complementary" aria-label="제휴 사이트 소개"></div>
 <script>
 (function () {
-  // 자매 사이트 배너 9개 중 하나를 무작위로 보여준다 (내 사이트 배너는 없다) — 시리얼 배너 추가 및 인물 사진 배경 배너로 교체 (캐시 갱신 ?v=5) 작업: 2026-11-17 18:09
-  var B = {{PROMOS}};
-  var b = B[Math.floor(Math.random() * B.length)], el = document.getElementById('promo');
-  if (!b || !el) return;
-  var u = b[2] + (b[2].indexOf('?') < 0 ? '?' : '&') + 'utm_source={{HOSTNAME}}&utm_medium=banner&utm_campaign=' + b[0];
-  el.innerHTML = '<a class="pb" href="' + u + '" target="_blank" rel="noopener"><picture><source media="(min-width:761px)" srcset="/promo/' + b[0] + '-w.webp?v=7"><img src="/promo/' + b[0] + '-n.webp?v=7" width="960" height="300" alt="' + b[1] + '" fetchpriority="low" decoding="async"></picture></a><span class="tags' + (/LP?$/.test(b[0]) ? ' r' : '') + '">'+(/P$/.test(b[0])?'':'<small>AI 생성 이미지</small>')+'<small>광고</small></span>';
-  // 매시간 새로 만드는 실시간 배너가 있으면 대부분 그것을 보여 준다 (내 사이트 배너는 빠진다)
-  fetch('/api/live').then(function (r) { return r.json(); }).then(function (L) {
-    L = L.filter(function (o) { return o.host.indexOf(location.hostname) < 0; });
-    if (!L.length || Math.random() > 0.7) return;
-    var o = L[Math.floor(Math.random() * L.length)];
-    var u2 = o.url + (o.url.indexOf('?') < 0 ? '?' : '&') + 'utm_source={{HOSTNAME}}&utm_medium=banner&utm_campaign=' + o.id;
-    el.innerHTML = '<a class="pb" href="' + u2 + '" target="_blank" rel="noopener"><picture><source media="(min-width:761px)" srcset="/live/' + o.id + '-w.webp"><img src="/live/' + o.id + '-n.webp" width="960" height="300" alt="' + o.text + '" decoding="async"></picture></a><span class="tags' + (/LP?$/.test(o.id) ? ' r' : '') + '"><small>광고</small></span>';
-  }).catch(function () {});
+  // 자매 사이트 배너를 무작위로 보여 준다 (내 사이트 배너는 없다). 맨 위 배너와 페이지 중앙 배너가 서로 다르게 나온다
+  var B = {{PROMOS}}, used = window.__pu = [];
+  window.promoShow = function (el) {
+    if (!el || !B.length) return;
+    var b, k = 0;
+    for (var t = 0; t < 10; t++) { b = B[Math.floor(Math.random() * B.length)]; if (used.indexOf(b[0]) < 0) break; }
+    used.push(b[0]); k = used.length - 1;
+    var u = b[2] + (b[2].indexOf('?') < 0 ? '?' : '&') + 'utm_source={{HOSTNAME}}&utm_medium=banner&utm_campaign=' + b[0];
+    el.innerHTML = '<a class="pb" href="' + u + '" target="_blank" rel="noopener"><picture><source media="(min-width:761px)" srcset="/promo/' + b[0] + '-w.webp?v=7"><img src="/promo/' + b[0] + '-n.webp?v=7" width="960" height="300" alt="' + b[1] + '" fetchpriority="low" decoding="async"></picture></a><span class="tags' + (/LP?$/.test(b[0]) ? ' r' : '') + '">'+(/P$/.test(b[0])?'':'<small>AI 생성 이미지</small>')+'<small>광고</small></span>';
+    // 매시간 새로 만드는 실시간 배너가 있으면 대부분 그것을 보여 준다 (내 사이트 배너는 빠진다)
+    window.__lv = window.__lv || fetch('/api/live').then(function (r) { return r.json(); }).catch(function () { return []; });
+    window.__lv.then(function (L) {
+      L = L.filter(function (o) { return o.host.indexOf(location.hostname) < 0 && used.indexOf(o.id) < 0; });
+      if (!L.length || Math.random() > 0.7) return;
+      var o = L[Math.floor(Math.random() * L.length)];
+      used[k] = o.id;
+      var u2 = o.url + (o.url.indexOf('?') < 0 ? '?' : '&') + 'utm_source={{HOSTNAME}}&utm_medium=banner&utm_campaign=' + o.id;
+      el.innerHTML = '<a class="pb" href="' + u2 + '" target="_blank" rel="noopener"><picture><source media="(min-width:761px)" srcset="/live/' + o.id + '-w.webp"><img src="/live/' + o.id + '-n.webp" width="960" height="300" alt="' + o.text + '" decoding="async"></picture></a><span class="tags' + (/LP?$/.test(o.id) ? ' r' : '') + '"><small>광고</small></span>';
+    });
+  };
+  window.promoShow(document.getElementById('promo'));
 })();
 </script>
 <div class="feebar"><div class="in">{{DISC_TOP}}</div></div>
@@ -70,6 +77,6 @@ window.__d = window.__p ? Promise.resolve(window.__p) : Promise.all([
   </div>
 </footer>
 <button id="top" aria-label="맨 위로">↑</button>
-<script src="/app.js?v=18" defer></script>
+<script src="/app.js?v=19" defer></script>
 </body>
 </html>
