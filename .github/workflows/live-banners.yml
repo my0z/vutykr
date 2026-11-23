@@ -15,7 +15,7 @@ on:
         description: 'ov 또는 video 를 적으면 목록에 올리지 않고 시험한다 (ov 는 Openverse 만 사용)'
         default: ''
       videos:
-        description: '움직이는 배너 장수 (비우면 1)'
+        description: '움직이는 배너 장수 (비우면 3)'
         default: ''
 permissions:
   contents: read
@@ -25,7 +25,7 @@ concurrency:
 jobs:
   live:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -45,5 +45,5 @@ jobs:
           ONLY: ${{ inputs.only }}
           FORCE_OV: ${{ inputs.probe == 'ov' && '1' || '' }}
           DRY: ${{ inputs.probe != '' && '1' || '' }}
-          VIDEOS: ${{ inputs.videos || '1' }}
+          VIDEOS: ${{ inputs.videos || '3' }}
         run: node scripts/live-banner.mjs
