@@ -62,7 +62,7 @@ async function findOV(q) {
   const kt = keyTokens(q);
   const hits = ((await r.json()).results || []).filter(h => !skip('openverse:' + h.id) && Number(h.width) >= 1600 && ['cc0', 'pdm'].includes(String(h.license).toLowerCase()) && (() => {
     const text = (String(h.title || '') + ', ' + (h.tags || []).map(t => t.name).join(', ')).toLowerCase();
-    if (BAD.test(text) || PEOPLE.test(text.replace(new RegExp('\\b(' + words(q).join('|') + ')\\b', 'g'), ''))) return false;
+    if (BAD.test(text) || /\b(art|artwork|painting|paintings|drawing|ancient|museum|antique|sculpture|engraving|illustration|print|etching|lithograph)\b/.test(text) || PEOPLE.test(text.replace(new RegExp('\\b(' + words(q).join('|') + ')\\b', 'g'), ''))) return false;
     return kt.length > 0 && kt.every(t => new RegExp('\\b' + t + 's?\\b').test(text));
   })());
   return hits;
@@ -114,7 +114,7 @@ for (let k = 0; k < COUNT; k++) {
         }
         const design = { ...randomDesign(pick(LAYOUTS)), px: '50%' };
         const dry = !!process.env.DRY; // DRY 는 목록에 올리지 않고 dry 로 시작하는 이름으로만 저장해 눈으로 확인한다
-        let n = 0, bid; do { bid = `${dry ? 'dry' : id[0]}${stamp}${n ? n : ''}${['mirror', 'fullr'].includes(design.layout) ? 'L' : ''}P`; n++; } while (index.some(x => x.id === bid));
+        let n = 0, bid; do { bid = `${dry ? 'dry' + id : id[0]}${stamp}${n ? n : ''}${['mirror', 'fullr'].includes(design.layout) ? 'L' : ''}P`; n++; } while (index.some(x => x.id === bid));
         const imgW = await shoot(browser, site, cat, photo, false, design), imgN = await shoot(browser, site, cat, photo, true, design);
         await kvPut(`live:img:${bid}-w`, imgW);
         await kvPut(`live:img:${bid}-n`, imgN);
