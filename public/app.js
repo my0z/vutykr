@@ -245,7 +245,7 @@
     else home();
   }
 
-  $('sf').addEventListener('submit', e => { e.preventDefault(); const v = $('q').value.trim(); location.hash = v ? '#/s/' + encodeURIComponent(v) : '/all'; });
+  $('sf').addEventListener('submit', e => { e.preventDefault(); const v = $('q').value.trim(); if (v) location.href = '/s/' + encodeURIComponent(v); else location.hash = '/all'; }); // 검색하면 안내 페이지를 거쳐 쿠팡 검색 결과로 바로 간다
   $('allcat').addEventListener('click', () => { const d = $('drop'); const o = d.classList.toggle('open'); $('allcat').setAttribute('aria-expanded', o); });
   document.addEventListener('click', e => { if (!e.target.closest('.cat')) $('drop').classList.remove('open'); });
   const top = $('top');
