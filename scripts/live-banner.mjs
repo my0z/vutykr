@@ -36,6 +36,7 @@ async function search(q) {
 function relevant(hit, q) {
   const tags = String(hit.tags || '').toLowerCase().split(',').map(t => t.trim()).filter(Boolean);
   const all = tags.join(' ');
+  if (/\b(pill|pills|tablet|tablets|medicine|medicines|medication|drug|drugs|capsule|capsules|pharmacy|syringe|injection)\b/i.test(all)) return false; // 알약과 약 사진은 육아와 반려동물 사이트에 어울리지 않는다
   if (PEOPLE.test(all.replace(new RegExp('\\b(' + words(q).join('|') + ')\\b', 'g'), ''))) return false;
   const head = ', ' + tags.slice(0, 4).join(', ') + ', ';
   const kt = keyTokens(q);

@@ -54,6 +54,32 @@ const norm = (p, category, badge = '') => ({
   badge
 });
 
+// 검색창에 친 말을 쿠팡 검색 결과로 바로 보내는 파트너스 링크 (같은 검색어는 30일 동안 다시 만들지 않고 시간당 30번까지만 만든다)
+const searchUrl = q => `https://www.coupang.com/np/search?component=&q=${encodeURIComponent(q)}&channel=user`;
+async function searchLink(env, q) {
+  const target = searchUrl(q);
+  if (!env.COUPANG_ACCESS_KEY || !env.COUPANG_SECRET_KEY) return target;
+  const cache = caches.default, key = new Request('https://deeplink.local/' + encodeURIComponent(q));
+  const hit = await cache.match(key);
+  if (hit) return hit.text();
+  const G = env.G || env.DATA, hour = Math.floor(Date.now() / 3600e3);
+  let o = null;
+  try { o = JSON.parse((await G.get('dlq')) || 'null'); } catch (e) {}
+  if (!o || o.h !== hour) o = { h: hour, n: 0 };
+  if (o.n >= 30) return target; // 호출 한도 보호: 파트너스 링크 없이 일반 검색 주소로 보낸다
+  o.n++;
+  await G.put('dlq', JSON.stringify(o), { expirationTtl: 3700 });
+  try {
+    const path = '/v2/providers/affiliate_open_api/apis/openapi/v1/deeplink';
+    const res = await fetch(HOST + path, { method: 'POST', headers: { Authorization: await sign('POST', path, '', env), 'Content-Type': 'application/json;charset=UTF-8' }, body: JSON.stringify({ coupangUrls: [target] }), signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return target;
+    const link = ((await res.json()).data || [])[0];
+    if (!link || !link.shortenUrl) return target;
+    await cache.put(key, new Response(link.shortenUrl, { headers: { 'cache-control': 'public, max-age=2592000' } }));
+    return link.shortenUrl;
+  } catch (e) { return target; }
+}
+
 // 쿠팡 파트너스 API는 시간당 10회까지라서 검색과 베스트를 합쳐 9회까지만 쓴다 (초과하면 API가 막힐 수 있다)
 // 세 사이트가 같은 키를 쓰므로 횟수는 사이트마다 따로 세지 않고 공용 저장소(G)에서 합쳐서 센다
 async function allowSearch(env) {
@@ -360,6 +386,19 @@ const handler = {
         return r;
       }
       return communityHandle(req, env, url, ctx);
+    }
+    if (path.startsWith('/s/')) { // 검색창에 친 말을 쿠팡 검색 결과로 바로 보낸다 (안내 페이지를 거쳐 파트너스 링크로)
+      let q = '';
+      try { q = decodeURIComponent(path.slice(3)).trim().slice(0, 60); } catch (e) {}
+      if (!q) return new Response(null, { status: 302, headers: { Location: '/' } });
+      if (/bot|spider|crawl|slurp|preview|facebookexternalhit|curl|python|go-http|monitor/i.test(req.headers.get('user-agent') || '')) return new Response('Not found', { status: 404 });
+      const g = url.searchParams.get('go');
+      const code = 's/' + encodeURIComponent(q);
+      if (g) {
+        if (g !== 'a') ctx.waitUntil(track(env, req, { type: 'click', code, pid: 'search', name: q + ' (검색)' }));
+        return new Response(null, { status: 302, headers: { Location: await searchLink(env, q), 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' } });
+      }
+      return goPage(SITE, code, { name: `"${q}" 쿠팡 검색 결과` });
     }
     if (/^\/[a-z0-9]{4}$/.test(path)) {
       const link = (await getLinks(env))[path.slice(1)];

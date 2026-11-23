@@ -139,7 +139,7 @@
     setTitle((kw ? kw + ' 검색' : (cat ? cat + ' 인기 랭킹 TOP' : '전체 상품 인기 랭킹')) + ' | ' + SN);
     let sort = 'rank', shown = 20;
     const title = kw ? `"${esc(kw)}" 검색 결과` : (cat ? esc(cat) : '전체 상품');
-    view.innerHTML = `<div class="ph"><h1>${title}</h1><span class="hint" id="cnt"></span></div>${!kw && cat && GUIDES.has(cat) ? `<a class="gl" href="/guide/${encodeURIComponent(cat)}">📖 ${esc(cat)} 구매 가이드 보기</a>` : ''}<div class="tools"><button class="chip on" data-s="rank">인기순</button><button class="chip" data-s="low">낮은 가격순</button><button class="chip" data-s="high">높은 가격순</button></div><div class="pg" id="pg"></div><div id="pmore"></div>`;
+    view.innerHTML = `<div class="ph"><h1>${title}</h1><span class="hint" id="cnt"></span></div>${kw ? `<a class="cpq" href="/s/${encodeURIComponent(kw)}" target="_blank" rel="sponsored nofollow noopener">🛒 쿠팡에서 "${esc(kw)}" 검색 결과 바로 보기 <b>→</b></a>` : ''}${!kw && cat && GUIDES.has(cat) ? `<a class="gl" href="/guide/${encodeURIComponent(cat)}">📖 ${esc(cat)} 구매 가이드 보기</a>` : ''}<div class="tools"><button class="chip on" data-s="rank">인기순</button><button class="chip" data-s="low">낮은 가격순</button><button class="chip" data-s="high">높은 가격순</button></div><div class="pg" id="pg"></div><div id="pmore"></div>`;
     function draw() {
       const k = (kw || '').toLowerCase();
       let l = ranked().filter(p => (!cat || p.category === cat) && (!k || p.name.toLowerCase().includes(k)));
