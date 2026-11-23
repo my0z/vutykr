@@ -40,7 +40,7 @@ export const EN = {
     사료: ['a bag of dog food', 'a bag of cat food', 'canned wet pet food'], 간식: ['dog treats in a bowl', 'a cat treat tube', 'dental chew bones'], 배변위생: ['a bag of cat litter', 'a pet pee pad pack', 'a cat litter box'],
     급식급수: ['a pet food bowl', 'a cat water fountain', 'an automatic pet feeder'], 장난감: ['a rope dog toy', 'a cat feather wand toy', 'a dog chew ball'], 산책외출: ['a dog harness', 'a dog leash', 'a pet carrier bag'],
     스크래처캣타워: ['a cat scratching post', 'a cat tree tower', 'a cat scratcher board'], 하우스방석: ['a dog bed cushion', 'a cat cave bed', 'a pet bed'], 미용목욕: ['a pet shampoo bottle', 'a pet grooming brush', 'pet nail clippers'],
-    건강관리: ['a pet supplement jar', 'a pet toothbrush', 'a pet ear cleaner bottle'], 의류: ['a dog sweater', 'a dog raincoat', 'a pet scarf'], 소동물조류: ['a hamster wheel', 'a rabbit food bag', 'a bird cage'],
+    건강관리: ['dog supplement', 'dog toothbrush', 'cat ear cleaner'], 의류: ['a dog sweater', 'a dog raincoat', 'a pet scarf'], 소동물조류: ['a hamster wheel', 'a rabbit food bag', 'a bird cage'],
     관상어: ['a fish tank aquarium', 'a fish food container', 'an aquarium filter', 'an aquarium heater'],
   },
 };
