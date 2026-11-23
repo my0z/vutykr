@@ -37,12 +37,12 @@ async function search(q) {
   return (await r.json()).hits || [];
 }
 // 상품을 가리키는 낱말이 모두 태그의 앞쪽 네 개 안에 낱말 그대로 있고 사람 태그가 없는 사진만 쓴다 (태그는 관련 깊은 순서다)
-function relevant(hit, q) {
+function relevant(hit, q, headN = 4) {
   const tags = String(hit.tags || '').toLowerCase().split(',').map(t => t.trim()).filter(Boolean);
   const all = tags.join(' ');
   if (BAD.test(all)) return false; // 알약과 약과 사람용 운동 보충제 사진은 뺀다
   if (PEOPLE.test(all.replace(new RegExp('\\b(' + words(q).join('|') + ')\\b', 'g'), ''))) return false;
-  const head = ', ' + tags.slice(0, 4).join(', ') + ', ';
+  const head = ', ' + tags.slice(0, headN).join(', ') + ', ';
   const kt = keyTokens(q);
   return kt.length > 0 && kt.every(t => new RegExp('\\b' + t + 's?\\b').test(head));
 }
@@ -173,7 +173,7 @@ for (let k = 0; k < VIDEOS; k++) { // 움직이는 배너
     if (!kws.length) continue;
     const q = kws[Math.floor(t / cats.length) % kws.length];
     try {
-      const hits = (await searchVideos(q)).filter(h => !skip('pixabayv:' + h.id) && videoUrl(h) && relevant(h, q));
+      const hits = (await searchVideos(q)).filter(h => !skip('pixabayv:' + h.id) && videoUrl(h) && relevant(h, q, 3) && !/\b(ai generated|animated|animation|cartoon|candle|candles|birthday|party|halloween|flame|fire|concept|abstract|3d)\b/i.test(String(h.tags)));
       await sleep(700);
       if (!hits.length) continue;
       const hit = pick(hits.slice(0, 6));
