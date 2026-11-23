@@ -81,6 +81,14 @@ async function download(url) {
 
 // ---------- 움직이는 배너: Pixabay 동영상 (표기 의무 없음) 위에 글자 덮개를 얹어 짧은 mp4 로 만든다 ----------
 const VLAYOUTS = ['full', 'fullr', 'glass']; // 동영상이 배너 전체 배경이 되는 배치만 쓴다
+// 동영상은 이미지보다 태그가 느슨해서 영어 상품 이름의 낱말을 모두(짧은 낱말 포함) 앞쪽 세 태그 안에서 찾는다
+function relevantVideo(hit, q) {
+  const tags = String(hit.tags || '').toLowerCase().split(',').map(t => t.trim()).filter(Boolean);
+  if (PEOPLE.test(tags.join(' ').replace(new RegExp('\\b(' + words(q).join('|') + ')\\b', 'g'), '')) || BAD.test(tags.join(' '))) return false;
+  const head = ', ' + tags.slice(0, 3).join(', ') + ', ';
+  const toks = words(q).filter(t => t.length >= 3 && !['the', 'with', 'and'].includes(t) && !GENERIC.has(t));
+  return toks.length > 0 && toks.every(t => new RegExp('\\b' + t + 's?\\b').test(head));
+}
 async function searchVideos(q) {
   const r = await fetch(`https://pixabay.com/api/videos/?key=${KEY}&q=${encodeURIComponent(words(q).filter(t => !['a', 'an', 'the'].includes(t)).join(' '))}&lang=en&safesearch=true&per_page=30`);
   if (r.status === 429) throw new Error('Pixabay 요청 한도 (429)');
@@ -173,7 +181,7 @@ for (let k = 0; k < VIDEOS; k++) { // 움직이는 배너
     if (!kws.length) continue;
     const q = kws[Math.floor(t / cats.length) % kws.length];
     try {
-      const hits = (await searchVideos(q)).filter(h => !skip('pixabayv:' + h.id) && videoUrl(h) && relevant(h, q, 3) && !/\b(ai generated|animated|animation|cartoon|candle|candles|birthday|party|halloween|flame|fire|concept|abstract|3d)\b/i.test(String(h.tags)));
+      const hits = (await searchVideos(q)).filter(h => !skip('pixabayv:' + h.id) && videoUrl(h) && relevantVideo(h, q) && !/\b(ai generated|animated|animation|cartoon|candle|candles|birthday|party|halloween|flame|fire|concept|abstract|3d|christmas|jesus|nativity|celebration|holiday)\b/i.test(String(h.tags)));
       await sleep(700);
       if (!hits.length) continue;
       const hit = pick(hits.slice(0, 6));
