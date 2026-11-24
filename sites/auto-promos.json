@@ -1250,5 +1250,53 @@
   "url": "https://bbping.kr/c/%EA%B1%B4%EA%B0%95%EC%9C%84%EC%83%9D",
   "src": "pixabay:4074333",
   "q": "가습기"
+ },
+ {
+  "id": "v2611241LP",
+  "site": "vuty",
+  "text": "선케어 인기 상품 모음",
+  "url": "https://vuty.kr/c/%EC%84%A0%EC%BC%80%EC%96%B4",
+  "src": "pixabay:1461335",
+  "q": "선크림"
+ },
+ {
+  "id": "z2611241LP",
+  "site": "zakgong",
+  "text": "용접납땜 고르기 전에 확인",
+  "url": "https://zakgong.com/c/%EC%9A%A9%EC%A0%91%EB%82%A9%EB%95%9C",
+  "src": "pixabay:1038540",
+  "q": "납땜 인두"
+ },
+ {
+  "id": "p2611241P",
+  "site": "pemily",
+  "text": "사료 고르기 전에 확인",
+  "url": "https://pemily.kr/c/%EC%82%AC%EB%A3%8C",
+  "src": "pixabay:6537763",
+  "q": "고양이 사료"
+ },
+ {
+  "id": "b2611241P",
+  "site": "bodcar",
+  "text": "엔진오일 인기 랭킹",
+  "url": "https://bodcar.com/c/%EC%97%94%EC%A7%84%EC%98%A4%EC%9D%BC",
+  "src": "pixabay:3108641",
+  "q": "엔진오일"
+ },
+ {
+  "id": "s2611241P",
+  "site": "seareal",
+  "text": "지금 많이 찾는 건어물",
+  "url": "https://seareal.kr/c/%EA%B1%B4%EC%96%B4%EB%AC%BC",
+  "src": "pixabay:5633757",
+  "q": "멸치"
+ },
+ {
+  "id": "b2611241LP",
+  "site": "bebepong",
+  "text": "장난감완구 인기 상품 모음",
+  "url": "https://bbping.kr/c/%EC%9E%A5%EB%82%9C%EA%B0%90%EC%99%84%EA%B5%AC",
+  "src": "pixabay:1645513",
+  "q": "블록 장난감"
  }
 ]
