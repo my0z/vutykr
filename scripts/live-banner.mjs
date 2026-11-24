@@ -210,10 +210,40 @@ for (let k = 0; k < VIDEOS; k++) { // 움직이는 배너
   rmSync(dir, { recursive: true, force: true });
   if (!ok) console.log('관련 동영상을 못 찾음', id);
 }
+// 예전 높이(240)로 만든 영상 배너를 같은 영상으로 새 높이(360)로 다시 만든다 (REBUILD=한 번에 만들 개수)
+const removeIds = new Set();
+if (Number(process.env.REBUILD || 0) > 0 && !process.env.DRY) {
+  const dir = mkdtempSync(join(tmpdir(), 'rb-'));
+  const olds = index.filter(x => x.video && !/VT/.test(x.id) && /^pixabayv:\d+$/.test(x.src || '')).slice(0, Number(process.env.REBUILD));
+  for (const old of olds) {
+    try {
+      const r = await fetch(`https://pixabay.com/api/videos/?key=${KEY}&id=${old.src.split(':')[1]}`);
+      const hit = r.ok ? ((await r.json()).hits || [])[0] : null;
+      await sleep(700);
+      if (!hit || !videoUrl(hit)) { console.log('원본 영상 없음 건너뜀', old.id); continue; }
+      const site = SITES[old.site], cat = decodeURIComponent(old.url.split('/c/')[1] || '');
+      if (!site || !site.cats[cat]) { console.log('카테고리 없음 건너뜀', old.id); continue; }
+      const vr = await fetch(videoUrl(hit), { signal: AbortSignal.timeout(60000) });
+      if (!vr.ok) throw new Error('동영상 내려받기 ' + vr.status);
+      const src = join(dir, 'src.mp4'); writeFileSync(src, Buffer.from(await vr.arrayBuffer()));
+      const design = { ...randomDesign(pick(VLAYOUTS)), px: '50%' }, left = design.layout === 'fullr';
+      let n = 0, bid; do { bid = `${old.site[0]}${stamp}VT${n ? n : ''}${left ? 'L' : ''}P`; n++; } while (index.some(x => x.id === bid) || fresh.some(x => x.id === bid));
+      const W = composeVideo(dir, src, await overlayPng(browser, site, cat, false, design), false, 'w');
+      const N = composeVideo(dir, src, await overlayPng(browser, site, cat, true, design), true, 'n');
+      await kvPut(`live:vid:${bid}-w`, W.mp4); await kvPut(`live:vid:${bid}-n`, N.mp4);
+      await kvPut(`live:img:${bid}-w`, W.still); await kvPut(`live:img:${bid}-n`, N.still);
+      fresh.push({ ...old, id: bid, text: copyOf(site, cat, design).title, bytes: W.mp4.length + N.mp4.length + W.still.length + N.still.length });
+      removeIds.add(old.id); made++;
+      for (const k of ['vid', 'img']) for (const v of ['w', 'n']) await kvDel(`live:${k}:${old.id}-${v}`);
+      console.log('다시 만듦', old.id, '->', bid);
+    } catch (e) { console.log('다시 만들기 실패', old.id, e.message); if (/429/.test(e.message)) break; }
+  }
+  rmSync(dir, { recursive: true, force: true });
+}
 await browser.close();
 if (made || !process.env.DRY) {
   // 그사이 관리자가 지운 배너가 되살아나지 않게 최신 목록을 다시 읽어 새로 만든 것만 더한다
-  let merged = [...(await json('live:index', [])), ...fresh].sort((a, b) => a.ts - b.ts);
+  let merged = [...(await json('live:index', [])).filter(x => !removeIds.has(x.id)), ...fresh].sort((a, b) => a.ts - b.ts);
   const cutoff = Date.now() - MAX_AGE_DAYS * 864e5, expired = merged.filter(x => x.ts < cutoff); // 한 달 지난 배너는 바로 지운다
   for (const x of expired) { await kvDel(`live:img:${x.id}-w`); await kvDel(`live:img:${x.id}-n`); if (x.video) { await kvDel(`live:vid:${x.id}-w`); await kvDel(`live:vid:${x.id}-n`); } console.log('한 달 지난 배너 삭제', x.id); }
   merged = merged.filter(x => x.ts >= cutoff);
