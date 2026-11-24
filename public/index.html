@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"></noscript>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<link rel="stylesheet" href="/style.css?v=15">
+<link rel="stylesheet" href="/style.css?v=16">
 <style id="theme">{{THEME_CSS}}</style>
 <script>window.__site={{SITE_JSON}}</script>
 <script>
@@ -49,6 +49,7 @@ window.__d = window.__p ? Promise.resolve(window.__p) : Promise.all([
       el.innerHTML = o.video
         ? '<a class="pb" href="' + u2 + '" target="_blank" rel="noopener"><video autoplay muted loop playsinline preload="auto" poster="/live/' + o.id + '-' + vs + '.webp" aria-label="' + o.text + '"><source src="/live/' + o.id + '-' + vs + '.mp4" type="video/mp4"></video></a>' + tg
         : '<a class="pb" href="' + u2 + '" target="_blank" rel="noopener"><picture><source media="(min-width:761px)" srcset="/live/' + o.id + '-w.webp"><img src="/live/' + o.id + '-n.webp" width="960" height="300" alt="' + o.text + '" decoding="async"></picture></a><span class="tags' + (/LP?$/.test(o.id) ? ' r' : '') + '"><small>광고</small></span>';
+      var pn = document.getElementById('pexnote'); if (pn && o.video && o.pex) pn.hidden = false; // Pexels 영상 배너가 뜰 때만 사이트 아래에 출처를 보인다
       el.style.aspectRatio = (o.video && /VT/.test(o.id) && vs === 'w') ? '1920/360' : ''; // 새 영상 배너는 데스크톱에서 더 높게
       var vd = el.querySelector('video'); // 화면에 보이면 재생을 다시 시도한다 (모바일에서 멈춰 있던 문제)
       if (vd) {
@@ -86,6 +87,7 @@ window.__d = window.__p ? Promise.resolve(window.__p) : Promise.all([
     <p>가격과 재고는 쿠팡에서 수시로 변동되니 구매 전 꼭 확인하세요.</p>
     <p>상품 판매와 배송과 교환과 환불은 쿠팡에서 직접 처리하며 {{NAME}} 사이트는 판매 당사자가 아닙니다.</p>
     <p>게시글의 의견은 작성자의 것이며 {{NAME}} 사이트는 책임지지 않습니다.</p>
+    <p class="pexnote" id="pexnote" hidden>배너 영상 제공: <a href="https://www.pexels.com" target="_blank" rel="noopener">Pexels</a></p>
     <p class="fl"><a href="/about">소개</a> · <a href="/privacy">개인정보처리방침</a> · <a href="/terms">이용약관</a></p>
   </div>
 </footer>

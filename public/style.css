@@ -171,3 +171,4 @@ footer .disc{color:var(--ink);max-width:720px;margin:12px auto}
 .promo2{display:block}.gspan{grid-column:1/-1}
 
 .pb video{display:block;width:100%;height:100%;object-fit:cover}
+.pexnote a{color:var(--mute);text-decoration:underline;text-underline-offset:3px}.pexnote[hidden]{display:none}

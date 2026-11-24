@@ -81,12 +81,6 @@ function pexRelevant(text, q) {
   const kt = keyTokens(q);
   return kt.length > 0 && kt.every(t => new RegExp('\\b' + t + 's?\\b').test(text));
 }
-async function findPexelsPhotos(q) {
-  const r = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(words(q).filter(t => !['a', 'an', 'the'].includes(t)).join(' '))}&per_page=40&orientation=landscape`, { headers: pexHeaders() });
-  if (r.status === 429) throw new Error('Pexels 요청 한도 (429)');
-  if (!r.ok) throw new Error('Pexels ' + r.status);
-  return ((await r.json()).photos || []).filter(h => !skip('pexels:' + h.id) && Number(h.width) >= 1600 && pexRelevant(h.alt, q));
-}
 async function findPexelsVideos(q) {
   const r = await fetch(`https://api.pexels.com/videos/search?query=${encodeURIComponent(words(q).filter(t => !['a', 'an', 'the'].includes(t)).join(' '))}&per_page=40&orientation=landscape`, { headers: pexHeaders() });
   if (r.status === 429) throw new Error('Pexels 요청 한도 (429)');
@@ -97,7 +91,6 @@ function pexVideoUrl(v) { // 가로 1280 이상 중 가장 작은 mp4
   const c = (v.video_files || []).filter(f => f.file_type === 'video/mp4' && Number(f.width) >= 1280 && Number(f.width) <= 2560).sort((a, b) => a.width - b.width);
   return c.length ? c[0].link : null;
 }
-const creditOf = (name, kind = 'Photo') => `${kind} by ${String(name || '').slice(0, 28)} on Pexels`;
 async function download(url) {
   const r = await fetch(url, { headers: { 'user-agent': 'banner-bot/1.0' }, signal: AbortSignal.timeout(30000) });
   if (!r.ok) throw new Error('사진 내려받기 ' + r.status);
@@ -162,26 +155,20 @@ for (let k = 0; k < COUNT; k++) {
   const id = process.env.ONLY || siteIds[(first + k) % siteIds.length], site = SITES[id];
   const cats = shuffle(Object.keys(site.cats));
   let ok = false;
-  for (const srcName of (process.env.FORCE_OV ? ['ov'] : (PEXELS ? shuffle(['pixabay', 'pexels']) : ['pixabay']).concat('ov'))) { // Pixabay 에서 못 찾으면 Openverse(CC0)를 쓴다
+  for (const srcName of (process.env.FORCE_OV ? ['ov'] : ['pixabay', 'ov'])) { // Pixabay 에서 못 찾으면 Openverse(CC0)를 쓴다
     for (let t = 0; t < cats.length * 3 && !ok; t++) {
       const cat = cats[t % cats.length];
       const kws = (EN[id] && EN[id][cat]) || [];
       if (!kws.length) continue;
       const q = kws[Math.floor(t / cats.length) % kws.length];
       try {
-        let src, tags, photo, credit = '';
+        let src, tags, photo;
         if (srcName === 'pixabay') {
           const hits = (await search(q)).filter(h => !skip('pixabay:' + h.id) && relevant(h, q));
           await sleep(700);
           if (!hits.length) continue;
           const hit = pick(hits.slice(0, 8));
           photo = await download(hit.fullHDURL || hit.largeImageURL); src = 'pixabay:' + hit.id; tags = hit.tags;
-        } else if (srcName === 'pexels') {
-          const hits = await findPexelsPhotos(q);
-          await sleep(700);
-          if (!hits.length) continue;
-          const hit = pick(hits.slice(0, 8));
-          photo = await download(hit.src.large2x || hit.src.large || hit.src.original); src = 'pexels:' + hit.id; tags = hit.alt; credit = creditOf(hit.photographer);
         } else {
           const hits = await findOV(q);
           await sleep(1500);
@@ -189,7 +176,7 @@ for (let k = 0; k < COUNT; k++) {
           const hit = pick(hits.slice(0, 6));
           photo = await download(hit.url); src = 'openverse:' + hit.id; tags = (hit.title || '') + ' | ' + (hit.tags || []).map(x => x.name).join(', ');
         }
-        const design = { ...randomDesign(pick(LAYOUTS)), px: '50%', credit };
+        const design = { ...randomDesign(pick(LAYOUTS)), px: '50%' };
         const dry = !!process.env.DRY; // DRY 는 목록에 올리지 않고 dry 로 시작하는 이름으로만 저장해 눈으로 확인한다
         let n = 0, bid; do { bid = `${dry ? 'dry' + id : id[0]}${stamp}${n ? n : ''}${['mirror', 'fullr'].includes(design.layout) ? 'L' : ''}P`; n++; } while (index.some(x => x.id === bid));
         const imgW = await shoot(browser, site, cat, photo, false, design), imgN = await shoot(browser, site, cat, photo, true, design);
@@ -222,7 +209,7 @@ for (let k = 0; k < VIDEOS; k++) { // 움직이는 배너
       await sleep(700);
       if (!hits.length) continue;
       const hit = pick(hits.slice(0, 6));
-      const vurl = usePex ? pexVideoUrl(hit) : videoUrl(hit), vkey = (usePex ? 'pexelsv:' : 'pixabayv:') + hit.id, credit = usePex ? creditOf(hit.user && hit.user.name, 'Video') : '';
+      const vurl = usePex ? pexVideoUrl(hit) : videoUrl(hit), vkey = (usePex ? 'pexelsv:' : 'pixabayv:') + hit.id;
       const src = join(dir, 'src.mp4');
       const vr = await fetch(vurl, { signal: AbortSignal.timeout(60000) });
       if (!vr.ok) throw new Error('동영상 내려받기 ' + vr.status);
@@ -234,7 +221,7 @@ for (let k = 0; k < VIDEOS; k++) { // 움직이는 배너
         const mean = sum / fr.length, sd = Math.sqrt(sq / fr.length - mean * mean), ed = edge / fr.length;
         if (mean < 50 || sd < 22 || ed < 3) { console.log('화질 기준 미달 건너뜀', hit.id, 'mean', Math.round(mean), 'sd', Math.round(sd), 'edge', ed.toFixed(1)); skipDark.add(vkey); continue; }
       }
-      const design = { ...randomDesign(pick(VLAYOUTS)), px: '50%', credit };
+      const design = { ...randomDesign(pick(VLAYOUTS)), px: '50%' };
       const left = design.layout === 'fullr';
       const dry = !!process.env.DRY;
       let n = 0, bid; do { bid = `${dry ? 'dry' + id : id[0]}${stamp}VT${n ? n : ''}${left ? 'L' : ''}P`; n++; } while (index.some(x => x.id === bid));
@@ -242,7 +229,7 @@ for (let k = 0; k < VIDEOS; k++) { // 움직이는 배너
       const N = composeVideo(dir, src, await overlayPng(browser, site, cat, true, design), true, 'n');
       await kvPut(`live:vid:${bid}-w`, W.mp4); await kvPut(`live:vid:${bid}-n`, N.mp4);
       await kvPut(`live:img:${bid}-w`, W.still); await kvPut(`live:img:${bid}-n`, N.still);
-      const item = { id: bid, site: id, text: copyOf(site, cat, design).title, url: `${site.host}/c/${encodeURIComponent(cat)}`, src: vkey, q, ts: Date.now(), video: true, bytes: W.mp4.length + N.mp4.length + W.still.length + N.still.length };
+      const item = { id: bid, site: id, text: copyOf(site, cat, design).title, url: `${site.host}/c/${encodeURIComponent(cat)}`, src: vkey, q, ts: Date.now(), video: true, ...(usePex ? { pex: true } : {}), bytes: W.mp4.length + N.mp4.length + W.still.length + N.still.length };
       if (!dry) { index.push(item); fresh.push(item); usedLive.add(item.src); made++; }
       ok = true;
       console.log(dry ? 'DRY 영상' : '만듦 영상', bid, cat, design.layout, '|', q, '|', String(hit.tags).slice(0, 80), '|', Math.round(item.bytes / 1024) + 'KB');
