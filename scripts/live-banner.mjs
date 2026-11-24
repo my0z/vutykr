@@ -10,6 +10,7 @@ import { SITES } from '../sites/index.js';
 import { EN } from './product-en.mjs';
 import { buildHtml, randomDesign, copyOf } from './banner-design.mjs';
 
+const PEXELS = process.env.PEXELS_API_KEY || ''; // 있으면 Pexels 사진과 동영상도 쓴다 (사진 가운데 구석에 출처를 적는다)
 const KEY = process.env.PIXABAY_API_KEY, TOKEN = process.env.CLOUDFLARE_API_TOKEN;
 const ACCT = process.env.CLOUDFLARE_ACCOUNT_ID || '709dcc6af36c8ee7b6d3d99e7a9fe422', NS = process.env.KV_NAMESPACE_ID || '8bdd6ff58a6248e0b310bf0d2e5235c6';
 if (!KEY || !TOKEN) { console.log('PIXABAY_API_KEY 또는 CLOUDFLARE_API_TOKEN 없음'); process.exit(1); }
@@ -70,6 +71,33 @@ async function findOV(q) {
   })());
   return hits;
 }
+
+// Pexels: 태그가 없어서 사진 설명(alt)이나 동영상 주소 낱말에 상품 낱말이 모두 있을 때만 쓴다. 출처는 사진 안 구석에 적는다 (API 약관)
+const pexHeaders = () => ({ authorization: PEXELS, 'user-agent': 'banner-bot/1.0' });
+function pexRelevant(text, q) {
+  text = String(text || '').toLowerCase();
+  if (BAD.test(text) || /\b(art|artwork|painting|drawing|illustration|3d|render|cartoon|anime|green screen|greenscreen|candle|birthday|party|halloween|christmas)\b/.test(text)) return false;
+  if (PEOPLE.test(text.replace(new RegExp('\\b(' + words(q).join('|') + ')\\b', 'g'), ''))) return false;
+  const kt = keyTokens(q);
+  return kt.length > 0 && kt.every(t => new RegExp('\\b' + t + 's?\\b').test(text));
+}
+async function findPexelsPhotos(q) {
+  const r = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(words(q).filter(t => !['a', 'an', 'the'].includes(t)).join(' '))}&per_page=40&orientation=landscape`, { headers: pexHeaders() });
+  if (r.status === 429) throw new Error('Pexels 요청 한도 (429)');
+  if (!r.ok) throw new Error('Pexels ' + r.status);
+  return ((await r.json()).photos || []).filter(h => !skip('pexels:' + h.id) && Number(h.width) >= 1600 && pexRelevant(h.alt, q));
+}
+async function findPexelsVideos(q) {
+  const r = await fetch(`https://api.pexels.com/videos/search?query=${encodeURIComponent(words(q).filter(t => !['a', 'an', 'the'].includes(t)).join(' '))}&per_page=40&orientation=landscape`, { headers: pexHeaders() });
+  if (r.status === 429) throw new Error('Pexels 요청 한도 (429)');
+  if (!r.ok) throw new Error('Pexels 동영상 ' + r.status);
+  return ((await r.json()).videos || []).filter(v => !skip('pexelsv:' + v.id) && Number(v.duration) >= 4 && Number(v.duration) <= 60 && pexVideoUrl(v) && pexRelevant(String(v.url || '').replace(/^.*\/video\//, '').replace(/[-\/\d]+/g, ' '), q));
+}
+function pexVideoUrl(v) { // 가로 1280 이상 중 가장 작은 mp4
+  const c = (v.video_files || []).filter(f => f.file_type === 'video/mp4' && Number(f.width) >= 1280 && Number(f.width) <= 2560).sort((a, b) => a.width - b.width);
+  return c.length ? c[0].link : null;
+}
+const creditOf = name => `Photo by ${String(name || '').slice(0, 28)} on Pexels`;
 async function download(url) {
   const r = await fetch(url, { headers: { 'user-agent': 'banner-bot/1.0' }, signal: AbortSignal.timeout(30000) });
   if (!r.ok) throw new Error('사진 내려받기 ' + r.status);
@@ -134,20 +162,26 @@ for (let k = 0; k < COUNT; k++) {
   const id = process.env.ONLY || siteIds[(first + k) % siteIds.length], site = SITES[id];
   const cats = shuffle(Object.keys(site.cats));
   let ok = false;
-  for (const srcName of (process.env.FORCE_OV ? ['ov'] : ['pixabay', 'ov'])) { // Pixabay 에서 못 찾으면 Openverse(CC0)를 쓴다
+  for (const srcName of (process.env.FORCE_OV ? ['ov'] : (PEXELS ? shuffle(['pixabay', 'pexels']) : ['pixabay']).concat('ov'))) { // Pixabay 에서 못 찾으면 Openverse(CC0)를 쓴다
     for (let t = 0; t < cats.length * 3 && !ok; t++) {
       const cat = cats[t % cats.length];
       const kws = (EN[id] && EN[id][cat]) || [];
       if (!kws.length) continue;
       const q = kws[Math.floor(t / cats.length) % kws.length];
       try {
-        let src, tags, photo;
+        let src, tags, photo, credit = '';
         if (srcName === 'pixabay') {
           const hits = (await search(q)).filter(h => !skip('pixabay:' + h.id) && relevant(h, q));
           await sleep(700);
           if (!hits.length) continue;
           const hit = pick(hits.slice(0, 8));
           photo = await download(hit.fullHDURL || hit.largeImageURL); src = 'pixabay:' + hit.id; tags = hit.tags;
+        } else if (srcName === 'pexels') {
+          const hits = await findPexelsPhotos(q);
+          await sleep(700);
+          if (!hits.length) continue;
+          const hit = pick(hits.slice(0, 8));
+          photo = await download(hit.src.large2x || hit.src.large || hit.src.original); src = 'pexels:' + hit.id; tags = hit.alt; credit = creditOf(hit.photographer);
         } else {
           const hits = await findOV(q);
           await sleep(1500);
@@ -155,7 +189,7 @@ for (let k = 0; k < COUNT; k++) {
           const hit = pick(hits.slice(0, 6));
           photo = await download(hit.url); src = 'openverse:' + hit.id; tags = (hit.title || '') + ' | ' + (hit.tags || []).map(x => x.name).join(', ');
         }
-        const design = { ...randomDesign(pick(LAYOUTS)), px: '50%' };
+        const design = { ...randomDesign(pick(LAYOUTS)), px: '50%', credit };
         const dry = !!process.env.DRY; // DRY 는 목록에 올리지 않고 dry 로 시작하는 이름으로만 저장해 눈으로 확인한다
         let n = 0, bid; do { bid = `${dry ? 'dry' + id : id[0]}${stamp}${n ? n : ''}${['mirror', 'fullr'].includes(design.layout) ? 'L' : ''}P`; n++; } while (index.some(x => x.id === bid));
         const imgW = await shoot(browser, site, cat, photo, false, design), imgN = await shoot(browser, site, cat, photo, true, design);
@@ -183,12 +217,14 @@ for (let k = 0; k < VIDEOS; k++) { // 움직이는 배너
     if (!kws.length) continue;
     const q = kws[Math.floor(t / cats.length) % kws.length];
     try {
-      const hits = (await searchVideos(q)).filter(h => !skip('pixabayv:' + h.id) && videoUrl(h) && relevantVideo(h, q, id) && !/\b(anime|illustration|painting|drawing|green screen|greenscreen|chroma|grinding|grinder|sparks|ai generated|animated|animation|cartoon|candle|candles|birthday|party|halloween|flame|fire|concept|abstract|3d|christmas|jesus|nativity|celebration|holiday)\b/i.test(String(h.tags)));
+      const usePex = Boolean(PEXELS) && Math.random() < 0.5; // 키가 있으면 절반은 Pexels 에서 찾는다
+      const hits = usePex ? (await findPexelsVideos(q)).filter(v => id !== 'bebepong' || /\b(baby|babies|infant|newborn|toddler)\b/.test(String(v.url))) : ((await searchVideos(q)).filter(h => !skip('pixabayv:' + h.id) && videoUrl(h) && relevantVideo(h, q, id) && !/\b(anime|illustration|painting|drawing|green screen|greenscreen|chroma|grinding|grinder|sparks|ai generated|animated|animation|cartoon|candle|candles|birthday|party|halloween|flame|fire|concept|abstract|3d|christmas|jesus|nativity|celebration|holiday)\b/i.test(String(h.tags))));
       await sleep(700);
       if (!hits.length) continue;
       const hit = pick(hits.slice(0, 6));
+      const vurl = usePex ? pexVideoUrl(hit) : videoUrl(hit), vkey = (usePex ? 'pexelsv:' : 'pixabayv:') + hit.id, credit = usePex ? creditOf(hit.user && hit.user.name) : '';
       const src = join(dir, 'src.mp4');
-      const vr = await fetch(videoUrl(hit), { signal: AbortSignal.timeout(60000) });
+      const vr = await fetch(vurl, { signal: AbortSignal.timeout(60000) });
       if (!vr.ok) throw new Error('동영상 내려받기 ' + vr.status);
       writeFileSync(src, Buffer.from(await vr.arrayBuffer()));
       const fr = spawnSync('ffmpeg', ['-loglevel', 'error', '-ss', '3', '-i', src, '-frames:v', '1', '-vf', 'scale=160:90,format=gray', '-f', 'rawvideo', '-'], { encoding: 'buffer' }).stdout;
@@ -196,9 +232,9 @@ for (let k = 0; k < VIDEOS; k++) { // 움직이는 배너
         let sum = 0, sq = 0, edge = 0;
         for (let i = 0; i < fr.length; i++) { sum += fr[i]; sq += fr[i] * fr[i]; if (i % 160) edge += Math.abs(fr[i] - fr[i - 1]); }
         const mean = sum / fr.length, sd = Math.sqrt(sq / fr.length - mean * mean), ed = edge / fr.length;
-        if (mean < 50 || sd < 22 || ed < 3) { console.log('화질 기준 미달 건너뜀', hit.id, 'mean', Math.round(mean), 'sd', Math.round(sd), 'edge', ed.toFixed(1)); skipDark.add('pixabayv:' + hit.id); continue; }
+        if (mean < 50 || sd < 22 || ed < 3) { console.log('화질 기준 미달 건너뜀', hit.id, 'mean', Math.round(mean), 'sd', Math.round(sd), 'edge', ed.toFixed(1)); skipDark.add(vkey); continue; }
       }
-      const design = { ...randomDesign(pick(VLAYOUTS)), px: '50%' };
+      const design = { ...randomDesign(pick(VLAYOUTS)), px: '50%', credit };
       const left = design.layout === 'fullr';
       const dry = !!process.env.DRY;
       let n = 0, bid; do { bid = `${dry ? 'dry' + id : id[0]}${stamp}VT${n ? n : ''}${left ? 'L' : ''}P`; n++; } while (index.some(x => x.id === bid));
@@ -206,7 +242,7 @@ for (let k = 0; k < VIDEOS; k++) { // 움직이는 배너
       const N = composeVideo(dir, src, await overlayPng(browser, site, cat, true, design), true, 'n');
       await kvPut(`live:vid:${bid}-w`, W.mp4); await kvPut(`live:vid:${bid}-n`, N.mp4);
       await kvPut(`live:img:${bid}-w`, W.still); await kvPut(`live:img:${bid}-n`, N.still);
-      const item = { id: bid, site: id, text: copyOf(site, cat, design).title, url: `${site.host}/c/${encodeURIComponent(cat)}`, src: 'pixabayv:' + hit.id, q, ts: Date.now(), video: true, bytes: W.mp4.length + N.mp4.length + W.still.length + N.still.length };
+      const item = { id: bid, site: id, text: copyOf(site, cat, design).title, url: `${site.host}/c/${encodeURIComponent(cat)}`, src: vkey, q, ts: Date.now(), video: true, bytes: W.mp4.length + N.mp4.length + W.still.length + N.still.length };
       if (!dry) { index.push(item); fresh.push(item); usedLive.add(item.src); made++; }
       ok = true;
       console.log(dry ? 'DRY 영상' : '만듦 영상', bid, cat, design.layout, '|', q, '|', String(hit.tags).slice(0, 80), '|', Math.round(item.bytes / 1024) + 'KB');
