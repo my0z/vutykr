@@ -39,9 +39,9 @@ window.__d = window.__p ? Promise.resolve(window.__p) : Promise.all([
     window.__lv = window.__lv || fetch('/api/live').then(function (r) { return r.json(); }).catch(function () { return []; });
     window.__lv.then(function (L) {
       L = L.filter(function (o) { return o.host.indexOf(location.hostname) < 0 && used.indexOf(o.id) < 0; });
-      if (!L.length || Math.random() > 0.7) return;
+      if (!L.length || Math.random() > 0.95) return;
       var V = L.filter(function (x) { return x.video; }); // 움직이는 배너를 더 자주 보여 준다
-      if (V.length && Math.random() < 0.7) L = V;
+      if (V.length && Math.random() < 0.95) L = V;
       var o = L[Math.floor(Math.random() * L.length)];
       used[k] = o.id;
       var u2 = o.url + (o.url.indexOf('?') < 0 ? '?' : '&') + 'utm_source={{HOSTNAME}}&utm_medium=banner&utm_campaign=' + o.id;
