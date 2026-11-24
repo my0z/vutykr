@@ -101,7 +101,7 @@ function videoUrl(h) { // 가로 1280 이상 중에서 가장 작은 것 (1920 �
   return c.length ? c[0].url : null;
 }
 async function overlayPng(browser, site, cat, narrow, design) {
-  const w = narrow ? 960 : 1920, h = narrow ? 300 : 240;
+  const w = narrow ? 960 : 1920, h = narrow ? 300 : 360;
   const p = await browser.newPage({ viewport: { width: w, height: h } });
   await p.setContent(buildHtml(site, cat, '', narrow, { ...design, video: true }));
   const png = await p.screenshot({ type: 'png', omitBackground: true });
@@ -109,7 +109,7 @@ async function overlayPng(browser, site, cat, narrow, design) {
   return png;
 }
 function composeVideo(dir, src, png, narrow, tag) {
-  const w = narrow ? 960 : 1920, h = narrow ? 300 : 240, ov = join(dir, `ov-${tag}.png`), out = join(dir, `out-${tag}.mp4`), still = join(dir, `still-${tag}.webp`);
+  const w = narrow ? 960 : 1920, h = narrow ? 300 : 360, ov = join(dir, `ov-${tag}.png`), out = join(dir, `out-${tag}.mp4`), still = join(dir, `still-${tag}.webp`);
   writeFileSync(ov, png);
   const a = spawnSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', src, '-i', ov, '-t', '6', '-r', '24', '-filter_complex', `[0:v]scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h}[v];[v][1:v]overlay=0:0:format=auto,format=yuv420p`, '-an', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '31', '-movflags', '+faststart', out], { encoding: 'utf8' });
   if (a.status !== 0) throw new Error('ffmpeg ' + String(a.stderr).slice(0, 200));
@@ -196,7 +196,7 @@ for (let k = 0; k < VIDEOS; k++) { // 움직이는 배너
       const design = { ...randomDesign(pick(VLAYOUTS)), px: '50%' };
       const left = design.layout === 'fullr';
       const dry = !!process.env.DRY;
-      let n = 0, bid; do { bid = `${dry ? 'dry' + id : id[0]}${stamp}V${n ? n : ''}${left ? 'L' : ''}P`; n++; } while (index.some(x => x.id === bid));
+      let n = 0, bid; do { bid = `${dry ? 'dry' + id : id[0]}${stamp}VT${n ? n : ''}${left ? 'L' : ''}P`; n++; } while (index.some(x => x.id === bid));
       const W = composeVideo(dir, src, await overlayPng(browser, site, cat, false, design), false, 'w');
       const N = composeVideo(dir, src, await overlayPng(browser, site, cat, true, design), true, 'n');
       await kvPut(`live:vid:${bid}-w`, W.mp4); await kvPut(`live:vid:${bid}-n`, N.mp4);

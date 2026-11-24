@@ -49,6 +49,7 @@ window.__d = window.__p ? Promise.resolve(window.__p) : Promise.all([
       el.innerHTML = o.video
         ? '<a class="pb" href="' + u2 + '" target="_blank" rel="noopener"><video autoplay muted loop playsinline preload="auto" poster="/live/' + o.id + '-' + vs + '.webp" aria-label="' + o.text + '"><source src="/live/' + o.id + '-' + vs + '.mp4" type="video/mp4"></video></a>' + tg
         : '<a class="pb" href="' + u2 + '" target="_blank" rel="noopener"><picture><source media="(min-width:761px)" srcset="/live/' + o.id + '-w.webp"><img src="/live/' + o.id + '-n.webp" width="960" height="300" alt="' + o.text + '" decoding="async"></picture></a><span class="tags' + (/LP?$/.test(o.id) ? ' r' : '') + '"><small>광고</small></span>';
+      el.style.aspectRatio = (o.video && /VT/.test(o.id) && vs === 'w') ? '1920/360' : ''; // 새 영상 배너는 데스크톱에서 더 높게
       var vd = el.querySelector('video'); // 화면에 보이면 재생을 다시 시도한다 (모바일에서 멈춰 있던 문제)
       if (vd) {
         vd.muted = true; var go = function () { var p = vd.play(); if (p && p.catch) p.catch(function () {}); };
