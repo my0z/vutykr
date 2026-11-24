@@ -11,8 +11,12 @@ let bad = 0;
 for (const [id, s] of Object.entries(SITES)) {
   const urls = [s.host + '/', s.host + '/sitemap.xml', ...Object.keys(s.cats || {}).slice(0, 3).map(c => `${s.host}/c/${encodeURIComponent(c)}`)];
   for (const u of urls) {
-    try { const r = await fetch(u, { headers: { 'user-agent': 'Mozilla/5.0 report' }, redirect: 'follow' }); if (!r.ok) { bad++; say(`- 오류 ${r.status} ${u}`); } }
-    catch (e) { bad++; say(`- 접속 실패 ${u}`); }
+    let st = 0; // 한 번 실패하면 잠시 뒤 한 번 더 확인한다 (일시 오류와 진짜 오류를 가른다)
+    for (let t = 0; t < 2 && st !== 200; t++) {
+      try { st = (await fetch(u, { headers: { 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36' }, redirect: 'follow' })).status; } catch (e) { st = -1; }
+      if (st !== 200) await new Promise(r => setTimeout(r, 4000));
+    }
+    if (st !== 200) { bad++; say(`- 오류 ${st} ${u}`); }
   }
 }
 say(bad ? `점검 결과: 문제 ${bad}건` : '점검 결과: 이상 없음');
