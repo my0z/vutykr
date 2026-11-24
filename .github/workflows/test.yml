@@ -1,0 +1,19 @@
+name: test
+# 푸시할 때마다 문법을 확인한다 (배포 전에 깨진 코드를 알아챈다)
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: |
+          for f in scripts/*.mjs src/*.js sites/*.js; do node --check "$f" || exit 1; done
+          echo OK

@@ -1,0 +1,37 @@
+name: maintenance
+# 하루 한 번 (한국 시간 06시) KV 백업 · 검색엔진 알림(IndexNow) · 사이트 점검 리포트 — 모두 무료
+on:
+  schedule:
+    - cron: '10 21 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: KV 백업 (공개 저장소라 암호로 잠근다 · 암호는 CLOUDFLARE_API_TOKEN 값)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          node scripts/backup-kv.mjs
+          openssl enc -aes-256-cbc -pbkdf2 -salt -pass env:CLOUDFLARE_API_TOKEN -in backup/kv-*.json -out backup/kv.json.enc
+          rm backup/kv-*.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kv-backup
+          path: backup/kv.json.enc
+          retention-days: 30
+      - name: 검색엔진에 알리기 (IndexNow)
+        continue-on-error: true
+        env:
+          INDEXNOW_KEY: 05c664617a377916dd44e02024763a73
+        run: node scripts/indexnow.mjs
+      - name: 사이트 점검 리포트
+        run: node scripts/daily-report.mjs

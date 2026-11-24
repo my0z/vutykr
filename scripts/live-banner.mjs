@@ -191,8 +191,13 @@ for (let k = 0; k < VIDEOS; k++) { // 움직이는 배너
       const vr = await fetch(videoUrl(hit), { signal: AbortSignal.timeout(60000) });
       if (!vr.ok) throw new Error('동영상 내려받기 ' + vr.status);
       writeFileSync(src, Buffer.from(await vr.arrayBuffer()));
-      const lum = spawnSync('ffmpeg', ['-loglevel', 'error', '-ss', '3', '-i', src, '-frames:v', '1', '-vf', 'scale=1:1,format=gray', '-f', 'rawvideo', '-'], { encoding: 'buffer' }).stdout;
-      if (lum && lum.length && lum[0] < 50) { console.log('너무 어두운 영상 건너뜀', hit.id, lum[0]); skipDark.add('pixabayv:' + hit.id); continue; } // 정지 화면이 검은 영상은 쓰지 않는다
+      const fr = spawnSync('ffmpeg', ['-loglevel', 'error', '-ss', '3', '-i', src, '-frames:v', '1', '-vf', 'scale=160:90,format=gray', '-f', 'rawvideo', '-'], { encoding: 'buffer' }).stdout;
+      if (fr && fr.length === 160 * 90) { // 정지 화면이 어둡거나 밋밋하거나 흐리면 쓰지 않는다 (밝기 · 대비 · 윤곽)
+        let sum = 0, sq = 0, edge = 0;
+        for (let i = 0; i < fr.length; i++) { sum += fr[i]; sq += fr[i] * fr[i]; if (i % 160) edge += Math.abs(fr[i] - fr[i - 1]); }
+        const mean = sum / fr.length, sd = Math.sqrt(sq / fr.length - mean * mean), ed = edge / fr.length;
+        if (mean < 50 || sd < 22 || ed < 3) { console.log('화질 기준 미달 건너뜀', hit.id, 'mean', Math.round(mean), 'sd', Math.round(sd), 'edge', ed.toFixed(1)); skipDark.add('pixabayv:' + hit.id); continue; }
+      }
       const design = { ...randomDesign(pick(VLAYOUTS)), px: '50%' };
       const left = design.layout === 'fullr';
       const dry = !!process.env.DRY;

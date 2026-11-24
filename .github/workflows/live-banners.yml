@@ -2,7 +2,7 @@ name: live-banners
 # 30분마다 무료 사진(Pixabay)을 새로 가져와 합성한 배너를 KV 에 올린다 (비용 0 · 커밋과 배포 없음)
 on:
   schedule:
-    - cron: '7,37 * * * *'
+    - cron: '*/10 * * * *' # 예약 실행이 늦어도 자주 걸어 두고 최근 30분 안에 만들었으면 건너뛴다
   workflow_dispatch:
     inputs:
       count:
@@ -30,16 +30,36 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: 최근 실행 확인 (예약 실행일 때만)
+        id: guard
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          A: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          skip=false
+          if [ "$EVENT" = "schedule" ]; then
+            last=$(curl -s -H "authorization: Bearer $T" "https://api.cloudflare.com/client/v4/accounts/$A/storage/kv/namespaces/8bdd6ff58a6248e0b310bf0d2e5235c6/values/live:index" | jq '[.[].ts]|max // 0')
+            last=${last:-0}
+            age=$(( ($(date +%s%3N) - last) / 60000 ))
+            echo "마지막 배너 $age 분 전"
+            [ "$age" -lt 30 ] && skip=true
+          fi
+          echo "skip=$skip" >> "$GITHUB_OUTPUT"
+      - if: steps.guard.outputs.skip != 'true'
+        uses: actions/checkout@v4
+      - if: steps.guard.outputs.skip != 'true'
+        uses: actions/setup-node@v4
         with:
           node-version: 22
       - name: 글꼴과 브라우저 준비
+        if: steps.guard.outputs.skip != 'true'
         run: |
           sudo apt-get update -y && sudo apt-get install -y fonts-noto-cjk ffmpeg
           npm i --no-save playwright
           npx playwright install --with-deps chromium
       - name: 실시간 배너 만들기
+        if: steps.guard.outputs.skip != 'true'
         env:
           PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

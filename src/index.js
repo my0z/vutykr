@@ -70,6 +70,7 @@ export default {
       const items = AUTO_PROMOS.map(b => ({ id: b.id, text: b.text, url: b.url, host: SITES[b.site] ? SITES[b.site].host : '' }));
       return secure(new Response(JSON.stringify(items), { headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*', 'cache-control': 'public,max-age=3600' } }));
     }
+    if (url.pathname === '/05c664617a377916dd44e02024763a73.txt') return new Response('05c664617a377916dd44e02024763a73', { headers: { 'content-type': 'text/plain' } }); // IndexNow 소유 확인 파일
     const lr = await liveRoute(url, env, req); // 실시간 배너 그림과 목록
     if (lr) return secure(lr);
     const { site, set } = pick(url, req);
