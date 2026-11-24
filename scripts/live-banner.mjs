@@ -97,7 +97,7 @@ function pexVideoUrl(v) { // 가로 1280 이상 중 가장 작은 mp4
   const c = (v.video_files || []).filter(f => f.file_type === 'video/mp4' && Number(f.width) >= 1280 && Number(f.width) <= 2560).sort((a, b) => a.width - b.width);
   return c.length ? c[0].link : null;
 }
-const creditOf = (name, kind = 'Photo') => `${kind} by ${String(name || '').slice(0, 28)} on Pexels`;
+const creditOf = name => `Photo by ${String(name || '').slice(0, 28)} on Pexels`;
 async function download(url) {
   const r = await fetch(url, { headers: { 'user-agent': 'banner-bot/1.0' }, signal: AbortSignal.timeout(30000) });
   if (!r.ok) throw new Error('사진 내려받기 ' + r.status);
@@ -222,7 +222,7 @@ for (let k = 0; k < VIDEOS; k++) { // 움직이는 배너
       await sleep(700);
       if (!hits.length) continue;
       const hit = pick(hits.slice(0, 6));
-      const vurl = usePex ? pexVideoUrl(hit) : videoUrl(hit), vkey = (usePex ? 'pexelsv:' : 'pixabayv:') + hit.id, credit = usePex ? creditOf(hit.user && hit.user.name, 'Video') : '';
+      const vurl = usePex ? pexVideoUrl(hit) : videoUrl(hit), vkey = (usePex ? 'pexelsv:' : 'pixabayv:') + hit.id, credit = usePex ? creditOf(hit.user && hit.user.name) : '';
       const src = join(dir, 'src.mp4');
       const vr = await fetch(vurl, { signal: AbortSignal.timeout(60000) });
       if (!vr.ok) throw new Error('동영상 내려받기 ' + vr.status);
