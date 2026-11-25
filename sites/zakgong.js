@@ -1,6 +1,7 @@
 // ZAKGONG 사이트 설정 — 이 파일 하나만 고치면 이 사이트의 이름과 분야와 검색어와 색상이 바뀝니다
 export default {
   id: 'zakgong',
+  verify: { naver: 'e1268bfe543b7f2b529536d723f2afc26e1e29c7' },
   strict: true, // 분류 규칙이 있는 분야는 상품 이름에 그 단어가 있을 때만 담는다
   domains: ['zakgong.com', 'www.zakgong.com'],
   host: 'https://zakgong.com',
