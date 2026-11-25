@@ -1,6 +1,7 @@
 // 노리동 사이트 설정 — 이 파일 하나만 고치면 이 사이트의 이름과 분야와 검색어와 색상이 바뀝니다
 export default {
   id: 'noridong',
+  verify: { naver: '8f4a90a1ffecd804cbdd221214877090a811d750' },
   strict: true, // 분류 규칙이 있는 분야는 상품 이름에 그 단어가 있을 때만 담는다
   domains: ['noridong.com', 'www.noridong.com'],
   host: 'https://noridong.com',
