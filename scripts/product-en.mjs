@@ -44,7 +44,7 @@ export const EN = {
     관상어: ['a fish tank aquarium', 'a fish food container', 'an aquarium filter', 'an aquarium heater'],
   },
   noridong: {
-    블록레고: ['colorful building blocks', 'a toy brick set', 'magnetic building tiles'], 인형캐릭터: ['a teddy bear plush', 'a stuffed animal toy', 'a toy doll'], 보드게임퍼즐: ['a board game box', 'a jigsaw puzzle', 'a deck of playing cards'],
+    블록레고: ['colorful building blocks', 'a toy brick set', 'magnetic building tiles'], 인형캐릭터: ['a teddy bear plush', 'a stuffed animal toy', 'a toy doll'], 보드게임퍼즐: ['a board game box with cards', 'a jigsaw puzzle', 'a deck of playing cards', 'a board game with dice'],
     역할소꿉놀이: ['a toy kitchen play set', 'a toy doctor kit', 'pretend play food toys'], 로봇RC카: ['a remote control car toy', 'a toy robot', 'a toy race car'], 야외물놀이: ['a water gun toy', 'a bubble wand', 'a kids scooter', 'a sandbox toy set'],
     미술만들기: ['colored modeling clay', 'a crayon box', 'a kids craft kit', 'watercolor paint set'], 교육완구: ['wooden educational toys', 'an alphabet learning toy', 'a kids science kit'],
   },

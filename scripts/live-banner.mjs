@@ -28,6 +28,7 @@ const LAYOUTS = ['split', 'full', 'light', 'slant', 'glass', 'circle', 'mirror',
 const GENERIC = new Set(['pack', 'folded', 'small', 'womens', 'women', 'bottle', 'tube', 'jar', 'set', 'box', 'bag', 'white', 'leather', 'gold', 'wool', 'cordless', 'power', 'portable', 'compact', 'with', 'baby']);
 const PEOPLE = /\b(girl|boy|woman|women|man|men|child|children|kid|kids|people|person|portrait|face|model|couple|family|mother|father|baby girl|toddler|newborn baby)\b/i;
 const BAD = /\b(pill|pills|tablet|tablets|medicine|medicines|medication|drug|drugs|capsule|capsules|pharmacy|syringe|injection|whey|protein|bodybuilding|fitness|gym|workout|muscle|steroid)\b/i;
+const NOCHESS = (text, q) => /\bchess|checkmate/i.test(text) && !/chess/i.test(q); // 보드게임 검색에 체스 사진이 섞이지 않게 한다
 const words = q => q.toLowerCase().replace(/'s\b/g, 's').replace(/[^a-z ]/g, ' ').split(/\s+/).filter(Boolean);
 const keyTokens = q => words(q).filter(t => (t.length >= 4 || ['dog', 'cat', 'pet'].includes(t)) && !GENERIC.has(t)); // dog 와 cat 도 꼭 있어야 하는 낱말로 본다 (사람용 제품과 구분)
 
@@ -41,7 +42,7 @@ async function search(q) {
 function relevant(hit, q, headN = 4) {
   const tags = String(hit.tags || '').toLowerCase().split(',').map(t => t.trim()).filter(Boolean);
   const all = tags.join(' ');
-  if (BAD.test(all)) return false; // 알약과 약과 사람용 운동 보충제 사진은 뺀다
+  if (BAD.test(all) || NOCHESS(all, q)) return false; // 알약과 약과 사람용 운동 보충제 사진은 뺀다
   if (PEOPLE.test(all.replace(new RegExp('\\b(' + words(q).join('|') + ')\\b', 'g'), ''))) return false;
   const head = ', ' + tags.slice(0, headN).join(', ') + ', ';
   const kt = keyTokens(q);
@@ -66,7 +67,7 @@ async function findOV(q) {
   const kt = keyTokens(q);
   const hits = ((await r.json()).results || []).filter(h => !skip('openverse:' + h.id) && Number(h.width) >= 1600 && ['cc0', 'pdm'].includes(String(h.license).toLowerCase()) && (() => {
     const text = (String(h.title || '') + ', ' + (h.tags || []).map(t => t.name).join(', ')).toLowerCase();
-    if (BAD.test(text) || /\b(art|artwork|painting|paintings|drawing|ancient|museum|antique|sculpture|engraving|illustration|print|etching|lithograph)\b/.test(text) || PEOPLE.test(text.replace(new RegExp('\\b(' + words(q).join('|') + ')\\b', 'g'), ''))) return false;
+    if (BAD.test(text) || NOCHESS(text, q) || /\b(art|artwork|painting|paintings|drawing|ancient|museum|antique|sculpture|engraving|illustration|print|etching|lithograph)\b/.test(text) || PEOPLE.test(text.replace(new RegExp('\\b(' + words(q).join('|') + ')\\b', 'g'), ''))) return false;
     return kt.length > 0 && kt.every(t => new RegExp('\\b' + t + 's?\\b').test(text));
   })());
   return hits;
@@ -76,7 +77,7 @@ async function findOV(q) {
 const pexHeaders = () => ({ authorization: PEXELS, 'user-agent': 'banner-bot/1.0' });
 function pexRelevant(text, q) {
   text = String(text || '').toLowerCase();
-  if (BAD.test(text) || /\b(art|artwork|painting|drawing|illustration|3d|render|cartoon|anime|green screen|greenscreen|candle|birthday|party|halloween|christmas)\b/.test(text)) return false;
+  if (BAD.test(text) || NOCHESS(text, q) || /\b(art|artwork|painting|drawing|illustration|3d|render|cartoon|anime|green screen|greenscreen|candle|birthday|party|halloween|christmas)\b/.test(text)) return false;
   if (PEOPLE.test(text.replace(new RegExp('\\b(' + words(q).join('|') + ')\\b', 'g'), ''))) return false;
   const kt = keyTokens(q);
   return kt.length > 0 && kt.every(t => new RegExp('\\b' + t + 's?\\b').test(text));
@@ -105,7 +106,7 @@ const VLAYOUTS = ['full', 'fullr', 'glass']; // 동영상이 배너 전체 배�
 // 동영상은 이미지보다 태그가 느슨해서 영어 상품 이름의 낱말을 모두(짧은 낱말 포함) 앞쪽 세 태그 안에서 찾는다
 function relevantVideo(hit, q, sid) {
   const tags = String(hit.tags || '').toLowerCase().split(',').map(t => t.trim()).filter(Boolean);
-  if (PEOPLE.test(tags.join(' ').replace(new RegExp('\\b(' + words(q).join('|') + ')\\b', 'g'), '')) || BAD.test(tags.join(' '))) return false;
+  if (PEOPLE.test(tags.join(' ').replace(new RegExp('\\b(' + words(q).join('|') + ')\\b', 'g'), '')) || BAD.test(tags.join(' ')) || NOCHESS(tags.join(' '), q)) return false;
   const head = ', ' + tags.slice(0, 3).join(', ') + ', ';
   if (sid === 'bebepong' && !/\b(baby|babies|infant|newborn|toddler)\b/.test(head)) return false; // 아기 사이트 영상은 baby 태그가 앞쪽에 있어야 한다
   const toks = words(q).filter(t => t.length >= 3 && !['the', 'with', 'and'].includes(t) && !GENERIC.has(t));
@@ -148,12 +149,18 @@ const skipDark = new Set();
 const skip = src => skipDark.has(src) || block.has(src) || usedLive.has(src) || usedRepo.has(src);
 
 const siteIds = Object.keys(SITES).filter(id => !SITES[id].draft); // 도메인 연결 전 사이트는 뺀다
-const first = Number(process.env.START ?? Math.floor(Date.now() / 1800e3)) % siteIds.length; // 30분마다 사이트를 돌아가며 만든다
+// 배너가 적은 사이트와 분야부터 만든다 (전체 수 기준으로 모자란 곳을 돌아가며 채운다)
+const catOf = x => { try { return decodeURIComponent(String(x.url || '').split('/c/')[1] || '').split('?')[0]; } catch (e) { return ''; } };
+const cnt = { site: {}, cat: {} };
+for (const x of index) { cnt.site[x.site] = (cnt.site[x.site] || 0) + 1; const k = x.site + '/' + catOf(x); cnt.cat[k] = (cnt.cat[k] || 0) + 1; }
+const bump = (id, cat) => { cnt.site[id] = (cnt.site[id] || 0) + 1; const k = id + '/' + cat; cnt.cat[k] = (cnt.cat[k] || 0) + 1; };
+const pickSite = () => process.env.ONLY || siteIds.slice().sort((a, b) => ((cnt.site[a] || 0) - (cnt.site[b] || 0)) || (Math.random() - 0.5))[0];
+const catsFor = (id, site) => Object.keys(site.cats).sort((a, b) => ((cnt.cat[id + '/' + a] || 0) - (cnt.cat[id + '/' + b] || 0)) || (Math.random() - 0.5));
 const browser = await chromium.launch();
 let made = 0; const fresh = [];
 for (let k = 0; k < COUNT; k++) {
-  const id = process.env.ONLY || siteIds[(first + k) % siteIds.length], site = SITES[id];
-  const cats = shuffle(Object.keys(site.cats));
+  const id = pickSite(), site = SITES[id];
+  const cats = catsFor(id, site);
   let ok = false;
   for (const srcName of (process.env.FORCE_OV ? ['ov'] : ['pixabay', 'ov'])) { // Pixabay 에서 못 찾으면 Openverse(CC0)를 쓴다
     for (let t = 0; t < cats.length * 3 && !ok; t++) {
@@ -183,7 +190,7 @@ for (let k = 0; k < COUNT; k++) {
         await kvPut(`live:img:${bid}-w`, imgW);
         await kvPut(`live:img:${bid}-n`, imgN);
         const item = { id: bid, site: id, text: copyOf(site, cat, design).title, url: `${site.host}/c/${encodeURIComponent(cat)}`, src, q, ts: Date.now(), bytes: imgW.length + imgN.length };
-        if (!dry) { index.push(item); fresh.push(item); usedLive.add(src); made++; }
+        if (!dry) { index.push(item); fresh.push(item); usedLive.add(src); made++; bump(id, cat); }
         ok = true;
         console.log(dry ? 'DRY' : '만듦', bid, srcName, cat, design.layout, '|', q, '|', String(tags).slice(0, 90));
       } catch (e) { console.log('실패', id, srcName, e.message); if (/429/.test(e.message)) break; }
@@ -194,8 +201,8 @@ for (let k = 0; k < COUNT; k++) {
 }
 
 for (let k = 0; k < VIDEOS; k++) { // 움직이는 배너
-  const id = process.env.ONLY || siteIds[(first + COUNT + k) % siteIds.length], site = SITES[id];
-  const cats = shuffle(Object.keys(site.cats));
+  const id = pickSite(), site = SITES[id];
+  const cats = catsFor(id, site);
   let ok = false;
   const dir = mkdtempSync(join(tmpdir(), 'vb-'));
   for (let t = 0; t < cats.length * 3 && !ok; t++) {
@@ -230,7 +237,7 @@ for (let k = 0; k < VIDEOS; k++) { // 움직이는 배너
       await kvPut(`live:vid:${bid}-w`, W.mp4); await kvPut(`live:vid:${bid}-n`, N.mp4);
       await kvPut(`live:img:${bid}-w`, W.still); await kvPut(`live:img:${bid}-n`, N.still);
       const item = { id: bid, site: id, text: copyOf(site, cat, design).title, url: `${site.host}/c/${encodeURIComponent(cat)}`, src: vkey, q, ts: Date.now(), video: true, ...(usePex ? { pex: true } : {}), bytes: W.mp4.length + N.mp4.length + W.still.length + N.still.length };
-      if (!dry) { index.push(item); fresh.push(item); usedLive.add(item.src); made++; }
+      if (!dry) { index.push(item); fresh.push(item); usedLive.add(item.src); made++; bump(id, cat); }
       ok = true;
       console.log(dry ? 'DRY 영상' : '만듦 영상', bid, cat, design.layout, '|', q, '|', String(hit.tags).slice(0, 80), '|', Math.round(item.bytes / 1024) + 'KB');
     } catch (e) { console.log('실패 영상', id, e.message); if (/429/.test(e.message)) break; }
