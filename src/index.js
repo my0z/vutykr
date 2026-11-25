@@ -113,6 +113,7 @@ export default {
         }
       })());
     }
+    ctx.waitUntil(kickGithub(env, hour).catch(e => console.error('kick', e.message))); // GitHub 예약 실행이 늦거나 안 돌 때를 대비해 Cloudflare 예약이 직접 깨운다
     if (hour === 20) { // 하루에 한 번 오래된 접속 기록을 정리한다
       for (const site of Object.values(SITES)) {
         const senv = bind(env, site);
@@ -121,3 +122,18 @@ export default {
     }
   }
 };
+
+// GitHub 의 예약 실행은 몇 시간씩 늦거나 건너뛰는 일이 있어서 Cloudflare 예약(정각마다)이 대신 작업을 깨운다. 시크릿 GITHUB_DISPATCH_TOKEN(저장소 Actions 쓰기 권한)이 있을 때만 동작한다
+async function kickGithub(env, hour) {
+  const tok = env.GITHUB_DISPATCH_TOKEN;
+  if (!tok) return;
+  const gh = (wf, inputs) => fetch(`https://api.github.com/repos/my0z/vutykr/actions/workflows/${wf}/dispatches`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${tok}`, accept: 'application/vnd.github+json', 'user-agent': 'vutykr-cron', 'x-github-api-version': '2022-11-28', 'content-type': 'application/json' },
+    body: JSON.stringify({ ref: 'main', inputs: inputs || {} }),
+  });
+  let last = 0;
+  try { last = Math.max(0, ...(JSON.parse((await env.DATA.get('live:index')) || '[]')).map(x => x.ts || 0)); } catch (e) {}
+  if (Date.now() - last > 40 * 60e3) { const r = await gh('live-banners.yml', { count: '1', videos: '3' }); if (!r.ok) console.error('live-banners dispatch', r.status); }
+  if (hour === 21) { const r = await gh('maintenance.yml'); if (!r.ok) console.error('maintenance dispatch', r.status); } // 한국 시간 오전 6시: 백업과 점검
+}
