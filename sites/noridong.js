@@ -3,8 +3,9 @@ export default {
   id: 'noridong',
   draft: true, // 도메인을 연결하기 전에는 실시간 배너와 자매 배너에 넣지 않는다 (연결하면 이 줄을 지운다)
   strict: true, // 분류 규칙이 있는 분야는 상품 이름에 그 단어가 있을 때만 담는다
-  domains: ['noridong.kr', 'www.noridong.kr'],
-  host: 'https://noridong.kr',
+  domains: ['noridong.com', 'www.noridong.com'],
+  host: 'https://noridong.com',
+  redirects: ['noridong.kr', 'www.noridong.kr', 'noridong.co.kr', 'www.noridong.co.kr'], // 이 주소로 들어오면 대표 주소(.com)로 옮겨 준다
   name: '노리동',
   mark: '🧸',
   icon: '🧸',
