@@ -13,6 +13,7 @@ import guideSeareal from './guides/seareal.js';
 import guideZakgong from './guides/zakgong.js';
 import guidePemily from './guides/pemily.js';
 import guideBebepong from './guides/bebepong.js';
+import guideNoridong from './guides/noridong.js';
 import moreVuty from './guides/vuty-more.js';
 import moreBodcar from './guides/bodcar-more.js';
 import moreSeareal from './guides/seareal-more.js';
@@ -21,7 +22,7 @@ import zakgong from './zakgong.js';
 
 // 분야별 구매 가이드 글을 각 사이트 설정에 붙인다 (새 사이트는 sites/guides/<이름>.js 를 만들고 여기에 한 줄을 더한다)
 const withMore = (g, more) => { for (const [c, v] of Object.entries(g)) v.sections = [...v.sections, ...(more[c] || [])]; return g; };
-vuty.guides = withMore(guideVuty, moreVuty); bodcar.guides = withMore(guideBodcar, moreBodcar); seareal.guides = withMore(guideSeareal, moreSeareal); zakgong.guides = withMore(guideZakgong, moreZakgong); pemily.guides = guidePemily; bebepong.guides = guideBebepong;
+vuty.guides = withMore(guideVuty, moreVuty); bodcar.guides = withMore(guideBodcar, moreBodcar); seareal.guides = withMore(guideSeareal, moreSeareal); zakgong.guides = withMore(guideZakgong, moreZakgong); pemily.guides = guidePemily; bebepong.guides = guideBebepong; noridong.guides = guideNoridong;
 
 // 사이트마다 화사한 꾸밈 (쁘띠.끄는 자기 설정 파일에 있다)
 bodcar.theme.extra = bright({ a: '#cfe3ff', b: '#d0f1ff', c: '#e1dcff', base: '#f3f8ff', line: '#d3e3ff', soft: '#e8f1ff', g1: '#0b5fff', g2: '#2f9bff', g3: '#7c5cff', glow: '11,95,255' });

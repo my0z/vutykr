@@ -288,7 +288,8 @@ async function refresh(env, opts = {}) {
       const by = {}; let tot = 0;
       for (const r of rows) { const c = cat[String(r.pid)]; if (c) { by[c] = (by[c] || 0) + r.c; tot += r.c; } }
       hot = {}; if (tot >= 20) for (const [c, n] of Object.entries(by)) hot[c] = n / tot; // 클릭이 너무 적으면 쓰지 않는다
-      pool.__bestHot = { t: Date.now(), w: hot };
+      const hotPids = rows.filter(r => r.c >= 2 && cat[String(r.pid)]).sort((a, b) => b.c - a.c).slice(0, 150).map(r => String(r.pid)); // 최근 30일에 두 번 이상 눌린 상품
+      pool.__bestHot = { t: Date.now(), w: hot, p: hotPids };
     } catch (e) { hot = {}; }
   }
   const bonus = c => ((hot && hot[c]) || 0) * 12 * 3600e3; // 클릭 비중이 1이면 12시간 더 오래된 것처럼 본다
@@ -333,6 +334,14 @@ async function refresh(env, opts = {}) {
     for (const p of prev.products) {
       if (!fitCat(p.category, p.name) || fresh.has(p.category) || seen.has(p.id) || names.has(String(p.name || '').toLowerCase().replace(/\s+/g, ''))) continue;
       kept.push({ ...p, category: fitCat(p.category, p.name), keep: true });
+    }
+    // 클릭이 많이 나온 상품은 새 목록에서 빠져도 최대 21일 더 남긴다 (클릭의 절반이 사라진 상품에서 나왔다)
+    const hotIds = new Set((pool.__bestHot && pool.__bestHot.p) || []), have2 = new Set(kept.map(p => p.id));
+    for (const p of prev.products) {
+      if (!hotIds.has(String(p.id)) || seen.has(p.id) || have2.has(p.id) || !fitCat(p.category, p.name) || !fresh.has(p.category)) continue;
+      const t0 = p.hk || Date.now();
+      if (Date.now() - t0 > 21 * 864e5) continue;
+      kept.push({ ...p, category: fitCat(p.category, p.name), hk: t0, keep: true });
     }
   }
 

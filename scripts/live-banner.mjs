@@ -92,6 +92,17 @@ function pexVideoUrl(v) { // 가로 1280 이상 중 가장 작은 mp4
   const c = (v.video_files || []).filter(f => f.file_type === 'video/mp4' && Number(f.width) >= 1280 && Number(f.width) <= 2560).sort((a, b) => a.width - b.width);
   return c.length ? c[0].link : null;
 }
+
+// 그림의 밝기와 대비와 윤곽 값을 구한다 (160x90 흑백으로 줄여서 계산)
+function lookStats(fr) {
+  if (!fr || fr.length !== 160 * 90) return null;
+  let sum = 0, sq = 0, edge = 0;
+  for (let i = 0; i < fr.length; i++) { sum += fr[i]; sq += fr[i] * fr[i]; if (i % 160) edge += Math.abs(fr[i] - fr[i - 1]); }
+  const mean = sum / fr.length;
+  return { mean, sd: Math.sqrt(sq / fr.length - mean * mean), ed: edge / fr.length };
+}
+// 어둡거나 밋밋하거나 흐리거나 흑백 노이즈처럼 너무 복잡한 그림은 쓰지 않는다
+const badLook = st => st && (st.mean < 50 || st.sd < 22 || st.ed < 3 || st.ed > 30 || st.sd > 85 || (st.mean > 205 && st.sd < 40));
 async function download(url) {
   const r = await fetch(url, { headers: { 'user-agent': 'banner-bot/1.0' }, signal: AbortSignal.timeout(30000) });
   if (!r.ok) throw new Error('사진 내려받기 ' + r.status);
@@ -183,6 +194,8 @@ for (let k = 0; k < COUNT; k++) {
           const hit = pick(hits.slice(0, 6));
           photo = await download(hit.url); src = 'openverse:' + hit.id; tags = (hit.title || '') + ' | ' + (hit.tags || []).map(x => x.name).join(', ');
         }
+        const pst = lookStats(spawnSync('ffmpeg', ['-loglevel', 'error', '-i', 'pipe:0', '-frames:v', '1', '-vf', 'scale=160:90,format=gray', '-f', 'rawvideo', '-'], { input: photo, encoding: 'buffer' }).stdout);
+        if (badLook(pst)) { console.log('사진 화질 기준 미달 건너뜀', src, 'mean', Math.round(pst.mean), 'sd', Math.round(pst.sd), 'edge', pst.ed.toFixed(1)); skipDark.add(src); continue; }
         const design = { ...randomDesign(pick(LAYOUTS)), px: '50%' };
         const dry = !!process.env.DRY; // DRY 는 목록에 올리지 않고 dry 로 시작하는 이름으로만 저장해 눈으로 확인한다
         let n = 0, bid; do { bid = `${dry ? 'dry' + id : id[0]}${stamp}${n ? n : ''}${['mirror', 'fullr'].includes(design.layout) ? 'L' : ''}P`; n++; } while (index.some(x => x.id === bid));
@@ -221,13 +234,8 @@ for (let k = 0; k < VIDEOS; k++) { // 움직이는 배너
       const vr = await fetch(vurl, { signal: AbortSignal.timeout(60000) });
       if (!vr.ok) throw new Error('동영상 내려받기 ' + vr.status);
       writeFileSync(src, Buffer.from(await vr.arrayBuffer()));
-      const fr = spawnSync('ffmpeg', ['-loglevel', 'error', '-ss', '3', '-i', src, '-frames:v', '1', '-vf', 'scale=160:90,format=gray', '-f', 'rawvideo', '-'], { encoding: 'buffer' }).stdout;
-      if (fr && fr.length === 160 * 90) { // 정지 화면이 어둡거나 밋밋하거나 흐리면 쓰지 않는다 (밝기 · 대비 · 윤곽)
-        let sum = 0, sq = 0, edge = 0;
-        for (let i = 0; i < fr.length; i++) { sum += fr[i]; sq += fr[i] * fr[i]; if (i % 160) edge += Math.abs(fr[i] - fr[i - 1]); }
-        const mean = sum / fr.length, sd = Math.sqrt(sq / fr.length - mean * mean), ed = edge / fr.length;
-        if (mean < 50 || sd < 22 || ed < 3) { console.log('화질 기준 미달 건너뜀', hit.id, 'mean', Math.round(mean), 'sd', Math.round(sd), 'edge', ed.toFixed(1)); skipDark.add(vkey); continue; }
-      }
+      const st = lookStats(spawnSync('ffmpeg', ['-loglevel', 'error', '-ss', '3', '-i', src, '-frames:v', '1', '-vf', 'scale=160:90,format=gray', '-f', 'rawvideo', '-'], { encoding: 'buffer' }).stdout);
+      if (badLook(st)) { console.log('화질 기준 미달 건너뜀', hit.id, 'mean', Math.round(st.mean), 'sd', Math.round(st.sd), 'edge', st.ed.toFixed(1)); skipDark.add(vkey); continue; } // 정지 화면이 어둡거나 밋밋하거나 흐리거나 노이즈 같으면 쓰지 않는다
       const design = { ...randomDesign(pick(VLAYOUTS)), px: '50%' };
       const left = design.layout === 'fullr';
       const dry = !!process.env.DRY;
