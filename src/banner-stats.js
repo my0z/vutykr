@@ -78,7 +78,7 @@ h1{font-size:1.35rem;margin:6px 0 14px;display:flex;gap:10px;align-items:center;
 .bar{display:grid;grid-template-columns:110px 1fr 120px;gap:10px;align-items:center;margin:7px 0;font-size:.88rem}.bar i{display:block;height:10px;border-radius:6px;background:var(--p);min-width:2px}.bar em{font-style:normal;color:var(--mute);text-align:right}
 .tools{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px;align-items:center}.tools select{padding:7px 10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}.card img{display:block;width:100%;aspect-ratio:16/5;object-fit:cover;background:#ccd}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}.card img,.card video{display:block;width:100%;aspect-ratio:16/5;object-fit:cover;background:#ccd}
 .card .in{padding:11px 12px}.card .t{font-weight:600;font-size:.92rem;margin:0 0 2px}.card .m{color:var(--mute);font-size:.78rem}
 .nums{display:flex;gap:14px;margin-top:8px;font-size:.85rem}.nums b{font-size:1.05rem}.ctr{margin-left:auto;font-weight:700}.ctr.hi{color:var(--ok)}.ctr.lo{color:var(--warn)}.ctr.na{color:var(--mute);font-weight:400}
 .tag{display:inline-block;padding:1px 8px;border-radius:99px;font-size:.72rem;background:var(--line);margin-right:4px}.tag.v{background:#ede9fe;color:#6d28d9}
@@ -120,8 +120,12 @@ function render(){
   $('cnt').textContent='('+n(L.length)+'개)';
   $('grid').innerHTML=L.slice(0,120).map(function(x){
     var base=x.live?'/live/':'/promo/',ctr=x.v>=20?x.c/x.v*100:null,cls=ctr==null?'na':ctr>=5?'hi':ctr<1?'lo':'';
-    return '<div class="card">'+(x.gone?'':'<img loading="lazy" src="'+base+x.id+'-n.webp" alt="">')+'<div class="in"><p class="t">'+esc(x.text||x.id)+'</p><div class="m">'+(x.video?'<span class="tag v">영상</span>':'<span class="tag">이미지</span>')+esc(x.cat)+' · '+esc((sites.indexOf(x.site)>=0?D.bySite[sites.indexOf(x.site)].name:x.site)||'')+' · '+ago(x.ts)+'</div><div class="nums"><span>노출 <b>'+n(x.v)+'</b></span><span>클릭 <b>'+n(x.c)+'</b></span><span class="ctr '+cls+'">'+(ctr==null?(x.v?'표본 적음':'-'):ctr.toFixed(1)+'%')+'</span></div></div></div>'}).join('')||'<p class="mute">조건에 맞는 배너가 없습니다</p>';
+    return '<div class="card">'+(x.gone?'':x.video?'<video class="mv" data-src="'+base+x.id+'-n.mp4" poster="'+base+x.id+'-n.webp" muted loop playsinline preload="none"></video>':'<img loading="lazy" src="'+base+x.id+'-n.webp" alt="">')+'<div class="in"><p class="t">'+esc(x.text||x.id)+'</p><div class="m">'+(x.video?'<span class="tag v">영상</span>':'<span class="tag">이미지</span>')+esc(x.cat)+' · '+esc((sites.indexOf(x.site)>=0?D.bySite[sites.indexOf(x.site)].name:x.site)||'')+' · '+ago(x.ts)+'</div><div class="nums"><span>노출 <b>'+n(x.v)+'</b></span><span>클릭 <b>'+n(x.c)+'</b></span><span class="ctr '+cls+'">'+(ctr==null?(x.v?'표본 적음':'-'):ctr.toFixed(1)+'%')+'</span></div></div></div>'}).join('')||'<p class="mute">조건에 맞는 배너가 없습니다</p>';
 }
+// 영상 배너는 화면에 보일 때만 받아서 재생하고 벗어나면 멈춘다 (한 화면에 많아도 가볍게)
+var vio=window.IntersectionObserver&&new IntersectionObserver(function(es){es.forEach(function(e){var v=e.target;if(e.isIntersecting){if(!v.src)v.src=v.dataset.src;var p=v.play();if(p&&p.catch)p.catch(function(){})}else v.pause()})},{threshold:.25});
+function watchVideos(){document.querySelectorAll('video.mv').forEach(function(v){vio?vio.observe(v):(v.src=v.dataset.src,v.autoplay=true)})}
+var render0=render;render=function(){render0();watchVideos()};
 ['sort','kind','site','seen'].forEach(function(i){$(i).addEventListener('change',render)});render();
 </script></body></html>`;
 }
