@@ -6,6 +6,7 @@ import { createSeo } from './seo.js';
 import { createSite } from './engine.js';
 import { shellResponse } from './shell.js';
 import { liveRoute } from './live.js';
+import { bnBeacon, bnPrune } from './banner-stats.js';
 
 // 사이트마다 엔진을 한 번만 만들어 둔다 (인스턴스가 살아 있는 동안 재사용)
 const engines = new Map();
@@ -28,7 +29,7 @@ function bind(env, site) {
   const DB = env['DB' + sfx];
   if (!DATA) return null;
   return {
-    ...env, DATA, DB, G: env.DATA, // G는 세 사이트가 함께 쓰는 쿠팡 호출 횟수 저장소
+    ...env, DATA, DB, G: env.DATA, GDB: env.DB, // G는 세 사이트가 함께 쓰는 쿠팡 호출 횟수 저장소
     ADMIN_PASSWORD: env['ADMIN_PASSWORD' + sfx] || env.ADMIN_PASSWORD,
     ASSETS: { fetch: async r => shellResponse(site, await env.ASSETS.fetch(r)) } // HTML 틀은 사이트별로 채워서 준다
   };
@@ -71,6 +72,7 @@ export default {
       return secure(new Response(JSON.stringify(items), { headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*', 'cache-control': 'public,max-age=3600' } }));
     }
     if (url.pathname === '/05c664617a377916dd44e02024763a73.txt') return new Response('05c664617a377916dd44e02024763a73', { headers: { 'content-type': 'text/plain' } }); // IndexNow 소유 확인 파일
+    if (url.pathname === '/api/bn') return bnBeacon(req, env, ctx); // 배너 노출과 클릭 신호
     const lr = await liveRoute(url, env, req); // 실시간 배너 그림과 목록
     if (lr) return secure(lr);
     const { site, set } = pick(url, req);
@@ -115,6 +117,7 @@ export default {
     }
     ctx.waitUntil(kickGithub(env, hour).catch(e => console.error('kick', e.message))); // GitHub 예약 실행이 늦거나 안 돌 때를 대비해 Cloudflare 예약이 직접 깨운다
     if (hour === 20) { // 하루에 한 번 오래된 접속 기록을 정리한다
+      ctx.waitUntil(bnPrune(env));
       for (const site of Object.values(SITES)) {
         const senv = bind(env, site);
         if (senv) ctx.waitUntil(engineFor(site).analytics.pruneOld(senv));

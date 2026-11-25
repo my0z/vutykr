@@ -1,5 +1,6 @@
 // 접속 기록(D1)과 관리자 통계 페이지(/0) — 사이트 설정과 커뮤니티를 받아 그 사이트용으로 만든다
 import { PROMOS } from '../sites/index.js';
+import { bnData, bnPage } from './banner-stats.js';
 import { liveDelete } from './live.js';
 const esc0 = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 export function createAnalytics(SITE, community) {
@@ -135,6 +136,19 @@ async function rlFail(req) {
   try { const n = (await rlCount(req)) + 1; await caches.default.put(rlKey(req), new Response(String(n), { headers: { 'cache-control': 'max-age=900' } })); } catch (e) {}
 }
 
+// 배너별 통계 화면 (/0/bn)과 숫자만 담은 JSON (/0/bn.json): 같은 관리자 비밀번호로 연다
+async function bannerAdmin(req, env, url) {
+  const head = { 'content-type': 'text/html;charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex' };
+  if (!env.ADMIN_PASSWORD) return new Response('ADMIN_PASSWORD 가 필요합니다', { status: 500, headers: head });
+  if ((await rlCount(req)) >= 10) return new Response('시도가 너무 많습니다. 15분 뒤에 다시 해 주세요', { status: 429, headers: { ...head, 'retry-after': '900' } });
+  if (!authed(req, env)) { if (req.headers.get('authorization')) await rlFail(req); return new Response('로그인이 필요합니다', { status: 401, headers: { ...head, 'www-authenticate': 'Basic realm="stats"' } }); }
+  const dp = Number(url.searchParams.get('d'));
+  const d = [0, 1, 7, 30].includes(dp) && url.searchParams.has('d') ? dp : 7;
+  const data = await bnData({ DB: env.GDB, G: env.G }, d);
+  if (url.pathname.endsWith('.json')) return new Response(JSON.stringify({ d, total: data.total, video: data.video, image: data.image, bySite: data.bySite, hosts: data.hosts }), { headers: { ...head, 'content-type': 'application/json' } });
+  return new Response(bnPage(data), { headers: head });
+}
+
 async function admin(req, env, url) {
   const head = { 'content-type': 'text/html;charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex' };
   if (!env.ADMIN_PASSWORD) return new Response('<meta charset="utf-8"><body style="font-family:sans-serif;padding:40px">통계 페이지를 쓰려면 GitHub 시크릿 ADMIN_PASSWORD를 등록하고 다시 배포하세요.', { status: 503, headers: head });
@@ -231,7 +245,7 @@ h1{margin:0;font-size:1.5rem}h1 span{color:var(--p1)}header{display:flex;justify
 button{background:var(--p1);color:#fff;border:0;border-radius:8px;padding:6px 12px;cursor:pointer;font:inherit}table{width:100%;border-collapse:collapse;font-size:.8rem}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);white-space:nowrap}th{color:var(--mute);font-weight:600}.wrap{overflow-x:auto}
 .tag{padding:2px 8px;border-radius:6px;font-size:.7rem;font-weight:800}.tag.click{background:var(--p1)}.tag.view{background:var(--p3)}
 </style></head><body>
-<header><h1><a href="${esc0(SITE.host)}/" style="color:inherit;text-decoration:none" title="사이트 메인으로">${esc0(SITE.name)}</a> <span>통계</span></h1><nav class="tabs">${tabs}</nav></header>
+<header><h1><a href="${esc0(SITE.host)}/" style="color:inherit;text-decoration:none" title="사이트 메인으로">${esc0(SITE.name)}</a> <span>통계</span> <a href="/0/bn" style="font-size:.8rem;font-weight:600;margin-left:10px;color:inherit;opacity:.85">배너 통계 →</a></h1><nav class="tabs">${tabs}</nav></header>
 <section class="kpis">
 <div class="kpi"><b>${num(uToday)}</b><span>오늘 방문자 (0시부터 지금까지)</span></div>
 <div class="kpi"><b>${num(uYest)}</b><span>어제 방문자 (0시부터 24시)</span></div>
@@ -373,5 +387,5 @@ async function getHist(env, id) {
   catch (e) { try { await init(env); return (await q()).results || []; } catch (e2) { return []; } }
 }
 
-return { track, admin, authed, clickCounts, countRequest, overBudget, pruneOld, recordPrices, getHist };
+return { track, admin, bannerAdmin, authed, clickCounts, countRequest, overBudget, pruneOld, recordPrices, getHist };
 }

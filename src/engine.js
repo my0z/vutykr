@@ -156,7 +156,7 @@ async function edgeJson(url, ctx, ttl, make) {
 export function createSite(SITE, mods) {
   // 이 사이트 설정(sites/*.js)에서 분야와 검색어와 분류 규칙을 읽는다
   const { analytics, seo, community } = mods;
-  const { track, admin, authed, clickCounts, countRequest, overBudget, pruneOld, recordPrices, getHist } = analytics;
+  const { track, admin, bannerAdmin, authed, clickCounts, countRequest, overBudget, pruneOld, recordPrices, getHist } = analytics;
   const communityHandle = community.handle;
   const CATEGORIES = Object.fromEntries(Object.entries(SITE.cats).map(([c, v]) => [c, v.kw]));
   const YEAR = new Date().getFullYear();
@@ -392,6 +392,7 @@ const handler = {
     if (SCAN.test(path)) return new Response('Not found', { status: 404, headers: { 'cache-control': 'public,max-age=3600', 'x-robots-tag': 'noindex' } });
     countRequest(env, ctx);
     if (path === '/0') return admin(req, env, url);
+    if (path === '/0/bn' || path === '/0/bn.json') return bannerAdmin(req, env, url);
     if (/^\/i\/\d+$/.test(path)) return image(req, url, ctx, env);
     if (path === '/api/clicks') return new Response(JSON.stringify(await getClicks(env, ctx)), { headers: { 'content-type': 'application/json', 'cache-control': 'public,max-age=60,stale-while-revalidate=300' } });
     if (/^\/api\/(posts|comments)(\/|$)/.test(path)) {
