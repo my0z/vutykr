@@ -24,7 +24,7 @@ export async function liveRoute(url, env, req) {
     let idx = [];
     try { idx = JSON.parse((await kv.get('live:index')) || '[]'); } catch (e) {}
     if (idx.length > 200) idx = [...idx.slice(-100), ...idx.slice(0, -100).sort(() => Math.random() - 0.5).slice(0, 100)]; // 많이 쌓이면 최근 100장과 옛 배너 무작위 100장을 보여 준다 (모두 보관한다)
-    const items = idx.filter(b => SITES[b.site]).map(b => ({ id: b.id, site: b.site, text: b.text, url: b.url, host: SITES[b.site].host, live: true, video: !!b.video, ...(b.pex ? { pex: true } : {}) }));
+    const items = idx.filter(b => SITES[b.site]).map(b => ({ id: b.id, site: b.site, text: b.text, url: b.url, host: SITES[b.site].host, live: true, ts: b.ts || 0, video: !!b.video, ...(b.pex ? { pex: true } : {}) }));
     return json(items, { 'cache-control': 'public,max-age=300' });
   }
   return null;
