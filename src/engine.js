@@ -245,7 +245,7 @@ async function getClicks(env, ctx) {
   return o ? o.v : {};
 }
 
-async function refresh(env) {
+async function refresh(env, opts = {}) {
   const errors = [];
   const seen = new Set();
   const products = [];
@@ -282,7 +282,7 @@ async function refresh(env) {
   const order = KW_ALL.slice().sort((a, b) => (((pool[a[1]] && pool[a[1]].t) || 0) - ((pool[b[1]] && pool[b[1]].t) || 0)) || ((have.has(a[0]) ? 1 : 0) - (have.has(b[0]) ? 1 : 0)));
   let done = 0;
   for (const [cat, kw] of order) {
-    if (done >= PER_RUN) break;
+    if (done >= (opts.perRun || PER_RUN)) break; // 한 시간에 두 사이트를 돌릴 때는 검색 횟수를 나눠 쓴다
     try {
       if (!(await allowSearch(env))) { errors.push('search ' + kw + ': 시간당 호출 한도 보호로 건너뜀'); break; }
       pool[kw] = { t: Date.now(), cat, items: (await call(`${BASE}/search`, { keyword: kw, limit: PER_KEYWORD }, env)).map(slim) };

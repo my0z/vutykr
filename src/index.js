@@ -82,27 +82,36 @@ export default {
     return res;
   },
 
-  // 매시간 한 사이트씩 돌아가며 상품을 갱신한다 (세 사이트가 같은 쿠팡 키를 쓰므로 한 시간에 한 사이트만 불러 호출 한도를 지킨다)
+  // 매시간 모자란 사이트 두 곳만 차례로 갱신한다 (쿠팡 검색은 시간당 10번이라 두 곳이 4번씩 나눠 쓴다)
+  // 모자람 = 상품이 없는 분야(분야마다 가중) + 상품 40개에 못 미친 수. 모자란 곳이 두 곳보다 적으면 가장 오래 갱신 안 한 곳으로 채운다
   async scheduled(_evt, env, ctx) {
     const ids = (env.CRON_SITES || Object.keys(SITES).join(',')).split(',').map(s => s.trim()).filter(id => SITES[id]);
     const hour = new Date().getUTCHours();
     if (ids.length) {
-      // 상품이 아직 적거나 비어 있는 분야가 있는 사이트가 있으면 순서와 상관없이 먼저 채운다
-      let site = SITES[ids[hour % ids.length]];
+      const need = [];
       for (const id of ids) {
         const e = bind(env, SITES[id]);
         if (!e) continue;
-        let n = 0, empty = 0;
+        let n = 0, empty = 0, oldest = 0;
         try {
           const list = (JSON.parse((await e.DATA.get('products')) || 'null') || {}).products || [];
           n = list.length;
           const have = new Set(list.map(p => p.category));
-          empty = Object.keys(SITES[id].cats).filter(c => !have.has(c)).length; // 상품이 하나도 없는 분야 수
+          empty = Object.keys(SITES[id].cats).filter(c => !have.has(c)).length;
+          const pool = JSON.parse((await e.DATA.get('pool')) || '{}');
+          const ts = Object.entries(pool).filter(([k]) => !k.startsWith('__best')).map(([, v]) => (v && v.t) || 0);
+          oldest = ts.length ? Math.min(...ts) : 0;
         } catch (x) {}
-        if (n < 40 || empty > 0) { site = SITES[id]; break; }
+        need.push({ id, lack: empty * 100 + Math.max(0, 40 - n), oldest, rot: (ids.indexOf(id) - (hour % ids.length) + ids.length) % ids.length });
       }
-      const senv = bind(env, site);
-      if (senv) ctx.waitUntil(engineFor(site).refresh(senv));
+      need.sort((a, b) => (b.lack > 0) - (a.lack > 0) || b.lack - a.lack || a.oldest - b.oldest || a.rot - b.rot);
+      const picks = need.slice(0, 2);
+      ctx.waitUntil((async () => {
+        for (const p of picks) {
+          const site = SITES[p.id], senv = bind(env, site);
+          if (senv) await engineFor(site).refresh(senv, { perRun: picks.length > 1 ? 4 : 7 }).catch(e => console.error('refresh', p.id, e.message));
+        }
+      })());
     }
     if (hour === 20) { // 하루에 한 번 오래된 접속 기록을 정리한다
       for (const site of Object.values(SITES)) {
