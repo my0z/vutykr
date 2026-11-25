@@ -279,7 +279,20 @@ async function refresh(env, opts = {}) {
       pool[k] = { t: Date.now(), items: (await call(`${BASE}/bestcategories/${b.id}`, { limit: b.limit || 12 }, env)).map(slim) };
     } catch (e) { console.error('best', b.id, e.message); errors.push('best ' + b.id + ': ' + e.message); }
   }
-  const order = KW_ALL.slice().sort((a, b) => (((pool[a[1]] && pool[a[1]].t) || 0) - ((pool[b[1]] && pool[b[1]].t) || 0)) || ((have.has(a[0]) ? 1 : 0) - (have.has(b[0]) ? 1 : 0)));
+  // 최근 30일 쿠팡 클릭이 많은 분야는 검색어를 더 일찍 갱신한다 (하루에 한 번만 D1 에서 집계해 pool 에 보관)
+  let hot = (pool.__bestHot && Date.now() - pool.__bestHot.t < 24 * 3600e3 && pool.__bestHot.w) || null;
+  if (!hot && env.DB && prev && prev.products) {
+    try {
+      const cat = Object.fromEntries(prev.products.map(p => [String(p.id), p.category]));
+      const rows = (await env.DB.prepare("SELECT pid, COUNT(*) c FROM hits WHERE type='click' AND bot=0 AND ts>? GROUP BY pid").bind(Date.now() - 30 * 86400e3).all()).results || [];
+      const by = {}; let tot = 0;
+      for (const r of rows) { const c = cat[String(r.pid)]; if (c) { by[c] = (by[c] || 0) + r.c; tot += r.c; } }
+      hot = {}; if (tot >= 20) for (const [c, n] of Object.entries(by)) hot[c] = n / tot; // 클릭이 너무 적으면 쓰지 않는다
+      pool.__bestHot = { t: Date.now(), w: hot };
+    } catch (e) { hot = {}; }
+  }
+  const bonus = c => ((hot && hot[c]) || 0) * 12 * 3600e3; // 클릭 비중이 1이면 12시간 더 오래된 것처럼 본다
+  const order = KW_ALL.slice().sort((a, b) => ((((pool[a[1]] && pool[a[1]].t) || 0) - bonus(a[0])) - (((pool[b[1]] && pool[b[1]].t) || 0) - bonus(b[0]))) || ((have.has(a[0]) ? 1 : 0) - (have.has(b[0]) ? 1 : 0)));
   let done = 0;
   for (const [cat, kw] of order) {
     if (done >= (opts.perRun || PER_RUN)) break; // 한 시간에 두 사이트를 돌릴 때는 검색 횟수를 나눠 쓴다

@@ -27,7 +27,7 @@ export default {
     dark: { bg: '#0b0f16', card: '#141a24', ink: '#eef3fb', mute: '#8a97a8', line: '#222c3a', soft: '#16233b', shadow: '0 12px 30px -14px rgba(0,0,0,.7)' },
     tiles: { t1: { bg: '#d9f7e8', ink: '#0b5a37', dbg: '#0f2d20', dink: '#8be9b8' }, t2: { bg: '#dff1ff', ink: '#0b4a7a', dbg: '#10283a', dink: '#a9d8ff' } }
   },
-  best: [{ id: 1018, limit: 12, cat: '차량용품' }], // 쿠팡 베스트 분류 번호 (classify가 true면 상품명으로 분야를 나눈다)
+  best: [{ id: 1018, limit: 30, cat: '차량용품' }], // 쿠팡 베스트 분류 번호 (classify가 true면 상품명으로 분야를 나눈다)
   strict: true, // 분류 규칙이 있는 분야는 상품 이름에 그 단어가 있을 때만 담는다
   classify: [ // 분야별 상품명 단어 (이 단어가 이름에 있는 상품만 그 분야에 담는다)
     ['세차', '세차|카샴푸|샴푸|왁스|광택|코팅|타월|극세사|휠\\s?클리너|유리\\s?세정|세척|워시|폼건|발수'],
