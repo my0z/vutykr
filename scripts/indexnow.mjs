@@ -1,7 +1,7 @@
 // 사이트맵의 주소를 IndexNow 로 검색엔진에 알린다 (키 파일은 각 사이트의 /<키>.txt 가 돌려준다)
 import { SITES } from '../sites/index.js';
 const KEY = process.env.INDEXNOW_KEY;
-for (const s of Object.values(SITES)) {
+for (const s of Object.values(SITES).filter(x => !x.draft)) {
   try {
     const host = new URL(s.host).hostname;
     const xml = await (await fetch(s.host + '/sitemap.xml', { headers: { 'user-agent': 'Mozilla/5.0 indexnow' } })).text();

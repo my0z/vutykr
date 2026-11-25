@@ -8,7 +8,7 @@ say(`## 실시간 배너 ${live.length}개 (영상 ${live.filter(x => x.video).l
 for (const [k, v] of Object.entries(by)) say(`- ${k}: ${v.n}개 · 영상 ${v.v}개`);
 say('## 사이트 상태');
 let bad = 0;
-for (const [id, s] of Object.entries(SITES)) {
+for (const [id, s] of Object.entries(SITES).filter(([, x]) => !x.draft)) {
   const urls = [s.host + '/', s.host + '/sitemap.xml', ...Object.keys(s.cats || {}).slice(0, 3).map(c => `${s.host}/c/${encodeURIComponent(c)}`)];
   for (const u of urls) {
     let st = 0; // 한 번 실패하면 잠시 뒤 한 번 더 확인한다 (일시 오류와 진짜 오류를 가른다)

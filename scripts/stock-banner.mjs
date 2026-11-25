@@ -67,7 +67,7 @@ async function shoot(browser, site, cat, photo, narrow, design) {
 const list = JSON.parse(readFileSync(LIST, 'utf8'));
 const usedPhotos = new Set(existsSync(USED) ? JSON.parse(readFileSync(USED, 'utf8')) : []);
 const usedIds = new Set(list.map(x => x.id));
-const siteIds = Object.keys(SITES);
+const siteIds = Object.keys(SITES).filter(id => !SITES[id].draft);
 // QUOTA="사이트:장수,..." 로 사이트마다 장수를 따로 정한다 (없으면 COUNT 를 똑같이 나눈다)
 const quota = Object.fromEntries((process.env.QUOTA || '').split(',').filter(Boolean).map(x => x.split(':')).map(([k, v]) => [k, Number(v)]));
 const perDefault = Math.ceil(COUNT / siteIds.length);

@@ -37,7 +37,7 @@ async function shoot(browser, site, cat, photo, narrow, design) {
 const list = JSON.parse(readFileSync(LIST, 'utf8'));
 const used = new Set(list.map(x => x.id));
 const uses = {}; for (const x of list) if (x.src) uses[x.src] = (uses[x.src] || 0) + 1;
-const ids = Object.keys(SITES).sort(() => Math.random() - 0.5);
+const ids = Object.keys(SITES).filter(id => !SITES[id].draft).sort(() => Math.random() - 0.5);
 const plan = ONLY ? Array(MAX).fill(ONLY) : Array.from({ length: MAX }, (_, i) => ids[i % ids.length]);
 const browser = await chromium.launch();
 let made = 0;

@@ -2,6 +2,7 @@
 import vuty from './vuty.js';
 import bodcar from './bodcar.js';
 import seareal from './seareal.js';
+import noridong from './noridong.js';
 import bebepong from './bebepong.js';
 import pemily from './pemily.js';
 import bright from './bright.js';
@@ -29,8 +30,9 @@ zakgong.theme.extra = bright({ a: '#ffe0bf', b: '#fff0c2', c: '#ffe0d6', base: '
 pemily.theme.extra = bright({ a: '#d4f5d9', b: '#fff3c2', c: '#d6efff', base: '#f4fbf4', line: '#d5ecd8', soft: '#e9f8ec', g1: '#16a34a', g2: '#65c466', g3: '#0ea5e9', glow: '22,163,74' });
 
 bebepong.theme.extra = bright({ a: '#e4dcff', b: '#fff0c2', c: '#d9f3ec', base: '#f8f5ff', line: '#e3dcff', soft: '#efeaff', g1: '#7c5cff', g2: '#b19cff', g3: '#ffb703', glow: '124,92,255' });
+noridong.theme.extra = bright({ a: '#ffe0cc', b: '#fff0c2', c: '#d7f5f0', base: '#fff8ef', line: '#ffe6cc', soft: '#fff0de', g1: '#ff7a45', g2: '#ffb347', g3: '#2ec4b6', glow: '255,122,69' });
 
-export const SITES = { vuty, bodcar, seareal, zakgong, pemily, bebepong };
+export const SITES = { vuty, bodcar, seareal, zakgong, pemily, bebepong, noridong };
 export const DEFAULT_SITE = 'vuty'; // 등록되지 않은 주소(workers.dev 등)로 들어오면 보여 줄 사이트
 
 // 쿠팡 파트너스 경제적 이해관계 표시 문구 (공식 예시 문장과 같은 뜻으로 쉼표만 뺐다)

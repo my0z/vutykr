@@ -70,7 +70,7 @@ async function shoot(browser, site, cat, photo, narrow, design) {
 }
 
 const list = JSON.parse(readFileSync(LIST, 'utf8'));
-const ids = Object.keys(SITES).sort(() => Math.random() - 0.5);
+const ids = Object.keys(SITES).filter(id => !SITES[id].draft).sort(() => Math.random() - 0.5);
 const extra = new Set(ids.filter(() => Math.random() < 0.33)); // 일부 사이트는 두 개
 let plan = ONLY ? Array(MAX_PER_DAY).fill(ONLY) : SCHNELL ? ids.slice(0, MAX_PER_DAY) : // schnell 은 사이트마다 한 장씩
    ids.flatMap(id => extra.has(id) ? [id, id] : [id]).slice(0, MAX_PER_DAY);

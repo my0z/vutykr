@@ -147,7 +147,7 @@ const usedRepo = new Set((existsSync('sites/stock-used.json') ? JSON.parse(readF
 const skipDark = new Set();
 const skip = src => skipDark.has(src) || block.has(src) || usedLive.has(src) || usedRepo.has(src);
 
-const siteIds = Object.keys(SITES);
+const siteIds = Object.keys(SITES).filter(id => !SITES[id].draft); // 도메인 연결 전 사이트는 뺀다
 const first = Number(process.env.START ?? Math.floor(Date.now() / 1800e3)) % siteIds.length; // 30분마다 사이트를 돌아가며 만든다
 const browser = await chromium.launch();
 let made = 0; const fresh = [];
