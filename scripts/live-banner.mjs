@@ -30,7 +30,7 @@ const PEOPLE = /\b(girl|boy|woman|women|man|men|child|children|kid|kids|people|p
 const BAD = /\b(pill|pills|tablet|tablets|medicine|medicines|medication|drug|drugs|capsule|capsules|pharmacy|syringe|injection|whey|protein|bodybuilding|fitness|gym|workout|muscle|steroid)\b/i;
 const NOCHESS = (text, q) => /\bchess|checkmate/i.test(text) && !/chess/i.test(q); // 보드게임 검색에 체스 사진이 섞이지 않게 한다
 const words = q => q.toLowerCase().replace(/'s\b/g, 's').replace(/[^a-z ]/g, ' ').split(/\s+/).filter(Boolean);
-const keyTokens = q => words(q).filter(t => (t.length >= 4 || ['dog', 'cat', 'pet'].includes(t)) && !GENERIC.has(t)); // dog 와 cat 도 꼭 있어야 하는 낱말로 본다 (사람용 제품과 구분)
+const keyTokens = q => words(q).filter(t => (t.length >= 4 || ['dog', 'cat', 'pet', 'toy'].includes(t)) && !GENERIC.has(t)); // dog 와 cat 도 꼭 있어야 하는 낱말로 본다 (사람용 제품과 구분)
 
 async function search(q) {
   const r = await fetch(`https://pixabay.com/api/?key=${KEY}&q=${encodeURIComponent(words(q).filter(t => !['a', 'an', 'the'].includes(t)).join(' '))}&lang=en&image_type=photo&orientation=horizontal&min_width=1600&safesearch=true&order=popular&per_page=40`);
