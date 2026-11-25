@@ -177,7 +177,7 @@ export function createSite(SITE, mods) {
 let linksCache = { t: 0, v: {} };
 async function getLinks(env) {
   if (Date.now() - linksCache.t < 60000) return linksCache.v;
-  const v = JSON.parse((await env.DATA.get('links')) || '{}');
+  const v = JSON.parse((await env.DATA.get('links', { cacheTtl: 60 })) || '{}'); // 콜로 캐시로 KV 읽기를 줄인다
   linksCache = { t: Date.now(), v };
   return v;
 }

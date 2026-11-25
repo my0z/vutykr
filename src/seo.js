@@ -17,7 +17,7 @@ let cache = { t: 0, v: null };
 async function load(env) {
   if (Date.now() - cache.t < 60000) return cache.v;
   let v = null;
-  try { v = JSON.parse((await env.DATA.get('products')) || 'null'); } catch (e) {}
+  try { v = JSON.parse((await env.DATA.get('products', { cacheTtl: 60 })) || 'null'); } catch (e) {}
   cache = { t: Date.now(), v };
   return v;
 }

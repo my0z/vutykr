@@ -2,6 +2,7 @@ name: deploy
 on:
   push:
     branches: [main]
+    paths-ignore: ['.github/**', 'scripts/**', '**.md'] # 배너 생성 스크립트와 작업 파일만 바뀐 푸시는 워커를 다시 배포하지 않는다
   workflow_dispatch:
 jobs:
   deploy:

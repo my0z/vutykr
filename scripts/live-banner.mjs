@@ -20,7 +20,6 @@ const kvGet = async k => { const r = await fetch(kvUrl(k), { headers: { authoriz
 const kvPut = async (k, body) => { const r = await fetch(kvUrl(k), { method: 'PUT', headers: { authorization: `Bearer ${TOKEN}` }, body }); if (!r.ok) throw new Error('KV 쓰기 ' + r.status); };
 const kvDel = k => fetch(kvUrl(k), { method: 'DELETE', headers: { authorization: `Bearer ${TOKEN}` } });
 const pick = a => a[Math.floor(Math.random() * a.length)];
-const shuffle = a => [...a].sort(() => Math.random() - 0.5);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const kst = new Date(Date.now() + 9 * 3600e3), stamp = kst.toISOString().slice(2, 13).replace(/[-T]/g, ''); // yymmddhh
 const LAYOUTS = ['split', 'full', 'light', 'slant', 'glass', 'circle', 'mirror', 'fullr']; // mirror 와 fullr 은 사진이 왼쪽이다 (id 끝에 LP 를 붙여 광고 표시를 오른쪽 아래로 옮긴다)
@@ -144,9 +143,9 @@ async function overlayPng(browser, site, cat, narrow, design) {
 function composeVideo(dir, src, png, narrow, tag) {
   const w = narrow ? 960 : 1920, h = narrow ? 300 : 360, ov = join(dir, `ov-${tag}.png`), out = join(dir, `out-${tag}.mp4`), still = join(dir, `still-${tag}.webp`);
   writeFileSync(ov, png);
-  const a = spawnSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', src, '-i', ov, '-t', '6', '-r', '24', '-filter_complex', `[0:v]scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h}[v];[v][1:v]overlay=0:0:format=auto,format=yuv420p`, '-an', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '31', '-movflags', '+faststart', out], { encoding: 'utf8' });
+  const a = spawnSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', src, '-i', ov, '-t', '6', '-r', '24', '-filter_complex', `[0:v]scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h}[v];[v][1:v]overlay=0:0:format=auto${narrow ? '' : ',scale=1440:270'},format=yuv420p`, '-an', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '33', '-movflags', '+faststart', out], { encoding: 'utf8' });
   if (a.status !== 0) throw new Error('ffmpeg ' + String(a.stderr).slice(0, 200));
-  const b = spawnSync('ffmpeg', ['-y', '-loglevel', 'error', '-ss', '3', '-i', out, '-frames:v', '1', '-c:v', 'libwebp', '-quality', '80', still], { encoding: 'utf8' });
+  const b = spawnSync('ffmpeg', ['-y', '-loglevel', 'error', '-ss', '3', '-i', out, '-frames:v', '1', '-c:v', 'libwebp', '-quality', '72', still], { encoding: 'utf8' });
   if (b.status !== 0) throw new Error('ffmpeg 정지 화면 ' + String(b.stderr).slice(0, 200));
   return { mp4: readFileSync(out), still: readFileSync(still) };
 }

@@ -1,8 +1,7 @@
 name: banners
 # 매일 새벽 사이트마다 새 배너를 한두 개씩 만들어 추가하고 배포한다
 on:
-  schedule:
-    - cron: '10 20 * * *'
+  # 매일 자동 생성은 껐다 (실시간 배너가 KV 에 쌓여서 저장소와 배포가 매일 늘지 않게). 필요할 때만 수동으로 돌린다
   workflow_dispatch:
     inputs:
       only:
