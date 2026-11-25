@@ -1,6 +1,7 @@
 // BODCAR 사이트 설정 — 이 파일 하나만 고치면 이 사이트의 이름과 분야와 검색어와 색상이 바뀝니다 (본문에는 쉼표를 쓰지 않는다)
 export default {
   id: 'bodcar',
+  verify: { naverFile: 'naverad4a7bdc2988afae9ae67e35c7b63e4a' },
   domains: ['bodcar.com', 'www.bodcar.com'],
   host: 'https://bodcar.com',
   name: 'BODCAR',
