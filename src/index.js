@@ -72,6 +72,7 @@ export default {
       return secure(new Response(JSON.stringify(items), { headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*', 'cache-control': 'public,max-age=3600' } }));
     }
     if (url.pathname === '/05c664617a377916dd44e02024763a73.txt') return new Response('05c664617a377916dd44e02024763a73', { headers: { 'content-type': 'text/plain' } }); // IndexNow 소유 확인 파일
+    { const nf = real && real.verify && real.verify.naverFile; if (nf && url.pathname === '/' + nf + '.html') return new Response('naver-site-verification: ' + nf + '.html', { headers: { 'content-type': 'text/html' } }); } // 네이버 소유확인 파일
     if (url.pathname === '/api/bn') return bnBeacon(req, env, ctx); // 배너 노출과 클릭 신호
     const lr = await liveRoute(url, env, req); // 실시간 배너 그림과 목록
     if (lr) return secure(lr);

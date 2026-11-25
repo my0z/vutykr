@@ -1,7 +1,7 @@
 // 쁘띠.끄 사이트 설정 — 이 파일 하나만 고치면 이 사이트의 이름과 분야와 검색어와 색상이 바뀝니다 (본문에는 쉼표를 쓰지 않는다)
 export default {
   id: 'vuty',
-  verify: { naver: '35df1626b2c74a6e3aebf0997533204310aee825' },
+  verify: { naver: '35df1626b2c74a6e3aebf0997533204310aee825', naverFile: 'naver36417c2976e90d70746c9ca0b2a6b567' },
   strict: true, // 분류 규칙이 있는 분야는 상품 이름에 그 단어가 있을 때만 담는다
   domains: ['vuty.kr', 'www.vuty.kr'],
   host: 'https://vuty.kr',
