@@ -44,7 +44,7 @@ window.__d = window.__p ? Promise.resolve(window.__p) : Promise.all([
     used.push(b[0]); k = used.length - 1;
     var u = b[2] + (b[2].indexOf('?') < 0 ? '?' : '&') + 'utm_source={{HOSTNAME}}&utm_medium=banner&utm_campaign=' + b[0];
     el.dataset.bid = b[0]; watchBn(el);
-    el.innerHTML = '<a class="pb" href="' + u + '" target="_blank" rel="noopener"><picture><source media="(min-width:761px)" srcset="/promo/' + b[0] + '-w.webp?v=7"><img src="/promo/' + b[0] + '-n.webp?v=7" width="960" height="300" alt="' + b[1] + '" fetchpriority="low" decoding="async"></picture></a><span class="tags' + (/LP?$/.test(b[0]) ? ' r' : '') + '">'+(/P$/.test(b[0])?'':'<small>AI 생성 이미지</small>')+'<small>광고</small></span>';
+    el.innerHTML = '<a class="pb" href="' + u + '" target="_blank" rel="noopener nofollow"><picture><source media="(min-width:761px)" srcset="/promo/' + b[0] + '-w.webp?v=7"><img src="/promo/' + b[0] + '-n.webp?v=7" width="960" height="300" alt="' + b[1] + '" fetchpriority="low" decoding="async"></picture></a><span class="tags' + (/LP?$/.test(b[0]) ? ' r' : '') + '">'+(/P$/.test(b[0])?'':'<small>AI 생성 이미지</small>')+'<small>광고</small></span>';
     // 매시간 새로 만드는 실시간 배너가 있으면 대부분 그것을 보여 준다 (내 사이트 배너는 빠진다)
     window.__lv = window.__lv || fetch('/api/live').then(function (r) { return r.json(); }).catch(function () { return []; });
     window.__lv.then(function (L) {
@@ -57,8 +57,8 @@ window.__d = window.__p ? Promise.resolve(window.__p) : Promise.all([
       var u2 = o.url + (o.url.indexOf('?') < 0 ? '?' : '&') + 'utm_source={{HOSTNAME}}&utm_medium=banner&utm_campaign=' + o.id;
       var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches, vs = window.matchMedia && matchMedia('(min-width:761px)').matches ? 'w' : 'n', tg = '<span class="tags' + (/LP?$/.test(o.id) ? ' r' : '') + '"><small>광고</small></span>';
       el.innerHTML = o.video
-        ? '<a class="pb" href="' + u2 + '" target="_blank" rel="noopener"><video autoplay muted loop playsinline preload="auto" poster="/live/' + o.id + '-' + vs + '.webp" aria-label="' + o.text + '"><source src="/live/' + o.id + '-' + vs + '.mp4" type="video/mp4"></video></a>' + tg
-        : '<a class="pb" href="' + u2 + '" target="_blank" rel="noopener"><picture><source media="(min-width:761px)" srcset="/live/' + o.id + '-w.webp"><img src="/live/' + o.id + '-n.webp" width="960" height="300" alt="' + o.text + '" decoding="async"></picture></a><span class="tags' + (/LP?$/.test(o.id) ? ' r' : '') + '"><small>광고</small></span>';
+        ? '<a class="pb" href="' + u2 + '" target="_blank" rel="noopener nofollow"><video autoplay muted loop playsinline preload="auto" poster="/live/' + o.id + '-' + vs + '.webp" aria-label="' + o.text + '"><source src="/live/' + o.id + '-' + vs + '.mp4" type="video/mp4"></video></a>' + tg
+        : '<a class="pb" href="' + u2 + '" target="_blank" rel="noopener nofollow"><picture><source media="(min-width:761px)" srcset="/live/' + o.id + '-w.webp"><img src="/live/' + o.id + '-n.webp" width="960" height="300" alt="' + o.text + '" decoding="async"></picture></a><span class="tags' + (/LP?$/.test(o.id) ? ' r' : '') + '"><small>광고</small></span>';
       el.dataset.bid = o.id;
       var pn = document.getElementById('pexnote'); if (pn && o.video && o.pex) pn.hidden = false; // Pexels 영상 배너가 뜰 때만 사이트 아래에 출처를 보인다
       el.style.aspectRatio = (o.video && /VT/.test(o.id) && vs === 'w') ? '1920/360' : ''; // 새 영상 배너는 데스크톱에서 더 높게
