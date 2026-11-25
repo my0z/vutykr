@@ -83,13 +83,14 @@ h1{font-size:1.35rem;margin:6px 0 14px;display:flex;gap:10px;align-items:center;
 .nums{display:flex;gap:14px;margin-top:8px;font-size:.85rem}.nums b{font-size:1.05rem}.ctr{margin-left:auto;font-weight:700}.ctr.hi{color:var(--ok)}.ctr.lo{color:var(--warn)}.ctr.na{color:var(--mute);font-weight:400}
 .tag{display:inline-block;padding:1px 8px;border-radius:99px;font-size:.72rem;background:var(--line);margin-right:4px}.tag.v{background:#ede9fe;color:#6d28d9}
 .mute{color:var(--mute)}
-@media(max-width:560px){.bar{grid-template-columns:80px 1fr 90px}}
+@media(max-width:560px){.bar{grid-template-columns:70px 1fr;gap:4px 8px}.bar em{grid-column:1/-1;text-align:left;font-size:.8rem;margin-bottom:4px}.kpis{grid-template-columns:repeat(2,1fr)}}
+.legend{color:var(--mute);font-size:.78rem;margin:-4px 0 8px}
 </style></head><body><div class="w">
 <h1>배너 통계 <a href="/0">← 사이트 통계</a></h1>
 <div class="tabs" id="range"></div>
 <div class="kpis" id="kpis"></div>
-<div class="box"><h2>배너를 만든 사이트별</h2><div id="bysite"></div></div>
-<div class="box"><h2>배너가 보인 사이트별</h2><div id="hosts"></div></div>
+<div class="box"><h2>배너를 만든 사이트별</h2><p class="legend">막대는 노출 · 오른쪽 숫자는 노출 · 클릭 · 클릭률</p><div id="bysite"></div></div>
+<div class="box"><h2>배너가 보인 사이트별</h2><p class="legend">어느 사이트 화면에서 배너가 보이고 눌렸는지입니다</p><div id="hosts"></div></div>
 <div class="tools"><b>배너 <span id="cnt"></span></b>
 <select id="sort"><option value="ts">최근 만든 순</option><option value="v">노출 많은 순</option><option value="c">클릭 많은 순</option><option value="r">클릭률 높은 순</option></select>
 <select id="kind"><option value="">영상과 이미지</option><option value="v">영상만</option><option value="i">이미지만</option></select>
