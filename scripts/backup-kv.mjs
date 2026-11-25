@@ -17,7 +17,10 @@ for (const [title, ns] of Object.entries(targets)) {
   } while (cursor);
   const small = keys.filter(k => !/^live:(img|vid):/.test(k));
   out[title] = {};
-  for (const k of small) { const r = await fetch(`${api}/${ns}/values/${encodeURIComponent(k)}`, { headers: h }); out[title][k] = r.ok ? await r.text() : null; }
+  let i = 0; // 값은 30개씩 동시에 받는다 (글이 많은 저장소가 오래 걸리지 않게)
+  await Promise.all(Array.from({ length: 30 }, async () => {
+    while (i < small.length) { const k = small[i++]; const r = await fetch(`${api}/${ns}/values/${encodeURIComponent(k)}`, { headers: h }).catch(() => null); out[title][k] = r && r.ok ? await r.text() : null; }
+  }));
   total += small.length;
   console.log(title, '전체 키', keys.length, '저장', small.length);
 }
