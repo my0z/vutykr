@@ -118,7 +118,7 @@ function buildItem(p, list, hist) {
   const idx = byPrice.findIndex(x => x.id === p.id);
   const start = Math.max(0, Math.min(Math.max(0, byPrice.length - 8), idx - 3));
   const near = byPrice.slice(start, start + 8);
-  const similar = same.filter(x => x.id !== p.id).slice(0, 4);
+  const similar = same.filter(x => x.id !== p.id).slice(0, 8);
   const unit = unitPrice(p.name, p.price);
   const prices = hist.map(r => r.price);
   let trend = '';
@@ -151,7 +151,7 @@ function buildItem(p, list, hist) {
 <section><h2>상품 한눈에 보기</h2><table class="ip-table"><tbody>${facts.map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join('')}</tbody></table></section>
 <section><h2>가격 변화</h2>${spark(hist)}${trend}<p class="ip-note">쿠팡 파트너스 데이터를 불러온 시점의 가격이 바뀐 경우만 기록한 값이며 상품마다 불러오는 시점이 다릅니다.</p></section>
 <section><h2>${esc(cat)} 가격 비교</h2><table class="ip-table cmp"><thead><tr><th>상품</th><th>쿠팡 판매가</th></tr></thead><tbody>${near.map(x => `<tr class="${x.id === p.id ? 'me' : ''}"><td><a href="/item/${esc(x.id)}">${esc(x.name)}</a></td><td>${fmt(x.price)}원</td></tr>`).join('')}</tbody></table></section>
-${tip ? `<section><h2>${esc(cat)} 고를 때 확인할 점</h2><ul class="ip-tips">${tip}</ul></section>` : ''}
+${tip ? `<section><h2>${esc(cat)} 고를 때 확인할 점</h2><ul class="ip-tips">${tip}</ul>${SITE.guides && SITE.guides[cat] ? `<p><a href="${guideUrl(cat)}">${esc(cat)} 구매 가이드 전체 보기</a></p>` : ''}</section>` : ''}
 ${similar.length ? `<section><h2>같은 카테고리의 다른 상품</h2><div class="ip-sim">${similar.map(x => `<a href="/item/${esc(x.id)}">${x.image ? `<img src="${esc(x.image)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : `<span>${SITE.emptyIcon}</span>`}<b>${esc(x.name)}</b><em>${x.price ? fmt(x.price) + '원' : ''}</em></a>`).join('')}</div></section>` : ''}
 </article>${faqHtml(faq)}`;
   return {
@@ -166,7 +166,8 @@ ${similar.length ? `<section><h2>같은 카테고리의 다른 상품</h2><div c
 
 function buildGuide(c, list) {
   const g = SITE.guides[c];
-  const items = list.filter(p => p.category === c).slice(0, 5);
+  const items = list.filter(p => p.category === c).slice(0, 10);
+  const others = Object.keys(SITE.guides).filter(k => k !== c);
   const title = `${c} 구매 가이드 | ${SITE.name}`;
   const desc = g.lead.slice(0, 150);
   const body = `<article class="ip gd ssr" data-cat="${esc(c)}">
@@ -175,6 +176,7 @@ function buildGuide(c, list) {
 ${g.sections.map(([h, t]) => `<section><h2>${esc(h)}</h2><p>${esc(t)}</p></section>`).join('')}
 <section><h2>구매 전 체크리스트</h2><ul class="ip-tips">${g.check.map(x => `<li>${esc(x)}</li>`).join('')}</ul></section>
 ${items.length ? `<section><h2>${esc(c)} 인기 상품</h2><ul class="ip-tips">${items.map(p => `<li><a href="${esc(p.url)}" target="_blank" rel="sponsored nofollow noopener">${esc(p.name)}</a> ${won(p.price)}</li>`).join('')}</ul></section>` : ''}
+${others.length ? `<section><h2>다른 분야 구매 가이드</h2><ul class="ip-tips">${others.map(k => `<li><a href="${guideUrl(k)}">${esc(k)} 구매 가이드</a></li>`).join('')}</ul></section>` : ''}
 <p class="ip-note"><a href="${catUrl(c)}">${esc(c)} 인기 랭킹 전체 보기</a> 가격과 재고는 쿠팡에서 바뀔 수 있습니다. ${esc(SITE.name)} 사이트는 상품을 소개만 하는 사이트이며 판매 당사자가 아닙니다.</p>
 </article>${faqHtml(catFaq(c))}`;
   const img = (items.find(p => p.image) || {}).image;
@@ -336,7 +338,7 @@ async function seo(req, env, url, ctx, h = {}) {
     const r = route(p);
     if (!r) return null;
     const cache = caches.default;
-    const key = new Request(url.origin + url.pathname + '?v=47&s=' + SITE.id);
+    const key = new Request(url.origin + url.pathname + '?v=48&s=' + SITE.id);
     let miss = false; // 상품 목록은 읽었는데 이 상품만 없을 때
     const gone = () => new Response('<!doctype html><meta charset="utf-8"><meta name="robots" content="noindex"><title>상품이 목록에서 빠졌어요</title><body style="font-family:sans-serif;padding:40px;line-height:1.7"><h1>이 상품은 더 이상 목록에 없어요</h1><p>판매가 끝났거나 인기 목록에서 빠진 상품입니다.</p><p><a href="/all">전체 상품 보기</a></p>', { status: 410, headers: { 'content-type': 'text/html;charset=utf-8', 'cache-control': 'public,max-age=3600', 'x-robots-tag': 'noindex' } });
     const gen = async () => {
