@@ -1,6 +1,7 @@
 // PEMILY 사이트 설정 — 이 파일 하나만 고치면 이 사이트의 이름과 분야와 검색어와 색상이 바뀝니다
 export default {
   id: 'pemily',
+  verify: { naverFile: 'naver8d5366402372557401593f89e99b51f6' },
   strict: true, // 분류 규칙이 있는 분야는 상품 이름에 그 단어가 있을 때만 담는다
   domains: ['pemily.kr', 'www.pemily.kr'],
   host: 'https://pemily.kr',
