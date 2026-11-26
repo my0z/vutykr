@@ -188,7 +188,7 @@ async function admin(req, env, url) {
     q(env, `SELECT CASE WHEN ref='' THEN '직접 접속' ELSE ref END k, COUNT(*) c FROM hits ${W} AND type='view' GROUP BY k ORDER BY c DESC LIMIT 10`, since),
     q(env, 'SELECT * FROM hits WHERE bot=0 ORDER BY ts DESC LIMIT 40'),
     q(env, 'SELECT COUNT(*) c FROM hits WHERE bot=1 AND ts>=?', since),
-    q(env, `SELECT ipm k, COUNT(*) c FROM hits ${W} AND ipm<>'' GROUP BY k ORDER BY c DESC LIMIT 15`, since)
+    q(env, `SELECT ipm k, COUNT(*) c, MAX(ts) t FROM hits ${W} AND ipm<>'' GROUP BY k ORDER BY t DESC LIMIT 15`, since)
   ]);
   // 하루는 한국시간 밤 0시부터 24시까지로 센다 (오늘과 어제를 같은 기준으로 비교)
   const DAY = 86400e3, now = Date.now();
@@ -277,7 +277,7 @@ button{background:var(--p1);color:#fff;border:0;border-radius:8px;padding:6px 12
 <div class="box"><h2>기기</h2>${bars(device)}</div>
 <div class="box"><h2>브라우저</h2>${bars(browser)}</div>
 <div class="box"><h2>운영체제</h2>${bars(os)}</div>
-<div class="box"><h2>접속 IP TOP (셋째 자리 가림)</h2>${bars(ips)}</div>
+<div class="box"><h2>접속 IP 최신순 (셋째 자리 가림)</h2>${bars(ips, r => r.k + ' · ' + kst(r.t))}</div>
 </section>
 <section class="box"><h2>최근 활동</h2><div class="wrap"><table><tr><th>시간</th><th>구분</th><th>내용</th><th>지역</th><th>기기</th><th>브라우저</th><th>OS</th><th>IP</th><th>유입</th></tr>
 ${recent.map(r => `<tr><td>${kst(r.ts)}</td><td><span class="tag ${r.type}">${r.type === 'click' ? '클릭' : '방문'}</span></td><td>${r.type === 'click' && r.code ? `<a href="${esc(SITE.host)}/${esc(r.code)}?go=a" target="_blank" rel="noopener nofollow">${esc(`${r.code} ${r.name}`.slice(0, 40))}</a>` : esc(r.type === 'click' ? `${r.code} ${r.name}`.slice(0, 40) : '메인')}</td><td>${esc(`${r.country} ${r.city}`.trim())}</td><td>${esc(r.device)}</td><td>${esc(r.browser)}</td><td>${esc(r.os)}</td><td>${esc(r.ipm || '')}</td><td>${esc(r.ref || '직접')}</td></tr>`).join('') || '<tr><td colspan="9" class="mute">기록이 없습니다</td></tr>'}
