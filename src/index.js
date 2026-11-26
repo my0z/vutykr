@@ -95,17 +95,21 @@ export default {
       for (const id of ids) {
         const e = bind(env, SITES[id]);
         if (!e) continue;
-        let n = 0, empty = 0, oldest = 0;
+        let n = 0, empty = 0, thin = 0, oldest = 0, upd = 0;
         try {
-          const list = (JSON.parse((await e.DATA.get('products')) || 'null') || {}).products || [];
+          const pj = JSON.parse((await e.DATA.get('products')) || 'null') || {}, list = pj.products || [];
+          upd = pj.updatedAt ? Date.parse(pj.updatedAt) || 0 : 0;
           n = list.length;
-          const have = new Set(list.map(p => p.category));
-          empty = Object.keys(SITES[id].cats).filter(c => !have.has(c)).length;
+          const cnt = {};
+          for (const p of list) cnt[p.category] = (cnt[p.category] || 0) + 1;
+          const cs = Object.keys(SITES[id].cats);
+          empty = cs.filter(c => !cnt[c]).length;
+          thin = cs.filter(c => cnt[c] && cnt[c] < 5).length; // 상품이 다섯 개 미만인 분야도 모자란 것으로 본다
           const pool = JSON.parse((await e.DATA.get('pool')) || '{}');
           const ts = Object.entries(pool).filter(([k]) => !k.startsWith('__best')).map(([, v]) => (v && v.t) || 0);
           oldest = ts.length ? Math.min(...ts) : 0;
         } catch (x) {}
-        need.push({ id, lack: empty * 100 + Math.max(0, 40 - n), oldest, rot: (ids.indexOf(id) - (hour % ids.length) + ids.length) % ids.length });
+        need.push({ id, lack: empty * 100 + thin * 40 + Math.max(0, 40 - n), oldest: upd || oldest, rot: (ids.indexOf(id) - (hour % ids.length) + ids.length) % ids.length });
       }
       need.sort((a, b) => (b.lack > 0) - (a.lack > 0) || b.lack - a.lack || a.oldest - b.oldest || a.rot - b.rot);
       const picks = need.slice(0, 2);
