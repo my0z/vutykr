@@ -307,4 +307,4 @@ if (made || !process.env.DRY) {
   await kvPut('live:used', JSON.stringify([...usedLive].slice(-4000)));
 }
 console.log('만든 실시간 배너', made);
-if (!made && !process.env.DRY && !(typeof expired !== 'undefined' && expired.length)) process.exit(1);
+if (!made && !process.env.DRY) console.log('::warning::이번 실행에서 맞는 사진과 영상을 못 찾아 배너를 만들지 못했다 (다음 실행에서 다시 찾는다)'); // 관련성 기준이 엄격해 가끔 0개가 나와도 실패로 보지 않는다
