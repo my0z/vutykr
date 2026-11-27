@@ -188,7 +188,7 @@ let prodCache = { t: 0, v: null };
 async function getProducts(env) {
   if (Date.now() - prodCache.t < 60000 && prodCache.v) return prodCache.v;
   const v = JSON.parse((await env.DATA.get('products', { cacheTtl: 60 })) || 'null');
-  if (v && v.products) v.products = v.products.map(p => ({ ...p, category: fitCat(p.category, p.name) })).filter(p => p.category); // 이미 저장된 엉뚱한 상품은 알맞은 분야로 옮기거나 숨긴다
+  if (v && v.products) { const ids = new Set(); v.products = v.products.map(p => ({ ...p, category: fitCat(p.category, p.name) })).filter(p => p.category && !ids.has(p.id) && ids.add(p.id)); } // 저장된 목록에 중복이 있어도 한 번만 보여 준다 // 이미 저장된 엉뚱한 상품은 알맞은 분야로 옮기거나 숨긴다
   prodCache = { t: Date.now(), v };
   return v;
 }
@@ -331,18 +331,19 @@ async function refresh(env, opts = {}) {
   const fresh = new Set(products.map(p => p.category));
   const kept = [];
   let imgStat = null;
+  const got = new Set(); // 이미 담은 상품 번호 (이전 목록에 중복이 있어도 한 번만 남긴다)
   if (prev && prev.products) {
     for (const p of prev.products) {
-      if (!fitCat(p.category, p.name) || fresh.has(p.category) || seen.has(p.id) || names.has(String(p.name || '').toLowerCase().replace(/\s+/g, ''))) continue;
-      kept.push({ ...p, category: fitCat(p.category, p.name), keep: true });
+      if (!fitCat(p.category, p.name) || fresh.has(p.category) || seen.has(p.id) || got.has(p.id) || names.has(String(p.name || '').toLowerCase().replace(/\s+/g, ''))) continue;
+      kept.push({ ...p, category: fitCat(p.category, p.name), keep: true }); got.add(p.id);
     }
     // 클릭이 많이 나온 상품은 새 목록에서 빠져도 최대 21일 더 남긴다 (클릭의 절반이 사라진 상품에서 나왔다)
     const hotIds = new Set((pool.__bestHot && pool.__bestHot.p) || []), have2 = new Set(kept.map(p => p.id));
     for (const p of prev.products) {
-      if (!hotIds.has(String(p.id)) || seen.has(p.id) || have2.has(p.id) || !fitCat(p.category, p.name) || !fresh.has(p.category)) continue;
+      if (!hotIds.has(String(p.id)) || seen.has(p.id) || have2.has(p.id) || got.has(p.id) || !fitCat(p.category, p.name) || !fresh.has(p.category)) continue;
       const t0 = p.hk || Date.now();
       if (Date.now() - t0 > 21 * 864e5) continue;
-      kept.push({ ...p, category: fitCat(p.category, p.name), hk: t0, keep: true });
+      kept.push({ ...p, category: fitCat(p.category, p.name), hk: t0, keep: true }); got.add(p.id);
     }
   }
 
@@ -365,7 +366,8 @@ async function refresh(env, opts = {}) {
     for (const k of keys.slice(0, Math.max(0, keys.length - 3000))) delete links[k];
     await env.DATA.put('links', JSON.stringify(links));
     linksCache = { t: 0, v: {} };
-    const all = [...products, ...kept.map(({ keep, ...x }) => x)];
+    const allIds = new Set();
+    const all = [...products, ...kept.map(({ keep, ...x }) => x)].filter(x => !allIds.has(x.id) && allIds.add(x.id)); // 같은 상품 번호는 한 번만
     try { await recordPrices(env, all.map(x => ({ ...x }))); } catch (e) { console.error('price', e.message); }
     try { imgStat = await resolveImages(env, all); } catch (e) { console.error('imgres', e.message); }
     await env.DATA.put('products', JSON.stringify({ updatedAt: new Date().toISOString(), categories: ['전체', ...Object.keys(CATEGORIES)], products: all }));
