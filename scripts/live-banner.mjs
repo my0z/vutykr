@@ -171,12 +171,13 @@ const catOf = x => { try { return decodeURIComponent(String(x.url || '').split('
 const cnt = { site: {}, cat: {} };
 for (const x of index) { cnt.site[x.site] = (cnt.site[x.site] || 0) + 1; const k = x.site + '/' + catOf(x); cnt.cat[k] = (cnt.cat[k] || 0) + 1; }
 const bump = (id, cat) => { cnt.site[id] = (cnt.site[id] || 0) + 1; const k = id + '/' + cat; cnt.cat[k] = (cnt.cat[k] || 0) + 1; };
-const pickSite = () => process.env.ONLY || siteIds.slice().sort((a, b) => ((cnt.site[a] || 0) - (cnt.site[b] || 0)) || (Math.random() - 0.5))[0];
+const failed = { img: new Set(), vid: new Set() }; // 이번 실행에서 못 찾은 사이트는 다시 고르지 않는다 (한 사이트만 계속 골라 0개로 끝나는 것 방지)
+const pickSite = (kind) => process.env.ONLY || siteIds.filter(x => !kind || !failed[kind].has(x) || siteIds.every(y => failed[kind].has(y))).sort((a, b) => ((cnt.site[a] || 0) - (cnt.site[b] || 0)) || (Math.random() - 0.5))[0];
 const catsFor = (id, site) => Object.keys(site.cats).sort((a, b) => ((cnt.cat[id + '/' + a] || 0) - (cnt.cat[id + '/' + b] || 0)) || (Math.random() - 0.5));
 const browser = await chromium.launch();
 let made = 0; const fresh = [];
 for (let k = 0; k < COUNT; k++) {
-  const id = pickSite(), site = SITES[id];
+  const id = pickSite('img'), site = SITES[id];
   const cats = catsFor(id, site);
   let ok = false;
   for (const srcName of (process.env.FORCE_OV ? ['ov'] : ['pixabay', 'ov'])) { // Pixabay 에서 못 찾으면 Openverse(CC0)를 쓴다
@@ -216,11 +217,11 @@ for (let k = 0; k < COUNT; k++) {
     }
     if (ok) break;
   }
-  if (!ok) console.log('관련 사진을 못 찾음', id);
+  if (!ok) { console.log('관련 사진을 못 찾음', id); failed.img.add(id); }
 }
 
 for (let k = 0; k < VIDEOS; k++) { // 움직이는 배너
-  const id = pickSite(), site = SITES[id];
+  const id = pickSite('vid'), site = SITES[id];
   const cats = catsFor(id, site);
   let ok = false;
   const dir = mkdtempSync(join(tmpdir(), 'vb-'));
@@ -257,7 +258,7 @@ for (let k = 0; k < VIDEOS; k++) { // 움직이는 배너
     } catch (e) { console.log('실패 영상', id, e.message); if (/429/.test(e.message)) break; }
   }
   rmSync(dir, { recursive: true, force: true });
-  if (!ok) console.log('관련 동영상을 못 찾음', id);
+  if (!ok) { console.log('관련 동영상을 못 찾음', id); failed.vid.add(id); }
 }
 // 예전 높이(240)로 만든 영상 배너를 같은 영상으로 새 높이(360)로 다시 만든다 (REBUILD=한 번에 만들 개수)
 const removeIds = new Set();
