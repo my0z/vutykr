@@ -23,9 +23,9 @@ async function load(env) {
 }
 
 function product(p) {
-  const o = { '@type': 'Product', name: p.name, url: abs(p.url) }; // category 는 구글이 정한 상품 분류 값이 아니면 오류로 봐서 넣지 않는다
+  const o = { '@type': 'Product', name: p.name, url: abs('/item/' + p.id) }; // 상품 주소는 상품 정보 페이지로 둔다 (짧은 링크는 noindex) · category 는 구글이 정한 상품 분류 값이 아니면 오류로 봐서 넣지 않는다
   if (p.image) o.image = p.image;
-  if (p.price) o.offers = { '@type': 'Offer', priceCurrency: 'KRW', price: p.price, url: abs(p.url) };
+  if (p.price) o.offers = { '@type': 'Offer', priceCurrency: 'KRW', price: p.price, url: abs('/item/' + p.id) };
   return o;
 }
 const itemList = (list, name) => ({
@@ -158,7 +158,7 @@ ${similar.length ? `<section><h2>같은 카테고리의 다른 상품</h2><div c
     title, desc, canonical: abs('/item/' + p.id), body,
     ld: [
       crumbs([['홈', '/'], [cat, catUrl(cat)], [p.name, '/item/' + p.id]]),
-      ld({ ...product(p), '@id': abs('/item/' + p.id), url: abs('/item/' + p.id), description: desc, offers: p.price ? { '@type': 'Offer', priceCurrency: 'KRW', price: p.price, url: abs(p.url) } : undefined }),
+      ld({ ...product(p), '@id': abs('/item/' + p.id), url: abs('/item/' + p.id), description: desc, offers: p.price ? { '@type': 'Offer', priceCurrency: 'KRW', price: p.price, url: abs('/item/' + p.id) } : undefined }),
       faqLd(faq)
     ]
   };
@@ -338,7 +338,7 @@ async function seo(req, env, url, ctx, h = {}) {
     const r = route(p);
     if (!r) return null;
     const cache = caches.default;
-    const key = new Request(url.origin + url.pathname + '?v=49&s=' + SITE.id);
+    const key = new Request(url.origin + url.pathname + '?v=50&s=' + SITE.id);
     let miss = false; // 상품 목록은 읽었는데 이 상품만 없을 때
     const gone = () => new Response('<!doctype html><meta charset="utf-8"><meta name="robots" content="noindex"><title>상품이 목록에서 빠졌어요</title><body style="font-family:sans-serif;padding:40px;line-height:1.7"><h1>이 상품은 더 이상 목록에 없어요</h1><p>판매가 끝났거나 인기 목록에서 빠진 상품입니다.</p><p><a href="/all">전체 상품 보기</a></p>', { status: 410, headers: { 'content-type': 'text/html;charset=utf-8', 'cache-control': 'public,max-age=3600', 'x-robots-tag': 'noindex' } });
     const gen = async () => {
