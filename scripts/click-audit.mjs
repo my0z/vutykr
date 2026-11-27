@@ -14,6 +14,7 @@ const Q = {
 const dbs = ((await api('/d1/database?per_page=50')).result || []);
 for (const db of dbs) {
   console.log(`\n######## ${db.name}`);
+  await api(`/d1/database/${db.uuid}/query`, { method: 'POST', body: JSON.stringify({ sql: 'ALTER TABLE hits ADD COLUMN asn TEXT' }) }).catch(() => {}); // 망 이름 열이 없으면 만든다 (있으면 오류만 나고 넘어간다)
   for (const [k, sql] of Object.entries(Q)) {
     const r = await api(`/d1/database/${db.uuid}/query`, { method: 'POST', body: JSON.stringify({ sql }) });
     const rows = r.result && r.result[0] && r.result[0].results;
