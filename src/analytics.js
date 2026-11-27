@@ -1,4 +1,5 @@
 import { dcNet } from './dc.js';
+const asnCol = new WeakSet();
 // 접속 기록(D1)과 관리자 통계 페이지(/0) — 사이트 설정과 커뮤니티를 받아 그 사이트용으로 만든다
 import { PROMOS } from '../sites/index.js';
 import { bnData, bnPage } from './banner-stats.js';
@@ -98,8 +99,9 @@ async function track(env, req, ev) {
         if (dup) return; // 같은 사람이 같은 상품을 10분 안에 다시 누른 것은 한 번만 센다
       }
     }
-    await env.DB.prepare('INSERT INTO hits (ts,type,code,pid,name,country,city,device,browser,os,ref,lang,vid,bot,iph,ipm) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
-      .bind(Date.now(), ev.type, ev.code || '', ev.pid || '', ev.name || '', cf.country || '', cf.city || '', device, browser, os, ref, lang, vid, bot, iph, ipm).run();
+    if (!asnCol.has(env.DB)) { asnCol.add(env.DB); try { await env.DB.prepare('ALTER TABLE hits ADD COLUMN asn TEXT').run(); } catch (e) {} } // 접속한 망 이름 (데이터센터 로봇 확인용)
+    await env.DB.prepare('INSERT INTO hits (ts,type,code,pid,name,country,city,device,browser,os,ref,lang,vid,bot,iph,ipm,asn) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
+      .bind(Date.now(), ev.type, ev.code || '', ev.pid || '', ev.name || '', cf.country || '', cf.city || '', device, browser, os, ref, lang, vid, bot ? 1 : 0, iph, ipm, String(cf.asOrganization || '').slice(0, 60)).run();
   } catch (e) { console.error('track', e.message); }
 }
 
