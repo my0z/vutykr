@@ -1,3 +1,4 @@
+import { dcNet } from './dc.js';
 // 접속 기록(D1)과 관리자 통계 페이지(/0) — 사이트 설정과 커뮤니티를 받아 그 사이트용으로 만든다
 import { PROMOS } from '../sites/index.js';
 import { bnData, bnPage } from './banner-stats.js';
@@ -69,6 +70,7 @@ async function track(env, req, ev) {
     await init(env);
     const ua = req.headers.get('user-agent') || '';
     let { bot, device, browser, os } = parseUA(ua);
+    if (!bot && dcNet(req)) bot = 1; // 데이터센터에서 온 접속은 로봇으로 센다
     const cf = req.cf || {};
     const ip = req.headers.get('cf-connecting-ip') || '';
     const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);

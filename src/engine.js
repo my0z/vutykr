@@ -1,3 +1,4 @@
+import { isAuto, noGo } from './dc.js';
 // 사이트 하나가 하는 일 전부 (상품 갱신과 짧은 링크와 이미지와 요청 처리) — 사이트마다 설정만 다르고 코드는 이 하나를 같이 쓴다
 import { goPage } from './go.js';
 import { pingIndexNow } from './indexnow.js';
@@ -415,6 +416,7 @@ const handler = {
       try { q = decodeURIComponent(path.slice(3)).trim().slice(0, 60); } catch (e) {}
       if (!q) return new Response(null, { status: 302, headers: { Location: '/' } });
       if (/bot|spider|crawl|slurp|preview|facebookexternalhit|curl|python|go-http|monitor/i.test(req.headers.get('user-agent') || '')) return new Response('Not found', { status: 404 });
+      if (isAuto(req) && url.searchParams.get('go') !== 'a') return noGo();
       const g = url.searchParams.get('go');
       const code = 's/' + encodeURIComponent(q);
       if (g) {
@@ -430,8 +432,8 @@ const handler = {
         const direct = () => new Response(null, { status: 302, headers: { Location: link.u, 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' } });
         const g = url.searchParams.get('go');
         if (g === 'a') return direct(); // 관리자가 통계에서 누른 링크는 세지 않고 바로 보낸다
+        if (isAuto(req)) return noGo(); // 로봇과 데이터센터 접속은 쿠팡으로 보내지 않는다 (무효 클릭 방지)
         if (g) { ctx.waitUntil(track(env, req, { type: 'click', code, pid: link.i, name: link.n })); return direct(); } // 안내 페이지에서 실제로 쿠팡으로 넘어갈 때 한 번 센다
-        if (/bot|spider|crawl|slurp|preview|facebookexternalhit|curl|python|go-http|monitor/i.test(req.headers.get('user-agent') || '')) return direct(); // 검색 로봇과 링크 검사기는 바로 보낸다
         const d = await getProducts(env).catch(() => null);
         return goPage(SITE, code, ((d && d.products) || []).find(x => x.id === link.i));
       }
