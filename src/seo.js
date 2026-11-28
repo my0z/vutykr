@@ -58,6 +58,88 @@ const nav = () => `<nav><a href="/">홈</a> <a href="/all">전체 상품</a> ${O
 const guideUrl = c => '/guide/' + encodeURIComponent(c);
 const hasGuide = c => !!(SITE.guides && SITE.guides[c]);
 
+
+// ---------- 주제 모음 페이지: 분야의 검색 낱말과 가격대마다 실제 상품 데이터로 만든다 (/t/분야/낱말 또는 p0~p3) ----------
+const NORM = s => String(s || '').toLowerCase().replace(/\s+/g, '');
+const BANDS = [[0, 10000, '1만원 이하'], [10000, 30000, '1만원 이상 3만원 미만'], [30000, 50000, '3만원 이상 5만원 미만'], [50000, 1e12, '5만원 이상']];
+const TMIN = 6; // 상품이 이만큼 안 되면 페이지를 만들지 않는다 (얇은 글 방지)
+const GEN = new Set(['프리미엄', '국내산', '국산', '고급', '대용량', '무선', '충전식', '휴대용', '신형', '대형', '소형', '정품', '일본', '한국', '프로', '미니', '슈퍼', '울트라', '스마트', '더', '뉴', '새로운', '올인원', '다용도', '실리콘']);
+const brandOf = n => String(n || '').replace(/^\s*[\[(][^\])]*[\])]\s*/, '').split(/\s+/)[0].replace(/[^0-9a-zA-Z가-힣]/g, '');
+const isBrand = (c, b) => { if (!b || b.length < 2 || /^\d/.test(b) || GEN.has(b)) return false; const stop = NORM(c + ' ' + ((SITE.cats[c].kw || []).join(' '))); return !stop.includes(NORM(b)) && !/^(강아지|고양이|아기|유아|여성|남성|신생아|아동|어린이|초등|주방|욕실|차량|자동차|낚시|캠핑)/.test(b); };
+const topicUrl = (c, k) => `/t/${encodeURIComponent(c)}/${encodeURIComponent(k)}`;
+const topicLabel = (c, k) => { const m = /^p([0-3])$/.exec(k); return m ? `${c} ${BANDS[m[1]][2]}` : k.startsWith('b:') ? `${k.slice(2)} ${c}` : k; };
+function topicItems(list, c, k) {
+  if (!SITE.cats[c]) return null;
+  const inCat = list.filter(p => p.category === c && p.price);
+  let out;
+  const bm = /^p([0-3])$/.exec(k);
+  if (bm) { const [lo, hi] = BANDS[bm[1]]; out = inCat.filter(p => p.price >= lo && p.price < hi); }
+  else if (k.startsWith('b:')) {
+    const b = k.slice(2);
+    if (!isBrand(c, b)) return null;
+    out = inCat.filter(p => brandOf(p.name) === b);
+  } else {
+    if (!((SITE.cats[c].kw || []).includes(k))) return null;
+    const toks = k.split(/\s+/).map(NORM).filter(Boolean);
+    out = inCat.filter(p => toks.every(t => NORM(p.name).includes(t)));
+  }
+  if (out.length < TMIN || out.length > inCat.length * 0.9) return null; // 분야 전체와 거의 같으면 따로 만들 이유가 없다
+  return out;
+}
+function topicList(list) {
+  const out = [];
+  for (const c of Object.keys(SITE.cats)) {
+    const bc = {};
+    for (const p of list) if (p.category === c && p.price) { const b = brandOf(p.name); if (b) bc[b] = (bc[b] || 0) + 1; }
+    const brands = Object.keys(bc).filter(b => bc[b] >= TMIN).sort((a, b) => bc[b] - bc[a]).map(b => 'b:' + b);
+    for (const k of [...(SITE.cats[c].kw || []), ...brands, 'p0', 'p1', 'p2', 'p3']) {
+      const it = topicItems(list, c, k);
+      if (it) out.push({ c, k, n: it.length });
+    }
+  }
+  return out;
+}
+const median = a => { const b = [...a].sort((x, y) => x - y), m = b.length >> 1; return b.length % 2 ? b[m] : Math.round((b[m - 1] + b[m]) / 2); };
+function buildTopic(c, k, list) {
+  const items = topicItems(list, c, k);
+  if (!items) return null;
+  const label = topicLabel(c, k), now = new Date(Date.now() + 9 * 3600e3), ym = `${now.getUTCFullYear()}년 ${now.getUTCMonth() + 1}월`;
+  const prices = items.map(p => p.price), mn = Math.min(...prices), mx = Math.max(...prices), md = median(prices);
+  const cheap = [...items].sort((a, b) => a.price - b.price).slice(0, 5);
+  const top = items.slice(0, 10);
+  const units = items.map(p => ({ p, u: unitPrice(p.name, p.price) })).filter(x => x.u).slice(0, 5);
+  const dist = BANDS.map(([lo, hi, nm]) => [nm, items.filter(p => p.price >= lo && p.price < hi).length]).filter(x => x[1]);
+  const rel = topicList(list).filter(t => t.c === c && t.k !== k).slice(0, 8);
+  const tip = (SITE.cats[c].tips || []).map(t => `<li>${esc(t)}</li>`).join('');
+  const title = `${label} 추천 가격 비교 TOP${Math.min(10, items.length)} ${ym} | ${SITE.name}`;
+  const desc = `${label} 상품 ${items.length}개를 쿠팡 판매 데이터로 비교했습니다. 최저가 ${fmt(mn)}원 중간 가격 ${fmt(md)}원 최고가 ${fmt(mx)}원이고 인기 순위와 가격대별 분포를 ${ym} 기준으로 정리했습니다`.slice(0, 160);
+  const faq = [
+    { q: `${label} 가장 싼 상품은 얼마인가요`, a: `${ym} 이 사이트에 담긴 ${items.length}개 중 가장 낮은 쿠팡 판매가는 ${fmt(mn)}원(${cheap[0].name.slice(0, 40)})입니다. 가격은 수시로 바뀌니 구매 전에 쿠팡에서 확인하세요.` },
+    { q: `${label} 평균 가격대는 어떻게 되나요`, a: `중간 가격은 ${fmt(md)}원이고 ${fmt(mn)}원에서 ${fmt(mx)}원까지 분포합니다. ${dist.map(([nm, n]) => `${nm} ${n}개`).join(' ')}.` },
+    { q: `${label} 인기 상품은 무엇인가요`, a: `쿠팡 인기 순위 기준 1위는 ${top[0].name.slice(0, 50)}입니다. 아래 목록에서 인기 순서대로 확인할 수 있습니다.` }
+  ];
+  const body = `<article class="ip gd ssr" data-cat="${esc(c)}">
+<nav class="crumb"><a href="/">홈</a> › <a href="${catUrl(c)}">${esc(c)}</a> › <span>${esc(label)}</span></nav>
+<section><h1>${esc(label)} 추천 가격 비교 (${ym})</h1><p>${esc(label)} 상품 ${items.length}개를 쿠팡 판매 데이터로 모았습니다. 가장 싼 상품은 ${fmt(mn)}원 중간 가격은 ${fmt(md)}원 가장 비싼 상품은 ${fmt(mx)}원입니다. ${esc(SITE.cats[c].intro || '')}</p></section>
+<section><h2>가격대별 분포</h2><table class="ip-table"><tbody>${dist.map(([nm, n]) => `<tr><th>${esc(nm)}</th><td>${n}개</td></tr>`).join('')}</tbody></table></section>
+<section><h2>${esc(label)} 인기 순위 TOP${top.length}</h2><ol>${top.map(p => `<li><a href="/item/${esc(p.id)}">${esc(p.name)}</a> ${won(p.price)}</li>`).join('')}</ol></section>
+<section><h2>${esc(label)} 가장 저렴한 상품 TOP${cheap.length}</h2><ol>${cheap.map(p => `<li><a href="/item/${esc(p.id)}">${esc(p.name)}</a> ${won(p.price)}</li>`).join('')}</ol></section>
+${units.length ? `<section><h2>단위 가격으로 비교하면</h2><ul class="ip-tips">${units.map(x => `<li><a href="/item/${esc(x.p.id)}">${esc(x.p.name)}</a> ${esc(x.u)}</li>`).join('')}</ul><p class="ip-note">상품명에 적힌 용량으로 계산한 추정값입니다.</p></section>` : ''}
+${tip ? `<section><h2>${esc(c)} 고를 때 확인할 점</h2><ul class="ip-tips">${tip}</ul>${hasGuide(c) ? `<p><a href="${guideUrl(c)}">${esc(c)} 구매 가이드 전체 보기</a></p>` : ''}</section>` : ''}
+${rel.length ? `<section><h2>${esc(c)} 다른 추천 모음</h2><ul class="ip-tips">${rel.map(t => `<li><a href="${topicUrl(t.c, t.k)}">${esc(topicLabel(t.c, t.k))}</a> ${t.n}개</li>`).join('')}</ul></section>` : ''}
+<p class="ip-note"><a href="${catUrl(c)}">${esc(c)} 인기 랭킹 전체 보기</a> 가격과 재고는 쿠팡에서 바뀔 수 있습니다. ${esc(SITE.name)} 사이트는 상품을 소개만 하는 사이트이며 판매 당사자가 아닙니다.</p>
+</article>${faqHtml(faq)}`;
+  return {
+    title, desc, canonical: abs(topicUrl(c, k)), body,
+    ld: [
+      crumbs([['홈', '/'], [c, catUrl(c)], [label, topicUrl(c, k)]]),
+      ld({ '@type': 'CollectionPage', name: `${label} 추천 가격 비교`, url: abs(topicUrl(c, k)), description: desc, inLanguage: 'ko-KR' }),
+      ld(itemList(top, `${SITE.name} ${label} 인기 순위`)),
+      faqLd(faq)
+    ]
+  };
+}
+
 function route(p) {
   if (p === '/' || p === '/index.html') return { t: 'home' };
   if (p === '/about' || p === '/privacy' || p === '/terms') return { t: 'legal', k: p.slice(1) };
@@ -69,6 +151,12 @@ function route(p) {
     let c = '';
     try { c = decodeURIComponent(gm[1]); } catch (e) { return null; }
     if (hasGuide(c)) return { t: 'guide', c };
+  }
+  const tm = p.match(/^\/t\/([^/]+)\/([^/]+)$/);
+  if (tm) {
+    let c = '', k = '';
+    try { c = decodeURIComponent(tm[1]); k = decodeURIComponent(tm[2]); } catch (e) { return null; }
+    if (SITE.cats[c]) return { t: 'topic', c, k };
   }
   const m = p.match(/^\/c\/(.+)$/);
   if (m) {
@@ -193,6 +281,7 @@ ${others.length ? `<section><h2>다른 분야 구매 가이드</h2><ul class="ip
 function build(r, list) {
   if (r.t === 'item') return buildItem(r.p, list, r.hist || []);
   if (r.t === 'guide') return buildGuide(r.c, list);
+  if (r.t === 'topic') return buildTopic(r.c, r.k, list);
   if (r.t === 'legal') { const g = legalPage(SITE, r.k); return { title: g.title, desc: g.desc, canonical: abs('/' + r.k), body: g.body, ld: [crumbs([['홈', '/'], [g.title.split(' | ')[0], '/' + r.k]])] }; }
   const top = list.slice(0, 20);
   if (r.t === 'home') {
@@ -202,6 +291,7 @@ function build(r, list) {
       const l = list.filter(p => p.category === c).slice(0, 5);
       if (l.length) body += `<h2><a href="${catUrl(c)}">${esc(c)} 인기 랭킹</a></h2>${li(l)}`;
     }
+    { const t = topicList(list).filter(x => !/^p[0-3]$/.test(x.k)).slice(0, 24); if (t.length) body += `<h2>인기 추천 모음</h2><ul>${t.map(x => `<li><a href="${topicUrl(x.c, x.k)}">${esc(topicLabel(x.c, x.k))}</a></li>`).join('')}</ul>`; }
     if (SITE.guides) body += `<h2>분야별 구매 가이드</h2><ul>${Object.keys(SITE.guides).map(c => `<li><a href="${guideUrl(c)}">${esc(c)} 구매 가이드</a></li>`).join('')}</ul>`;
     body += `</section>${faqHtml()}`;
     return {
@@ -227,7 +317,7 @@ function build(r, list) {
   const cfg = SITE.cats[r.c];
   return {
     title: `${r.c} 인기 랭킹 TOP | ${SITE.name}`, desc: cfg.intro, canonical: abs(catUrl(r.c)),
-    body: `<section class="ssr"><h1>${esc(r.c)} 인기 랭킹</h1><p>${esc(cfg.intro)}</p>${nav()}${li(l.slice(0, 40))}${hasGuide(r.c) ? `<p><a href="${guideUrl(r.c)}">${esc(r.c)} 구매 가이드 보기</a></p>` : ''}<h2>${esc(r.c)} 고를 때 확인할 점</h2><ul>${(cfg.tips || []).map(t => `<li>${esc(t)}</li>`).join('')}</ul></section>${faqHtml(catFaq(r.c))}`,
+    body: `<section class="ssr"><h1>${esc(r.c)} 인기 랭킹</h1><p>${esc(cfg.intro)}</p>${nav()}${li(l.slice(0, 40))}${hasGuide(r.c) ? `<p><a href="${guideUrl(r.c)}">${esc(r.c)} 구매 가이드 보기</a></p>` : ''}${(() => { const t = topicList(list).filter(x => x.c === r.c); return t.length ? `<h2>${esc(r.c)} 추천 모음</h2><ul>${t.map(x => `<li><a href="${topicUrl(x.c, x.k)}">${esc(topicLabel(x.c, x.k))}</a> ${x.n}개</li>`).join('')}</ul>` : ''; })()}<h2>${esc(r.c)} 고를 때 확인할 점</h2><ul>${(cfg.tips || []).map(t => `<li>${esc(t)}</li>`).join('')}</ul></section>${faqHtml(catFaq(r.c))}`,
     ld: [
       crumbs([['홈', '/'], [r.c, catUrl(r.c)]]),
       ld({ '@type': 'CollectionPage', name: `${r.c} 인기 랭킹`, url: abs(catUrl(r.c)), description: cfg.intro, inLanguage: 'ko-KR' }),
@@ -286,7 +376,7 @@ function robots() {
 async function sitemap(env) {
   const d = await load(env);
   const last = d && d.updatedAt ? String(d.updatedAt).slice(0, 10) : new Date().toISOString().slice(0, 10);
-  const urls = [['/', 1.0], ['/all', 0.8], ...Object.keys(SITE.cats).map(c => [catUrl(c), 0.7]), ...Object.keys(SITE.guides || {}).map(c => [guideUrl(c), 0.8]), ['/about', 0.3], ['/privacy', 0.2], ['/terms', 0.2], ...[...new Set(((d && d.products) || []).map(x => x.id))].slice(0, 2000).map(id => ['/item/' + id, 0.6])];
+  const urls = [['/', 1.0], ['/all', 0.8], ...Object.keys(SITE.cats).map(c => [catUrl(c), 0.7]), ...Object.keys(SITE.guides || {}).map(c => [guideUrl(c), 0.8]), ...(d && d.products ? topicList(d.products).map(t => [topicUrl(t.c, t.k), 0.6]) : []), ['/about', 0.3], ['/privacy', 0.2], ['/terms', 0.2], ...[...new Set(((d && d.products) || []).map(x => x.id))].slice(0, 2000).map(id => ['/item/' + id, 0.6])];
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(([u, p]) => `<url><loc>${esc(abs(u))}</loc>${/^\/(about|privacy|terms)/.test(u) ? '' : `<lastmod>${last}</lastmod>`}<priority>${p}</priority></url>`).join('\n')}\n</urlset>\n`;
   return new Response(xml, { headers: headers('application/xml;charset=utf-8') });
 }
@@ -338,7 +428,7 @@ async function seo(req, env, url, ctx, h = {}) {
     const r = route(p);
     if (!r) return null;
     const cache = caches.default;
-    const key = new Request(url.origin + url.pathname + '?v=50&s=' + SITE.id);
+    const key = new Request(url.origin + url.pathname + '?v=52&s=' + SITE.id);
     let miss = false; // 상품 목록은 읽었는데 이 상품만 없을 때
     const gone = () => new Response('<!doctype html><meta charset="utf-8"><meta name="robots" content="noindex"><title>상품이 목록에서 빠졌어요</title><body style="font-family:sans-serif;padding:40px;line-height:1.7"><h1>이 상품은 더 이상 목록에 없어요</h1><p>판매가 끝났거나 인기 목록에서 빠진 상품입니다.</p><p><a href="/all">전체 상품 보기</a></p>', { status: 410, headers: { 'content-type': 'text/html;charset=utf-8', 'cache-control': 'public,max-age=3600', 'x-robots-tag': 'noindex' } });
     const gen = async () => {
@@ -359,6 +449,7 @@ async function seo(req, env, url, ctx, h = {}) {
         rr.hist = hist;
       }
       const pg = build(rr, list);
+      if (!pg) return null; // 상품이 모자란 주제 페이지는 만들지 않는다
       if (rr.t === 'item' && rr.p.image) pg.preload = rr.p.image;
       const first = list.find(x => x.image);
       // 상품 본문 페이지는 상품 목록이 필요 없어서 비워 용량을 줄인다
