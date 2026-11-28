@@ -24,7 +24,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const kst = new Date(Date.now() + 9 * 3600e3), stamp = kst.toISOString().slice(2, 13).replace(/[-T]/g, ''); // yymmddhh
 const LAYOUTS = ['split', 'full', 'light', 'slant', 'glass', 'circle', 'mirror', 'fullr']; // mirror 와 fullr 은 사진이 왼쪽이다 (id 끝에 LP 를 붙여 광고 표시를 오른쪽 아래로 옮긴다)
 // 영어 상품 이름으로 영어 태그를 검색한다 (한국어 태그는 딸랑이=꽃 토너=토너먼트 같은 엉뚱한 뜻이 많다)
-const GENERIC = new Set(['pack', 'folded', 'small', 'womens', 'women', 'bottle', 'tube', 'jar', 'set', 'box', 'bag', 'white', 'leather', 'gold', 'wool', 'cordless', 'power', 'portable', 'compact', 'with', 'baby']);
+const GENERIC = new Set(['pack', 'folded', 'small', 'womens', 'women', 'bottle', 'tube', 'jar', 'set', 'box', 'bag', 'white', 'leather', 'gold', 'wool', 'cordless', 'power', 'portable', 'compact', 'with', 'baby', 'stick', 'sticks']);
 const PEOPLE = /\b(girl|boy|woman|women|man|men|child|children|kid|kids|people|person|portrait|face|model|couple|family|mother|father|baby girl|toddler|newborn baby)\b/i;
 const BAD = /\b(pill|pills|tablet|tablets|medicine|medicines|medication|drug|drugs|capsule|capsules|pharmacy|syringe|injection|whey|protein|bodybuilding|fitness|gym|workout|muscle|steroid)\b/i;
 const NOCHESS = (text, q) => /\bchess|checkmate/i.test(text) && !/chess/i.test(q); // 보드게임 검색에 체스 사진이 섞이지 않게 한다
@@ -32,7 +32,7 @@ const words = q => q.toLowerCase().replace(/'s\b/g, 's').replace(/[^a-z ]/g, ' '
 const keyTokens = q => words(q).filter(t => (t.length >= 4 || ['dog', 'cat', 'pet', 'toy'].includes(t)) && !GENERIC.has(t)); // dog 와 cat 도 꼭 있어야 하는 낱말로 본다 (사람용 제품과 구분)
 
 // 영상 전용 엄격 규칙: 상품과 상관없는 장면 낱말이 있으면 버린다 (상품 영어 이름에 그 낱말이 있으면 허용)
-const OFF = /\b(wood|woodwork|woodworking|carpenter|carpentry|workshop|lumber|timber|sawdust|construction|factory|waterfall|forest|mountain|landscape|aerial|drone|city|cityscape|traffic|highway|bridge|sunset|sunrise|sky|clouds|beach|desert|rock|rocks|stone|stones|hand|hands|finger|fingers|legs|feet|walking|worker|workers|crowd|silhouette)\b/gi;
+const OFF = /\b(wood|woodwork|woodworking|carpenter|carpentry|workshop|lumber|timber|sawdust|construction|factory|waterfall|forest|mountain|landscape|aerial|drone|city|cityscape|traffic|highway|bridge|sunset|sunrise|sky|clouds|beach|desert|rock|rocks|stone|stones|crowd|silhouette)\b/gi;
 const offScene = (text, q) => { const qw = new Set(words(q)); return (String(text).toLowerCase().match(OFF) || []).some(w => !qw.has(w.toLowerCase().replace(/s$/, '')) && !qw.has(w.toLowerCase())); };
 const nounOf = q => { const k = keyTokens(q); return k[k.length - 1]; }; // 상품 이름의 마지막 낱말이 보통 물건 이름이다
 async function search(q) {
@@ -85,7 +85,7 @@ function pexRelevant(text, q) {
   const kt = keyTokens(q);
   return kt.length > 0 && kt.every(t => new RegExp('\\b' + t + 's?\\b').test(text));
 }
-const pexStrict = (slug, q) => { const n = nounOf(q); return !offScene(slug, q) && !!n && new RegExp('\\b' + n + 's?\\b').test(slug.split(/\s+/).slice(0, 7).join(' ')); }; // 물건 낱말이 설명 앞쪽 일곱 낱말 안에 있어야 한다
+const pexStrict = (slug, q) => { const n = nounOf(q); return !offScene(slug, q) && !!n && new RegExp('\\b' + n + 's?\\b').test(slug.split(/\s+/).slice(0, 10).join(' ')); }; // 물건 낱말이 설명 앞쪽 열 낱말 안에 있어야 한다
 async function findPexelsVideos(q) {
   const r = await fetch(`https://api.pexels.com/videos/search?query=${encodeURIComponent(words(q).filter(t => !['a', 'an', 'the'].includes(t)).join(' '))}&per_page=40&orientation=landscape`, { headers: pexHeaders() });
   if (r.status === 429) throw new Error('Pexels 요청 한도 (429)');
@@ -126,7 +126,7 @@ function relevantVideo(hit, q, sid) {
   if (sid === 'bebepong' && !/\b(baby|babies|infant|newborn|toddler)\b/.test(head)) return false; // 아기 사이트 영상은 baby 태그가 앞쪽에 있어야 한다
   const toks = words(q).filter(t => t.length >= 3 && !['the', 'with', 'and'].includes(t) && !GENERIC.has(t));
   if (offScene(tags.join(' '), q)) return false;
-  const n = nounOf(q); if (n && !new RegExp('\\b' + n + 's?\\b').test(', ' + tags.slice(0, 2).join(', ') + ', ')) return false; // 물건 낱말이 앞쪽 두 태그 안에 있어야 한다
+  const n = nounOf(q); if (n && !new RegExp('\\b' + n + 's?\\b').test(', ' + tags.slice(0, 3).join(', ') + ', ')) return false; // 물건 낱말이 앞쪽 세 태그 안에 있어야 한다
   return toks.length > 0 && toks.every(t => new RegExp('\\b' + t + 's?\\b').test(head));
 }
 async function searchVideos(q) {
