@@ -176,6 +176,7 @@ const pickSite = (kind) => process.env.ONLY || siteIds.filter(x => !kind || !fai
 const catsFor = (id, site) => Object.keys(site.cats).sort((a, b) => ((cnt.cat[id + '/' + a] || 0) - (cnt.cat[id + '/' + b] || 0)) || (Math.random() - 0.5));
 const browser = await chromium.launch();
 let made = 0; const fresh = [];
+let imgTry = 0;
 for (let k = 0; k < COUNT; k++) {
   const id = pickSite('img'), site = SITES[id];
   const cats = catsFor(id, site);
@@ -217,9 +218,10 @@ for (let k = 0; k < COUNT; k++) {
     }
     if (ok) break;
   }
-  if (!ok) { console.log('관련 사진을 못 찾음', id); failed.img.add(id); }
+  if (!ok) { console.log('관련 사진을 못 찾음', id); failed.img.add(id); if (!process.env.ONLY && ++imgTry < siteIds.length) k--; } // 못 찾으면 다른 사이트로 다시 시도한다
 }
 
+let vidTry = 0;
 for (let k = 0; k < VIDEOS; k++) { // 움직이는 배너
   const id = pickSite('vid'), site = SITES[id];
   const cats = catsFor(id, site);
@@ -258,7 +260,7 @@ for (let k = 0; k < VIDEOS; k++) { // 움직이는 배너
     } catch (e) { console.log('실패 영상', id, e.message); if (/429/.test(e.message)) break; }
   }
   rmSync(dir, { recursive: true, force: true });
-  if (!ok) { console.log('관련 동영상을 못 찾음', id); failed.vid.add(id); }
+  if (!ok) { console.log('관련 동영상을 못 찾음', id); failed.vid.add(id); if (!process.env.ONLY && ++vidTry < siteIds.length * 2) k--; } // 못 찾으면 다른 사이트로 다시 시도한다 (성공할 때까지 사이트 수의 두 배까지)
 }
 // 예전 높이(240)로 만든 영상 배너를 같은 영상으로 새 높이(360)로 다시 만든다 (REBUILD=한 번에 만들 개수)
 const removeIds = new Set();
