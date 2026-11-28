@@ -9,6 +9,8 @@ const Q = {
   '클릭 유입 경로': `SELECT ref, COUNT(*) n FROM hits WHERE type='click' AND bot=0 AND ts>${since} GROUP BY 1 ORDER BY n DESC LIMIT 10`,
   '한 IP 의 클릭 수 분포': `SELECT c, COUNT(*) ips FROM (SELECT iph, COUNT(*) c FROM hits WHERE type='click' AND bot=0 AND ts>${since} GROUP BY iph) GROUP BY c ORDER BY c`,
   '클릭 망(ASN) 상위': `SELECT asn, bot, COUNT(*) n FROM hits WHERE type='click' AND ts>${since} GROUP BY 1,2 ORDER BY n DESC LIMIT 15`,
+  '오늘 사람 클릭 망과 나라': `SELECT asn, country, COUNT(*) n FROM hits WHERE type='click' AND bot=0 AND ts>${Date.now() - 864e5} GROUP BY 1,2 ORDER BY n DESC LIMIT 10`,
+  '오늘 로봇 처리 수': `SELECT bot, COUNT(*) n FROM hits WHERE ts>${Date.now() - 864e5} GROUP BY 1`,
   '클릭 도시 상위': `SELECT city, COUNT(*) n FROM hits WHERE type='click' AND bot=0 AND ts>${since} GROUP BY 1 ORDER BY n DESC LIMIT 10`
 };
 const dbs = ((await api('/d1/database?per_page=50')).result || []);
